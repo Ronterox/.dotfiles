@@ -16,10 +16,10 @@ HISTCONTROL=ignoreboth
 shopt -s histappend
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=1000
-HISTFILESIZE=1000
+HISTSIZE=5000
+HISTFILESIZE=5000
 
-export HISTIGNORE="ls:h:history:pwd:clear:cls:hc:q:exit:cd ..:cd"
+export HISTIGNORE="ls:lsd:h:history:pwd:clear:cls:hc:q:exit:cd ..:cd"
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -128,6 +128,21 @@ alias q='exit'
 alias nf='neofetch && ls'
 alias cls='clear && ls'
 
+ls-cd() {
+    lscmd="$1" && shift
+    [ $# -eq 0 ] && path="." || path="$*"
+    dir=$($lscmd "$path" | fzf --height=50% --preview "batcat \"$path\"/{} 2> /dev/null || tree -L 1 \"$path\"/{}")
+    if [ ! "$dir" ]; then 
+       cd "$path"
+       return
+    fi
+    path="$path/$dir" && ls-cd "$lscmd" "$path"
+}
+
+lsd() { ls-cd "ls" "$@"; }
+lsa() { ls-cd "ls -a" "$@"; }
+lc() { locate "$*" | fzf --border; }
+
 h() { 
     cmd="$(history | fzf +s --tac --prompt='Run command: ' | sed 's/ *[0-9]* *//')"
     echo "$cmd" | xclip -selection clipboard
@@ -161,9 +176,7 @@ alias k='kitty +kitten'
 alias icat='kitty +kitten icat'
 alias tconf='nvim ~/.dotfiles/.config/kitty/kitty.conf'
 
-kitty-reload() {
-    kill -SIGUSR1 $(pidof kitty)
-}
+kitty-reload() { kill -SIGUSR1 $(pidof kitty); } # Problem: There is no kitty process, like ever
 
 # ------------------- Apt -------------------
 
@@ -192,6 +205,15 @@ alias gitrm='git rm'
 alias gitb='git branch'
 alias gitbc='git checkout'
 alias gitl='git log'
+
+alias git-clone='git clone --bare'
+
+alias gh-auth='gh auth login'
+gh-open(){
+    repo=$(gh repo list -L 100 | fzf --prompt="Open Repo:" --border | awk '{print $1}')
+    [ ! "$repo" ] && return
+    gh repo view --web "$repo"
+}
 
 # ------------------- Web Dev -------------------
 
@@ -235,7 +257,13 @@ psearch(){ firefox --private-window "https://www.google.com/search?q=$*"; }
 
 alias conda='mamba'
 
-condact() { conda activate $(condalist | awk '{print $1}' | fzf); }
+condact() { 
+    if [ $# -eq 0 ]; then
+        conda activate $(condalist | awk '{print $1}' | fzf); 
+        return
+    fi
+    conda activate $1
+}
 alias condeact='conda deactivate'
 
 alias condalist='conda env list'
@@ -301,7 +329,7 @@ tmux-sessions() {
 
 # ------------------- Project Management -------------------
 
-PR_DIRS=(~/Documents/Projects/ ~/.config /media/rontero/EXTRicardo1/ProjectsHeavy/)
+PR_DIRS=(~/Documents/Projects/ ~/.dotfiles /media/rontero/EXTRicardo1/ProjectsHeavy/)
 
 cdpc() { cdp -c "nvim ." $@; }
 
@@ -319,9 +347,10 @@ cdp() {
         esac
     done
 
-    session_path=$(find ${PR_DIRS[@]} -maxdepth 2 -type d -ipath "*$**" | fzf --prompt="Project: " --border)
+    # foreach ignoredir -name $ignoredir -o
+    session_path=$(find ${PR_DIRS[@]} -maxdepth 2 \( -name '.git' \) -prune -o -type d -ipath "*$**" | fzf --prompt="Project: " --border)
     [ ! "$session_path" ] && return
-    session_name=$(basename "$session_path")
+    session_name=$(basename "$session_path" | tr -d '.' )
 
     if ! tmux has-session -t "$session_name" 2> /dev/null; then
         tmux new-session -d -s "$session_name" -c "$session_path"
