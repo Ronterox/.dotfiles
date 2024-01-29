@@ -6,11 +6,11 @@ return {
     },
     opts = {
         filetype = {
-            -- java = {"cd $dir &&", "javac $fileName &&", "java $fileNameWithoutExt"},
-            typescript = 'bun $fileName',
-            javascript = 'bun $fileName',
-            r = 'Rscript $fileName'
-            -- rust = {"cd $dir &&", "rustc $fileName &&", "$dir/$fileNameWithoutExt"}
+            typescript = 'bun $dir/$fileName',
+            javascript = 'bun $dir/$fileName',
+            r = 'Rscript $dir/$fileName',
+            go = 'go run $dir/$fileName',
+            rust = 'cargo run $dir/$fileName || cargo run --bin $fileNameWithoutExt'
         }
     }
 }

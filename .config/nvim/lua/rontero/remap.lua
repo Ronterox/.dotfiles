@@ -27,4 +27,3 @@ vim.keymap.set('n', '<C-k>', ':bnext<CR>zz')
 vim.keymap.set('n', '<C-q>', ':e#<CR>')
 
 vim.keymap.set('t', '<Esc>', '<C-\\><C-n>')
-vim.keymap.set('n', '<C-f>', ':!tmux neww cdpc<CR>')

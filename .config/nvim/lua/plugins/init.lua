@@ -15,7 +15,6 @@ return {
             }
         }
     },
-    'stevearc/dressing.nvim',
     { 'rhysd/clever-f.vim' },
 
     -- Code Highlighting

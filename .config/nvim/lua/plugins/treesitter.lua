@@ -3,8 +3,8 @@ return {
     build = ":TSUpdate",
     event = { "VeryLazy" },
     dependencies = {
-        { 'p00f/nvim-ts-rainbow' },
-        { "nvim-treesitter/nvim-treesitter-textobjects" }
+        { "nvim-treesitter/nvim-treesitter-textobjects" },
+        { "nvim-treesitter/nvim-treesitter-context" }
     },
     cmd = { "TSUpdateSync", "TSUpdate", "TSInstall" },
     keys = {
@@ -37,10 +37,6 @@ return {
                 goto_previous_start = { ["[f"] = "@function.outer", ["[c"] = "@class.outer" },
                 goto_previous_end = { ["[F"] = "@function.outer", ["[C"] = "@class.outer" },
             },
-        },
-        rainbow = {
-            enable = true,
-            extended_mode = true,
         }
     },
     config = function(_, opts) require("nvim-treesitter.configs").setup(opts) end,

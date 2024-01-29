@@ -10,7 +10,7 @@ esac
 
 # don't put duplicate lines or lines starting with space in the history.
 # See bash(1) for more options
-HISTCONTROL=ignoreboth
+HISTCONTROL=ignoreboth:erasedups
 
 # append to the history file, don't overwrite it
 shopt -s histappend
@@ -58,8 +58,12 @@ if [ -n "$force_color_prompt" ]; then
     fi
 fi
 
+parse_git_branch() {
+     git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
+}
+
 if [ "$color_prompt" = yes ]; then
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;36m\][\!]\[\033[01;33m\][\t] \[\033[02;33m\]\d \[\033[00;36m\]\u\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    PS1="${debian_chroot:+($debian_chroot)}\[\033[01;36m\][\!] \[\033[01;33m\]\t \[\033[01;34m\]\$(parse_git_branch)(\[\033[00;36m\]\u)\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "
 else
     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
@@ -68,7 +72,7 @@ unset color_prompt force_color_prompt
 # If this is an xterm set the title to user@host:dir
 case "$TERM" in
     xterm*|rxvt*)
-        PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+        PS1=" $PS1"
         ;;
     *)
         ;;
@@ -145,6 +149,7 @@ lc() { locate "$*" | fzf --border; }
 
 h() { 
     cmd="$(history | fzf +s --tac --prompt='Run command: ' | sed 's/ *[0-9]* *//')"
+    [ ! "$cmd" ] && return
     echo "$cmd" | xclip -selection clipboard
     sleep 0.1 && xdotool key --delay {{1}} ctrl+shift+v
 }
@@ -155,8 +160,6 @@ alias dirsize='du -h -d 1'
 alias notrunbyshell='grep -l pam_env /etc/pam.d/*' # /etc/environment else /etc/profile
 alias fontcache='sudo fc-cache -fv'
 alias fixaudio='systemctl --user restart wireplumber pipewire pipewire-pulse'
-
-calc() { echo $1 | bc; } # Calculate
 
 hc() { h -d 1-$(calc $(hlen)-$HISTFILESIZE); } # Clear history
 man() { command man $1 || command $1 --help | batcat || command $1 -h | batcat; }
@@ -180,6 +183,16 @@ kitty-reload() { kill -SIGUSR1 $(pidof kitty); } # Problem: There is no kitty pr
 
 # ------------------- Apt -------------------
 
+# apti() { 
+#     results=$(apt search "$*")
+#     if [ ! "$results" ]; then
+#         echo "No results found!"
+#         return
+#     fi
+#     package=$(echo "$results" | fzf --prompt="Install: " --border)
+#     [ ! "$package" ] && return
+#     echo "Installing $package..."
+# }
 alias apti='apt install'
 alias aptr='apt remove'
 alias aptup='apt update'
@@ -213,6 +226,32 @@ gh-open(){
     repo=$(gh repo list -L 100 | fzf --prompt="Open Repo:" --border | awk '{print $1}')
     [ ! "$repo" ] && return
     gh repo view --web "$repo"
+}
+
+GH_BASE_URL="https://api.github.com"
+GH_RAW_URL="https://raw.githubusercontent.com"
+
+gh-lsf() {
+    user=$1
+    repo=$2
+    branch=$3
+    recursive=$4
+    curl -s "$GH_BASE_URL/repos/$user/$repo/git/trees/$branch?recursive=${recursive:-0}" | jq -r '.tree[] | select(.type == "blob") | .path'
+}
+
+gh-get-raw() {
+    user=$1
+    repo=$2
+    branch=$3
+    file=$4
+    curl -s "$GH_RAW_URL/$user/$repo/$branch/$file"
+}
+
+gh-gitignore() {
+    file=$(gh-lsf github gitignore main | fzf --prompt="Select .gitignore:" --border)
+    [ ! "$file" ] && return
+
+    gh-get-raw github gitignore main "$file" >> .gitignore
 }
 
 # ------------------- Web Dev -------------------
@@ -285,7 +324,7 @@ condcreate() {
     fi
 
     if [ $# -lt 2 ]; then
-        echo -e "\nUsage: condacreate [env name] [env path num] [packages]\n"
+        echo -e "\nUsage: condacreate [env name] [env path num] [packages...]\n"
         return
     fi
 
@@ -294,7 +333,7 @@ condcreate() {
 
     path+=/$1
     shift 2
-    cmd="conda create -c conda-forge -p $path $*"
+    cmd="mamba create -c conda-forge -p $path $*"
 
     echo "$cmd" && $cmd
 }
@@ -329,9 +368,11 @@ tmux-sessions() {
 
 # ------------------- Project Management -------------------
 
-PR_DIRS=(~/Documents/Projects/ ~/.dotfiles /media/rontero/EXTRicardo1/ProjectsHeavy/)
+PR_DIRS=(~/Documents/Projects/ ~/.dotfiles /media/rontero/EXTRicardo/ProjectsHeavy/)
 
 cdpc() { cdp -c "nvim ." $@; }
+
+export -f cdpc
 
 cdp() {
     cmd="tree -L 1"
@@ -366,17 +407,26 @@ cdp() {
 
 # develop new project
 devproj() {
-    lang=$(find ${PR_DIRS[@]} -maxdepth 1 -type d -ipath "*$**" -exec basename {} \; | sed s/Projects// | fzf)
+    lang=$(find "${PR_DIRS[@]}" -maxdepth 1 -type d -ipath "*$**" -exec basename {} \; | sed s/Projects// | fzf)
     [ ! "$lang" ] && return
 
     echo "Language: $lang"
-    read -p "Project Name: " proj_name
+    read -p "Project Name (github works 2): " proj_name
     [ ! "$proj_name" ] && return
-    read -p "Main File Name (optional): " main_file
-    return
+
+    cd $(find "${PR_DIRS[@]}" -maxdepth 1 -type d -name "*$lang*" -print -quit)
+
+    if [[ "$proj_name" == *"https://github.com"* ]]; then
+        proj_name="$(echo "$proj_name" | cut -d'/' -f4)/$(echo "$proj_name" | cut -d'/' -f5)"
+    fi
+
+    if [[ "$proj_name" == *"/"* ]]; then
+        gh repo clone "$proj_name"
+        proj_name=$(echo "$proj_name" | cut -d'/' -f 2)
+    fi
 
     mkdir -p "$proj_name" && cd "$proj_name"; ls
-    [ "$main_file" ] && touch "$main_file" && nvim .
+    [ "$main_file" ] && touch "$main_file" && cdpc "$proj_name" || cdp "$proj_name"
 }
 
 # ------------------- Startup -------------------
@@ -384,10 +434,11 @@ devproj() {
 bind '"\e\e[C": forward-word' # Jump words with ctrl
 bind '"\e\e[D": backward-word' # Backward
 
-bind '"\C-f":"\C-acdpc \n"' # Binding my command cdp
-bind '"\C-t":"\C-atmux-sessions \n"' # Binding my command tmux-sessions
-bind '"\C-h":"\C-acheat \n"' # Binding my command cheat
-bind '"\C-r":"\C-ah \n"' # Binding my command h
+bind '"\C-f":"\C-acdpc \n"'
+bind '"\C-t":"\C-atmux-sessions \n"'
+bind '"\C-h":"\C-acheat \n"'
+bind '"\C-r":"\C-ah \n"'
+bind '"\eq":"\C-aqalc \n"' # alt + q
 
 shopt -s autocd
 
@@ -435,3 +486,59 @@ export PATH=$BUN_INSTALL/bin:$PATH
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# Zoxide
+_z_cd() {
+    cd "$@" || return "$?"
+
+    if [ "$_ZO_ECHO" = "1" ]; then
+        echo "$PWD"
+    fi
+}
+
+z() {
+    if [ "$#" -eq 0 ]; then
+        _z_cd ~
+    elif [ "$#" -eq 1 ] && [ "$1" = '-' ]; then
+        if [ -n "$OLDPWD" ]; then
+            _z_cd "$OLDPWD"
+        else
+            echo 'zoxide: $OLDPWD is not set'
+            return 1
+        fi
+    else
+        _zoxide_result="$(zoxide query -- "$@")" && _z_cd "$_zoxide_result"
+    fi
+}
+
+zi() {
+    _zoxide_result="$(zoxide query -i -- "$@")" && _z_cd "$_zoxide_result"
+}
+
+
+alias za='zoxide add'
+
+alias zq='zoxide query'
+alias zqi='zoxide query -i'
+
+alias zr='zoxide remove'
+zri() {
+    _zoxide_result="$(zoxide query -i -- "$@")" && zoxide remove "$_zoxide_result"
+}
+
+
+_zoxide_hook() {
+    if [ -z "${_ZO_PWD}" ]; then
+        _ZO_PWD="${PWD}"
+    elif [ "${_ZO_PWD}" != "${PWD}" ]; then
+        _ZO_PWD="${PWD}"
+        zoxide add "$(pwd -L)"
+    fi
+}
+
+case "$PROMPT_COMMAND" in
+    *_zoxide_hook*) ;;
+    *) PROMPT_COMMAND="_zoxide_hook${PROMPT_COMMAND:+;${PROMPT_COMMAND}}" ;;
+esac
+
+. "$HOME/.cargo/env"
