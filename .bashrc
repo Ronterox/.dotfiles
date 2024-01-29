@@ -62,8 +62,14 @@ parse_git_branch() {
      git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
 }
 
+CYAN="\[\033[01;36m\]"
+YELLOW="\[\033[01;33m\]"
+BLUE="\[\033[01;34m\]"
+WHITE="\[\033[00m\]"
+DARK_CYAN="\[\033[00;36m\]"
+
 if [ "$color_prompt" = yes ]; then
-    PS1="${debian_chroot:+($debian_chroot)}\[\033[01;36m\][\!] \[\033[01;33m\]\t \[\033[01;34m\]\$(parse_git_branch)(\[\033[00;36m\]\u)\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "
+    PS1="${debian_chroot:+($debian_chroot)}$CYAN[\!] $YELLOW\t $BLUE\$(parse_git_branch)($DARK_CYAN\u$BLUE)$WHITE:$BLUE\w$WHITE\$ "
 else
     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
