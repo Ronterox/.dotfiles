@@ -78,7 +78,7 @@ unset color_prompt force_color_prompt
 # If this is an xterm set the title to user@host:dir
 case "$TERM" in
     xterm*|rxvt*)
-        PS1=" $PS1"
+        # PS1="$PS1"
         ;;
     *)
         ;;
@@ -419,6 +419,7 @@ devproj() {
     echo "Language: $lang"
     read -p "Project Name (github works 2): " proj_name
     [ ! "$proj_name" ] && return
+    read -p "Main File (Optional): " main_file
 
     cd $(find "${PR_DIRS[@]}" -maxdepth 1 -type d -name "*$lang*" -print -quit)
 
