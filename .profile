@@ -50,12 +50,6 @@ export JAVA_HOME=/usr/lib/jvm/jdk-18
 export PATH=$PATH:/usr/lib/jvm/jdk-18/bin
 export PATH=$PATH:/opt/gradle/gradle-8.4/bin
 
-# API_KEYS
-
-export OPENAI_API_KEY=sk-OqtPu4JfzaP2e6FbjrMVT3BlbkFJhAI1SdzeKy59HubZdr
-export GIT_TOKEN=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
-export PASTEBIN_API_KEY=U7w-bTnNmnezvZgMdDzu8mLavPmHMPk7
-
 # Tmux
 
 # ~/.tmux/plugins
