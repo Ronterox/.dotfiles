@@ -16,7 +16,7 @@ vim.keymap.set('x', '<leader>p', '"_dP')
 vim.keymap.set('n', '<leader>d', '"_d')
 vim.keymap.set('v', '<leader>d', '"_d')
 
-vim.keymap.set('n', 'Q', '<nop>') -- Don't know why, but don't press Q
+vim.keymap.set('n', 'Q', '<nop>') -- Don't know why, but don't press Q. Edit: I figured out why, so it stays.
 vim.keymap.set('n', '<leader>r', ':%s/\\<<C-r><C-w>\\>/<C-r><C-w>/gI<left><left><left>')
 vim.keymap.set('v', '<leader>r', 'y:%s/\\V<C-r>0/<C-r>0/gI<left><left><left>')
 

@@ -179,6 +179,17 @@ cd() {
 
 alias cdd='cd "$lastCd"'
 
+# ------------------- File Handling -------------------
+
+rename-file() {
+    if [ $# -lt 1 ]; then
+        echo -e "\nUsage: rename-file [files path]\n"
+        return
+    fi
+    rename 's/ /_/g; s/([A-Z])/$1/g; $_ = lc($_)' "$@"
+
+}
+
 # ------------------- Kitty -------------------
 
 alias k='kitty +kitten'
@@ -212,8 +223,8 @@ alias gitp='git push origin'
 
 alias gita='git add'
 alias gitr='git restore'
-alias gitac='gita . && git commit -am'
-alias gitc='git commit -m'
+alias gitac='gita . && git commit'
+alias gitc='git commit'
 
 alias gits='git status'
 alias gitd='git diff'
@@ -225,6 +236,7 @@ alias gitb='git branch'
 alias gitbc='git checkout'
 alias gitl='git log'
 
+alias gitw='git worktree'
 alias git-clone='git clone --bare'
 
 alias gh-auth='gh auth login'
@@ -428,12 +440,18 @@ devproj() {
     fi
 
     if [[ "$proj_name" == *"/"* ]]; then
-        gh repo clone "$proj_name"
+        gh repo clone "$proj_name" -- --bare 
         proj_name=$(echo "$proj_name" | cut -d'/' -f 2)
+        mv "$proj_name.git" "$proj_name"
     fi
 
     mkdir -p "$proj_name" && cd "$proj_name"; ls
-    [ "$main_file" ] && touch "$main_file" && cdpc "$proj_name" || cdp "$proj_name"
+
+    if [ "$main_file" ]; then
+        touch "$main_file" && cdpc "$proj_name"
+    else
+        cdp "$proj_name"
+    fi
 }
 
 # ------------------- Startup -------------------
