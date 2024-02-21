@@ -236,7 +236,7 @@ alias gitl='git log'
 
 alias gitw='git worktree'
 alias gitwa='git worktree add'
-alias gitwl='git worktree add'
+alias gitwl='git worktree list'
 alias git-clone='git clone --bare'
 
 git-worktree() {
@@ -447,8 +447,9 @@ devproj() {
 
     mkdir -p "$proj_name" && cd "$proj_name"; ls
 
+    message="\n--- Don't forget to add a .gitignore file with gh-gitignore! ---\n"
     [ "$start_file" ] && echo "$start_file" > start
-    cdp -c "giti && . start" "$proj_name"
+    cdp -c "giti && . start && tree -L 1 && echo -e \"\n$message\"" "$proj_name"
 } 
 
 # ------------------- Startup -------------------
