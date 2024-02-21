@@ -58,9 +58,7 @@ if [ -n "$force_color_prompt" ]; then
     fi
 fi
 
-parse_git_branch() {
-     git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
-}
+parse_git_branch() { git branch --show-current 2> /dev/null; }
 
 CYAN="\[\033[01;36m\]"
 YELLOW="\[\033[01;33m\]"
@@ -237,7 +235,25 @@ alias gitbc='git checkout'
 alias gitl='git log'
 
 alias gitw='git worktree'
+alias gitwa='git worktree add'
+alias gitwl='git worktree add'
 alias git-clone='git clone --bare'
+
+git-worktree() {
+    folder=$(basename "$PWD")
+    current_branch=$(gitb --show-current)
+
+    read -r -p "Are you sure you want to create a worktree of $folder? [y/n]: " confirm
+    [ "$confirm" != "y" ] && return
+
+    cd .. && git-clone "$folder"
+    rm -rf "$folder" && mv "$folder.git" "$folder"
+
+    cd "$folder" && gitwa "$current_branch"
+    echo "cd $current_branch && nvim ." > start
+
+    cd "$current_branch" && echo "Success!"
+}
 
 alias gh-auth='gh auth login'
 gh-open(){
@@ -284,31 +300,15 @@ alias cat='batcat'
 
 # ------------------- Search -------------------
 
-duck() { lynx "https://lite.duckduckgo.com/lite?kd=-1&kp=-1&q=$*"; }
-bing() { lynx "www.bing.com/search?q=$*"; }
-google() { lynx "https://google.com/search?q=$*"; }
-
-export -f duck
-export -f bing
-export -f google
-
-alias ?=duck
-alias ??=google
-alias ???=bing
-
-duck1() { exec bash -c "duck $*"; }
-google1() { exec bash -c "google $*"; }
-bing1() { exec bash -c "bing $*"; }
-
-alias ?!=duck1
-alias ??!=google1
-alias ???!=bing1
-
 alias lucky='firefox --new-window https://wheelofnames.com/'
 alias graph='firefox --new-window https://mermaid.js.org/'
+alias draw='firefox --new-window https://excalidraw.com/'
 yt(){ firefox --new-window "https://www.youtube.com/search?q=$*"; }
 search(){ firefox --new-window "https://www.google.com/search?q=$*"; }
 psearch(){ firefox --private-window "https://www.google.com/search?q=$*"; }
+
+alias ?='search'
+alias ??='psearch'
 
 # ------------------- Conda -------------------
 
@@ -388,7 +388,7 @@ tmux-sessions() {
 
 PR_DIRS=(~/Documents/Projects/ ~/.dotfiles /media/rontero/EXTRicardo/ProjectsHeavy/)
 
-cdpc() { cdp -c "nvim ." $@; }
+cdpc() { cdp -c ". start || nvim ." $@; }
 
 export -f cdpc
 
@@ -429,9 +429,9 @@ devproj() {
     [ ! "$lang" ] && return
 
     echo "Language: $lang"
-    read -p "Project Name (github works 2): " proj_name
+    read -r -p "Project Name (github works 2): " proj_name
     [ ! "$proj_name" ] && return
-    read -p "Main File (Optional): " main_file
+    read -r -p "Start File (Optional): " start_file
 
     cd $(find "${PR_DIRS[@]}" -maxdepth 1 -type d -name "*$lang*" -print -quit)
 
@@ -447,12 +447,9 @@ devproj() {
 
     mkdir -p "$proj_name" && cd "$proj_name"; ls
 
-    if [ "$main_file" ]; then
-        touch "$main_file" && cdpc "$proj_name"
-    else
-        cdp "$proj_name"
-    fi
-}
+    [ "$start_file" ] && echo "$start_file" > start
+    cdp -c "giti && . start" "$proj_name"
+} 
 
 # ------------------- Startup -------------------
 
