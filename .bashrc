@@ -185,7 +185,31 @@ rename-file() {
         return
     fi
     rename 's/ /_/g; s/([A-Z])/$1/g; $_ = lc($_)' "$@"
+}
 
+encrypt() {
+    if [ $# -lt 2 ]; then
+        echo -e "\nUsage: encrypt [input file] [output file]\n"
+        return
+    fi
+    ansible-vault encrypt "$1" --output "$2"
+}
+
+decrypt() {
+    if [ $# -lt 2 ]; then
+        echo -e "\nUsage: decrypt [input file] [output file]\n"
+        return
+    fi
+    ansible-vault decrypt "$1" --output "$2"
+}
+
+editcrypt() {
+    if [ $# -lt 2 ]; then
+        echo -e "\nUsage: editcrypt [edit file] [output encrypted file]\n"
+        return
+    fi
+    filemod=$(stat -c %y "$1")
+    nvim "$1" && [ "$filemod" != "$(stat -c %y "$1")" ] && encrypt "$1" "$2"
 }
 
 # ------------------- Kitty -------------------
