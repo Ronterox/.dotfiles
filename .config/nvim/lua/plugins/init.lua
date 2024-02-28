@@ -39,10 +39,12 @@ return {
     -- 'tpope/vim-obsession' -- Session Management
     -- Also tpope, is like the god of vim plugins <- I didn't write this, but I agree with it
 
+    { "https://github.com/apple/pkl-neovim.git", as = "pkl" },
+
     -- Fast Typing
-    { "windwp/nvim-autopairs",        event = "VeryLazy",                                  config = true },
-    { 'numToStr/Comment.nvim',        event = "VeryLazy",                                  config = true },
+    { "windwp/nvim-autopairs",                   event = "VeryLazy",                                  config = true },
+    { 'numToStr/Comment.nvim',                   event = "VeryLazy",                                  config = true },
 
     -- File Previewer
-    { "iamcco/markdown-preview.nvim", build = function() vim.fn["mkdp#util#install"]() end },
+    { "iamcco/markdown-preview.nvim",            build = function() vim.fn["mkdp#util#install"]() end },
 }

@@ -373,6 +373,16 @@ alias tmuxls='tmux ls'
 alias tmuxa='tmux attach -t'
 alias tmuxnew='tmux new -s'
 
+tmux-send-cmd() {
+    if [ -z "$1" ]; then
+        echo "Usage: tmux-send-cmd <window-name> <command>"
+        return
+    fi
+    win_name=$1
+    shift 1
+    tmux new-window -d -n "$win_name" && tmux send-keys -t "$win_name" "$*" Enter
+}
+
 tmux-sessions() {
     session_name=$(tmux ls | awk '{print $1}' | tr -d ':' | fzf --prompt="Session: " --border --height=50% --preview="tmux list-windows -t {}")
     [ ! "$session_name" ] && return
@@ -407,7 +417,7 @@ cdp() {
     done
 
     # foreach ignoredir -name $ignoredir -o
-    session_path=$(find ${PR_DIRS[@]} -maxdepth 2 \( -name '.git' \) -prune -o -type d -ipath "*$**" | fzf --prompt="Project: " --border)
+    session_path=$(find ${PR_DIRS[@]} -maxdepth 2 \( -name '.git' \) -prune -o -type d -ipath "*$**" | fzf --query=$* --prompt="Project: " --border)
     [ ! "$session_path" ] && return
     session_name=$(basename "$session_path" | tr -d '.' )
 
@@ -435,6 +445,9 @@ devproj() {
 
     cd $(find "${PR_DIRS[@]}" -maxdepth 1 -type d -name "*$lang*" -print -quit)
 
+    message="\n--- Don't forget to add a .gitignore file with gh-gitignore! ---\n"
+    cmd="giti && . start 2>/dev/null && tree -L 1 && echo -e \"\n$message\""
+
     if [[ "$proj_name" == *"https://github.com"* ]]; then
         proj_name="$(echo "$proj_name" | cut -d'/' -f4)/$(echo "$proj_name" | cut -d'/' -f5)"
     fi
@@ -442,14 +455,14 @@ devproj() {
     if [[ "$proj_name" == *"/"* ]]; then
         gh repo clone "$proj_name" -- --bare 
         proj_name=$(echo "$proj_name" | cut -d'/' -f 2)
+        cmd="branch=\$(gitb -a | awk '{print \$2 ? \$2 : \$1}'| fzf); gitw add \$branch && cd \$branch && . start 2> /dev/null; tree -L 1"
         mv "$proj_name.git" "$proj_name"
     fi
 
     mkdir -p "$proj_name" && cd "$proj_name"; ls
 
-    message="\n--- Don't forget to add a .gitignore file with gh-gitignore! ---\n"
     [ "$start_file" ] && echo "$start_file" > start
-    cdp -c "giti && . start && tree -L 1 && echo -e \"\n$message\"" "$proj_name"
+    cdp -c "$cmd" "$proj_name"
 } 
 
 # ------------------- Startup -------------------
