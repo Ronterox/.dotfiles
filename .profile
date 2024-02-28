@@ -62,10 +62,11 @@ export PATH=$HOME/.config/tmux/plugins/t-smart-tmux-session-manager/bin:$PATH
 export EDITOR='nvim'
 export PATH=$PATH:$HOME/.local/share/nvim/mason/bin
 
+# My Enviroment
+
+. "$HOME/.dotfiles/.env"
+
 # Rust
 
 . "$HOME/.cargo/env"
 
-# My Enviroment
-
-. "$HOME/.dotfiles/.env
