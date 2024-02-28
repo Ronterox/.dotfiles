@@ -65,3 +65,7 @@ export PATH=$PATH:$HOME/.local/share/nvim/mason/bin
 # Rust
 
 . "$HOME/.cargo/env"
+
+# My Enviroment
+
+. "$HOME/.dotfiles/.env
