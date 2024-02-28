@@ -17,11 +17,13 @@ return {
     },
     { 'rhysd/clever-f.vim' },
 
+    { 'tpope/vim-surround' },
+
     -- Code Highlighting
-    'chaimleib/vim-renpy',
+    { 'chaimleib/vim-renpy' },
     -- https://github.com/AVagueNumberOfHumans/renpyls
 
-    'fladson/vim-kitty',
+    { 'fladson/vim-kitty' },
     {
         'norcalli/nvim-colorizer.lua',
         event = { "VeryLazy", "BufReadPre" },
@@ -34,7 +36,7 @@ return {
     },
 
     -- Tracking Tools
-    'wakatime/vim-wakatime',
+    { 'wakatime/vim-wakatime' },
 
     -- 'tpope/vim-obsession' -- Session Management
     -- Also tpope, is like the god of vim plugins <- I didn't write this, but I agree with it

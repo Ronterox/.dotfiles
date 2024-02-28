@@ -21,6 +21,12 @@ return {
             desc = "Find Files"
         },
         {
+            '<leader>fa',
+            '<Cmd>:Telescope find_files hidden=true<CR>',
+            mode = { 'n' },
+            desc = "Find Files"
+        },
+        {
             '<leader>fg',
             '<Cmd>Telescope live_grep<CR>',
             mode = { 'n' },
@@ -62,6 +68,11 @@ return {
         }
     },
     config = function(_, opts)
+        opts.pickers = {
+            live_grep = {
+                additional_args = { '--hidden' }
+            },
+        }
         require('telescope').setup(opts)
         require('telescope').load_extension('file_browser')
     end

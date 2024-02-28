@@ -41,6 +41,7 @@
   "vim-jukit": { "branch": "master", "commit": "73214c9a8abc4b6aa7a6266b5bc2ddbf8b3e3c00" },
   "vim-kitty": { "branch": "main", "commit": "dc5086d4bdd3cc99133015dad0a1f1b3b61f5aaf" },
   "vim-renpy": { "branch": "master", "commit": "3434523ae70818573f5e24045547ea302eab4437" },
+  "vim-surround": { "branch": "master", "commit": "3d188ed2113431cf8dac77be61b842acb64433d9" },
   "vim-wakatime": { "branch": "master", "commit": "a4c66faea1eca47dce7c7c3586332f75cfbe9edf" },
   "vscode.nvim": { "branch": "main", "commit": "e4eb84baf3a2b0b761780bc54b726461d23d4d3e" },
   "which-key.nvim": { "branch": "main", "commit": "4433e5ec9a507e5097571ed55c02ea9658fb268a" }

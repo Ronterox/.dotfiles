@@ -212,6 +212,22 @@ editcrypt() {
     nvim "$1" && [ "$filemod" != "$(stat -c %y "$1")" ] && encrypt "$1" "$2"
 }
 
+# ------------------- Security -------------------
+
+bwp() {
+    listpath="$HOME/.config/Bitwarden CLI/items.json"
+    if [ "$(find \"$listpath\" -mmin +5 2>/dev/null)" ]; then
+        echo "Fetching Bitwarden items..."
+        bw list items | jq 'map({name,user: .login.username,password: .login.password})' > "$listpath"
+    fi
+    selected=$(jq -r '.[] | "\(.name) \(.user)"' < "$listpath" | fzf)
+    [ ! "$selected" ] && return
+    name=$(echo "$selected" | awk '{print $1}')
+    user=$(echo "$selected" | awk '{print $2}')
+    echo -e "\nPassword pasted to clipboard for $name ($user)!\n"
+    jq -r ".[] | select(.name == \"$name\" and .user == \"$user\") | .password" < "$listpath" | xclip -selection clipboard
+}
+
 # ------------------- Kitty -------------------
 
 alias k='kitty +kitten'
