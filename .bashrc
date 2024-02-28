@@ -140,9 +140,9 @@ ls-cd() {
     lscmd="$1" && shift
     [ $# -eq 0 ] && path="." || path="$*"
     dir=$($lscmd "$path" | fzf --height=50% --preview "batcat \"$path\"/{} 2> /dev/null || tree -L 1 \"$path\"/{}")
-    if [ ! "$dir" ]; then 
-       cd "$path"
-       return
+    if [ ! "$dir" ]; then
+        cd "$path"
+        return
     fi
     path="$path/$dir" && ls-cd "$lscmd" "$path"
 }
@@ -151,7 +151,7 @@ lsd() { ls-cd "ls" "$@"; }
 lsa() { ls-cd "ls -a" "$@"; }
 lc() { locate "$*" | fzf --border; }
 
-h() { 
+h() {
     cmd="$(history | fzf +s --tac --prompt='Run command: ' | sed 's/ *[0-9]* *//')"
     [ ! "$cmd" ] && return
     echo "$cmd" | xclip -selection clipboard
@@ -238,7 +238,7 @@ kitty-reload() { kill -SIGUSR1 $(pidof kitty); } # Problem: There is no kitty pr
 
 # ------------------- Apt -------------------
 
-# apti() { 
+# apti() {
 #     results=$(apt search "$*")
 #     if [ ! "$results" ]; then
 #         echo "No results found!"
@@ -354,9 +354,9 @@ alias ??='psearch'
 
 alias conda='mamba'
 
-condact() { 
+condact() {
     if [ $# -eq 0 ]; then
-        conda activate $(condalist | awk '{print $1}' | fzf); 
+        conda activate $(condalist | awk '{print $1}' | fzf);
         return
     fi
     conda activate $1
@@ -493,7 +493,7 @@ devproj() {
     fi
 
     if [[ "$proj_name" == *"/"* ]]; then
-        gh repo clone "$proj_name" -- --bare 
+        gh repo clone "$proj_name" -- --bare
         proj_name=$(echo "$proj_name" | cut -d'/' -f 2)
         cmd="branch=\$(gitb -a | awk '{print \$2 ? \$2 : \$1}'| fzf); gitw add \$branch && cd \$branch && . start 2> /dev/null; tree -L 1"
         mv "$proj_name.git" "$proj_name"
@@ -503,7 +503,7 @@ devproj() {
 
     [ "$start_file" ] && echo "$start_file" > start
     cdp -c "$cmd" "$proj_name"
-} 
+}
 
 # ------------------- Startup -------------------
 
