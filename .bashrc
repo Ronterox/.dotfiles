@@ -216,6 +216,7 @@ editcrypt() {
 
 bwp() {
     listpath="$HOME/.config/Bitwarden CLI/items.json"
+    echo "Checking Bitwarden items..."
     if [ "$(find \"$listpath\" -mmin +5 2>/dev/null)" ]; then
         echo "Fetching Bitwarden items..."
         bw list items | jq 'map({name,user: .login.username,password: .login.password})' > "$listpath"
@@ -224,8 +225,12 @@ bwp() {
     [ ! "$selected" ] && return
     name=$(echo "$selected" | awk '{print $1}')
     user=$(echo "$selected" | awk '{print $2}')
-    echo -e "\nPassword pasted to clipboard for $name ($user)!\n"
     jq -r ".[] | select(.name == \"$name\" and .user == \"$user\") | .password" < "$listpath" | xclip -selection clipboard
+    echo -e "\nPassword pasted to clipboard for $name ($user)!\n"
+    pass_len=$(jq -r ".[] | select(.name == \"$name\" and .user == \"$user\") | .password" < "$listpath" | wc -c)
+    echo -n "Password: "
+    for i in $(seq 1 $pass_len); do echo -n "*"; done
+    echo -e "\n"
 }
 
 # ------------------- Kitty -------------------
@@ -514,6 +519,7 @@ bind '"\C-f":"\C-acdpc \n"'
 bind '"\C-t":"\C-atmux-sessions \n"'
 bind '"\C-h":"\C-acheat \n"'
 bind '"\C-r":"\C-ah \n"'
+bind '"\C-b":"\C-abwp \n"'
 bind '"\eq":"\C-aqalc \n"' # alt + q
 
 shopt -s autocd
