@@ -486,7 +486,21 @@ devproj() {
     echo "Language: $lang"
     read -r -p "Project Name (github works 2): " proj_name
     [ ! "$proj_name" ] && return
-    read -r -p "Start File (Optional): " start_file
+    read -r -p "Start File (command or y/n): " start_file
+
+    if [ "$start_file" == "y" ] || [ "$start_file" == "yes" ]; then
+        tmpfile=$(mktemp)
+        tmpmod=$(stat -c %y $tmpfile)
+        echo '#!/bin/bash' > $tmpfile
+        nvim $tmpfile
+        if [ "$tmpmod" != "$(stat -c %y $tmpfile)" ]; then
+            start_file=$(cat $tmpfile)
+        else
+            start_file=""
+        fi
+    elif [ "$start_file" == "n" ] || [ "$start_file" == "no" ]; then
+        start_file=""
+    fi
 
     cd $(find "${PR_DIRS[@]}" -maxdepth 1 -type d -name "*$lang*" -print -quit)
 
