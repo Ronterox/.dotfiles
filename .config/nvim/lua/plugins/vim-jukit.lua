@@ -5,7 +5,7 @@ end
 
 return {
     'luk400/vim-jukit',
-    enabled = true,
+    enabled = false,
     ft = { 'python', 'json', 'r' },
     config = function()
         vim.g.jukit_mappings_ext_enabled = { 'py', 'ipynb' }

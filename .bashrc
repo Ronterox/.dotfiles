@@ -260,6 +260,32 @@ alias aptug='apt upgrade'
 
 # ------------------- Git -------------------
 
+# Interesting git commands
+
+# git alias
+# git authors
+# git effort
+# git contrib
+# git bulk
+# git abort
+# git archive-file
+# git clear && git clear-soft
+# git count
+# git ignore && git ignore-io
+# git fresh-branch
+# git blame && git guilt
+# git get # maybe is 
+# git info && git summary
+# git local-commit
+# git magic
+# git mr && git pr # merge request and pull request
+# git obliterate # remove repository file
+# git rename-#tag or branch or remote
+# git repl
+# git show-tree
+# git squash
+# git undo
+
 alias giti='git init'
 alias gitu='git pull'
 alias gitp='git push origin'
