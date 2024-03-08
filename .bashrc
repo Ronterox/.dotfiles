@@ -243,17 +243,18 @@ kitty-reload() { kill -SIGUSR1 $(pidof kitty); } # Problem: There is no kitty pr
 
 # ------------------- Apt -------------------
 
-# apti() {
-#     results=$(apt search "$*")
-#     if [ ! "$results" ]; then
-#         echo "No results found!"
-#         return
-#     fi
-#     package=$(echo "$results" | fzf --prompt="Install: " --border)
-#     [ ! "$package" ] && return
-#     echo "Installing $package..."
-# }
-alias apti='apt install'
+apti() {
+    results=$(apt search "$*" | grep "$*" | awk '{print $1}')
+    if [ ! "$results" ]; then
+        echo "No results found!"
+        return
+    fi
+    package=$(echo "$results" | fzf --prompt="Install: " --border)
+    [ ! "$package" ] && return
+    echo "Installing $package..."
+
+    sudo apt install "$package"
+}
 alias aptr='apt remove'
 alias aptup='apt update'
 alias aptug='apt upgrade'
@@ -274,10 +275,8 @@ alias aptug='apt upgrade'
 # git ignore && git ignore-io
 # git fresh-branch
 # git blame && git guilt
-# git get # maybe is 
 # git info && git summary
 # git local-commit
-# git magic
 # git mr && git pr # merge request and pull request
 # git obliterate # remove repository file
 # git rename-#tag or branch or remote
@@ -427,9 +426,19 @@ condcreate() {
     echo "$cmd" && $cmd
 }
 
-# ------------------- Interpreters & Editors  -------------------
+# ------------------- Java -------------------
 
 javarun() { javac $1.java && java $1;  }
+
+javajdk() { 
+    sudo update-alternatives --config java && sudo update-alternatives --config javac
+    java -version && javac -version
+}
+
+alias javaclean='rm -f *.class'
+alias javainstall='apti openjdk-*'
+
+# ------------------- Interpreters & Editors  -------------------
 
 alias docker='sudo docker'
 alias py='python'

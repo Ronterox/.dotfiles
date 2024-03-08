@@ -46,8 +46,6 @@ export CMAKE_C_COMPILER=/usr/bin/gcc # Compile fix
 
 # Java
 
-export JAVA_HOME=/usr/lib/jvm/jdk-18
-export PATH=$PATH:/usr/lib/jvm/jdk-18/bin
 export PATH=$PATH:/opt/gradle/gradle-8.4/bin
 
 # Tmux
