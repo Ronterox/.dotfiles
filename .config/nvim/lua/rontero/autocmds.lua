@@ -3,6 +3,12 @@
 -- auto-command repeatedly every time a file is resourced
 local autocmd_group = vim.api.nvim_create_augroup("Custom auto-commands", { clear = true })
 
+vim.api.nvim_create_autocmd({ "BufWritePre" }, {
+    pattern = "*",
+    command = [[%s/\s\+$//e]],
+    group = autocmd_group,
+})
+
 vim.api.nvim_create_autocmd('TextYankPost', {
     pattern = "*",
     desc = "Highlight yanked text",
