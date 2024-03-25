@@ -64,7 +64,11 @@ return {
 
             lsp_zero.format_on_save({
                 format_opts = { async = true, timeout_ms = 10000 },
-                servers = { ['pylsp'] = { 'python' }, ['lua_ls'] = { 'lua' } }
+                servers = {
+                    ['pylsp'] = { 'python' },
+                    ['lua_ls'] = { 'lua' },
+                    ['clangd'] = { 'c', 'cpp', 'objc', 'objcpp' },
+                }
             })
 
             require('mason-lspconfig').setup({

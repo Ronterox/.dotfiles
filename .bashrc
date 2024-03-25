@@ -287,7 +287,11 @@ alias aptug='apt upgrade'
 
 alias giti='git init'
 alias gitu='git pull'
-alias gitp='git push origin'
+gitp() {
+    branch=$(gitb --show-current)
+    [ ! "$1" ] && remote="origin" || remote="$1"
+    git push "$remote" "$branch"
+}
 
 alias gita='git add'
 alias gitr='git restore'
@@ -434,7 +438,7 @@ condcreate() {
 
 javarun() { javac $1.java && java $1;  }
 
-javajdk() { 
+javajdk() {
     sudo update-alternatives --config java && sudo update-alternatives --config javac
     java -version && javac -version
 }
@@ -445,6 +449,12 @@ alias javainstall='apti openjdk-*'
 # ------------------- Interpreters & Editors  -------------------
 
 alias docker='sudo docker'
+docker-clean() {
+    docker system prune -a
+    docker volume prune -a
+    docker network prune -a
+    docker image prune -a
+}
 alias py='python'
 
 alias vi='nvim'
@@ -677,3 +687,5 @@ case "$PROMPT_COMMAND" in
 esac
 
 . "$HOME/.cargo/env"
+
+[ -f "/home/rontero/.ghcup/env" ] && . "/home/rontero/.ghcup/env" # ghcup-env
