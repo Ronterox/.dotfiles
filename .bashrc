@@ -539,14 +539,8 @@ devproj() {
 
     if [ "$start_file" == "y" ] || [ "$start_file" == "yes" ]; then
         tmpfile=$(mktemp)
-        tmpmod=$(stat -c %y $tmpfile)
         echo '#!/bin/bash' > $tmpfile
-        nvim $tmpfile
-        if [ "$tmpmod" != "$(stat -c %y $tmpfile)" ]; then
-            start_file=$(cat $tmpfile)
-        else
-            start_file=""
-        fi
+        nvim $tmpfile && start_file=$(cat $tmpfile) || start_file=""
     elif [ "$start_file" == "n" ] || [ "$start_file" == "no" ]; then
         start_file=""
     fi
@@ -563,7 +557,7 @@ devproj() {
     if [[ "$proj_name" == *"/"* ]]; then
         gh repo clone "$proj_name" -- --bare
         proj_name=$(echo "$proj_name" | cut -d'/' -f 2)
-        cmd="branch=\$(gitb -a | awk '{print \$2 ? \$2 : \$1}'| fzf); gitw add \$branch && cd \$branch && . start 2> /dev/null; tree -L 1"
+        cmd="branch=\$(gitb -a | awk '{print \$2 ? \$2 : \$1}'| fzf); gitw add \$branch && echo \"cd \$branch && . start || nvim .\" >> start && cd \$branch && . start 2> /dev/null; tree -L 1"
         mv "$proj_name.git" "$proj_name"
     fi
 
@@ -687,5 +681,6 @@ case "$PROMPT_COMMAND" in
 esac
 
 . "$HOME/.cargo/env"
+
 
 [ -f "/home/rontero/.ghcup/env" ] && . "/home/rontero/.ghcup/env" # ghcup-env

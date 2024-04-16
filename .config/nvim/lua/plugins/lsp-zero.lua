@@ -68,6 +68,7 @@ return {
                     ['pylsp'] = { 'python' },
                     ['lua_ls'] = { 'lua' },
                     ['clangd'] = { 'c', 'cpp', 'objc', 'objcpp' },
+                    ['hls'] = { 'haskell' },
                 }
             })
 
@@ -78,7 +79,16 @@ return {
                     lua_ls = function()
                         local lua_opts = lsp_zero.nvim_lua_ls()
                         require('lspconfig').lua_ls.setup(lua_opts)
-                    end
+                    end,
+                    hls = function()
+                        require('lspconfig').hls.setup({
+                            settings = {
+                                haskell = {
+                                    formattingProvider = 'fourmolu',
+                                }
+                            }
+                        })
+                    end,
                 }
             })
         end

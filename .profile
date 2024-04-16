@@ -69,4 +69,5 @@ export PATH=$PATH:$HOME/.local/share/nvim/mason/bin
 . "$HOME/.cargo/env"
 
 
+
 [ -f "/home/rontero/.ghcup/env" ] && . "/home/rontero/.ghcup/env" # ghcup-env
