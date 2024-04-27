@@ -295,7 +295,7 @@ gitp() {
 
 alias gita='git add'
 alias gitr='git restore'
-alias gitac='gita . && git commit'
+alias gitac='gitd && gita . && git commit'
 alias gitc='git commit'
 
 alias gits='git status'
@@ -581,7 +581,9 @@ bind '"\eq":"\C-aqalc \n"' # alt + q
 
 shopt -s autocd
 
-clear && figlet 'Hello There' && nf
+# clear && figlet 'Hello There' && nf
+
+figlet "Designing and building something new everyday until I'm rich"
 
 # ------------------ Setting APT to be NALA ------------------
 
