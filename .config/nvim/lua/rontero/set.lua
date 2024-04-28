@@ -35,3 +35,5 @@ vim.o.foldlevel = 99
 vim.o.foldcolumn = "1"
 vim.opt.foldmethod = "expr"
 vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
+
+vim.opt.wildignore:append({ '*/node_modules/**', '*/dist/**', '*.log', '*/.git/**' })

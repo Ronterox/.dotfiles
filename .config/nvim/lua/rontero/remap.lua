@@ -22,8 +22,11 @@ vim.keymap.set('v', '<leader>r', 'y:%s/\\V<C-r>0/<C-r>0/gI<left><left><left>')
 
 vim.keymap.set('n', '<leader>bdd', ':bd<CR>')
 vim.keymap.set('n', '<leader>bda', ':%bd|e#|bd#<CR>')
+
 vim.keymap.set('n', '<C-j>', ':bprevious<CR>zz')
 vim.keymap.set('n', '<C-k>', ':bnext<CR>zz')
 vim.keymap.set('n', '<C-q>', ':e#<CR>')
 
 vim.keymap.set('t', '<Esc>', '<C-\\><C-n>')
+
+vim.keymap.set('n', '<leader>td', ':vimgrep /TODO/ **/*<CR>:cw<CR>')
