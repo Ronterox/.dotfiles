@@ -451,7 +451,6 @@ alias javainstall='apti openjdk-*'
 alias docker='sudo docker'
 docker-clean-dangling() {
     docker system prune -a --volumes
-    docker system prune -a
     docker volume prune -a
     docker network prune -a
     docker image prune -a
@@ -462,6 +461,8 @@ docker-clean() {
     docker rm -vf $(docker ps -aq)
     # Delete all images
     docker rmi -f $(docker images -aq)
+
+    echo "All cleaned up!"
 }
 alias py='python'
 
