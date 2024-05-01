@@ -449,11 +449,19 @@ alias javainstall='apti openjdk-*'
 # ------------------- Interpreters & Editors  -------------------
 
 alias docker='sudo docker'
-docker-clean() {
+docker-clean-dangling() {
+    docker system prune -a --volumes
     docker system prune -a
     docker volume prune -a
     docker network prune -a
     docker image prune -a
+}
+docker-clean() {
+    docker-clean-dangling
+    # Remove all containers and volumes
+    docker rm -vf $(docker ps -aq)
+    # Delete all images
+    docker rmi -f $(docker images -aq)
 }
 alias py='python'
 
