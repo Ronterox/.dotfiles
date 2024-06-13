@@ -215,19 +215,28 @@ editcrypt() {
 # ------------------- Security -------------------
 
 bwp() {
-    listpath="$HOME/.config/Bitwarden CLI/items.json"
+    bwdir="$HOME/.config/Bitwarden CLI"
+    token="$bwdir/token"
+    items="$bwdir/items.json"
+
     echo "Checking Bitwarden items..."
-    if [ "$(find \"$listpath\" -mmin +5 2>/dev/null)" ]; then
+    if [ "$(find "$bwdir" -mmin +30)" ] || [ ! -f "$items" ]; then
         echo "Fetching Bitwarden items..."
-        bw list items | jq 'map({name,user: .login.username,password: .login.password})' > "$listpath"
+        if [ ! -f "$token" ]; then
+            echo "Logging in Bitwarden..."
+            bw login
+            bw unlock --raw > "$token"
+        fi
+        bw list items --session $(cat "$token") | jq 'map({name,user: .login.username,password: .login.password})' > "$items"
     fi
-    selected=$(jq -r '.[] | "\(.name) \(.user)"' < "$listpath" | fzf)
+
+    selected=$(jq -r '.[] | "\(.name) \(.user)"' < "$items" | fzf)
     [ ! "$selected" ] && return
     name=$(echo "$selected" | awk '{print $1}')
     user=$(echo "$selected" | awk '{print $2}')
-    jq -r ".[] | select(.name == \"$name\" and .user == \"$user\") | .password" < "$listpath" | xclip -selection clipboard
+    jq -r ".[] | select(.name == \"$name\" and .user == \"$user\") | .password" < "$items" | xclip -selection clipboard
     echo -e "\nPassword pasted to clipboard for $name ($user)!\n"
-    pass_len=$(jq -r ".[] | select(.name == \"$name\" and .user == \"$user\") | .password" < "$listpath" | wc -c)
+    pass_len=$(jq -r ".[] | select(.name == \"$name\" and .user == \"$user\") | .password" < "$items" | wc -c)
     echo -n "Password: "
     for i in $(seq 1 $pass_len); do echo -n "*"; done
     echo -e "\n"
@@ -302,6 +311,7 @@ alias gits='git status'
 alias gitd='git diff'
 
 alias gitf='git ls-files'
+alias gitfe='git fetch origin --depth=10000 $(git ls-remote -h -t origin)'
 alias gitrm='git rm'
 
 alias gitb='git branch'
@@ -390,7 +400,8 @@ alias ??='psearch'
 
 # ------------------- Conda -------------------
 
-alias conda='mamba'
+alias conda='micromamba'
+conda="micromamba"
 
 condact() {
     if [ $# -eq 0 ]; then
@@ -402,10 +413,10 @@ condact() {
 alias condeact='conda deactivate'
 
 alias condalist='conda env list'
-alias condel='command conda remove --all --name'
+alias condel='conda remove --all --name'
 
 alias condaclean='conda clean --all'
-alias condaconfig='command conda config --show'
+alias condaconfig='conda config list'
 
 condcreate() {
     pattern='envs_dirs:(\s*- (/.*/envs))*'
@@ -425,11 +436,17 @@ condcreate() {
     fi
 
     path=${paths[$2]}
-    [[ ! "$path" ]] && echo "Error: Path not found!" && return
+    [[ ! "$path" ]] && [[ -n "${paths[*]}" ]] && echo "Error: Path not found!" && return
 
-    path+=/$1
-    shift 2
-    cmd="mamba create -c conda-forge -p $path $*"
+    if [[ -n "${paths[*]}" ]]; then
+        path+=/$1
+        shift 2
+        cmd="$conda create -p $path $*"
+    else
+        env_name=$1
+        shift 2
+        cmd="$conda create -n $env_name $*"
+    fi
 
     echo "$cmd" && $cmd
 }
@@ -476,6 +493,26 @@ alias tmuxls='tmux ls'
 alias tmuxa='tmux attach -t'
 alias tmuxnew='tmux new -s'
 
+tmuxkill() { tmux kill-session -t "$(tmux display-message -p '#S')"; }
+alias tmuxkillall='tmux kill-server'
+
+tmuxuptime() {
+    if [ -z "$1" ]; then
+        session_name=$(tmux display-message -p '#S')
+        if [ -z "$session_name" ]; then
+            echo "No session name provided!"
+            return
+        fi
+    else
+        session_name=$1
+    fi
+
+    created=$(tmux list-sessions -F "#{session_name} #{session_created}" | grep $session_name | awk '{print $2}')
+    now=$(date +%s)
+    uptime=$(($now - $created))
+    echo "Session uptime: $(date -d@$uptime -u +%H:%M:%S)"
+}
+
 tmux-send-cmd() {
     if [ -z "$1" ]; then
         echo "Usage: tmux-send-cmd <window-name> <command>"
@@ -487,7 +524,7 @@ tmux-send-cmd() {
 }
 
 tmux-sessions() {
-    session_name=$(tmux ls | awk '{print $1}' | tr -d ':' | fzf --prompt="Session: " --border --height=50% --preview="tmux list-windows -t {}")
+    session_name=$(tmux ls | cut -d: -f1 | fzf --prompt="Session: " --border --height=50% --preview="tmux list-windows -t {}")
     [ ! "$session_name" ] && return
 
     if [ -z $TMUX ]; then
@@ -610,25 +647,6 @@ if hash nala 2> /dev/null; then
     }
 fi
 
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/rontero/Documents/Program-Files/mambaforge/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/rontero/Documents/Program-Files/mambaforge/etc/profile.d/conda.sh" ]; then
-        . "/home/rontero/Documents/Program-Files/mambaforge/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/rontero/Documents/Program-Files/mambaforge/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-
-if [ -f "/home/rontero/Documents/Program-Files/mambaforge/etc/profile.d/mamba.sh" ]; then
-    . "/home/rontero/Documents/Program-Files/mambaforge/etc/profile.d/mamba.sh"
-fi
-# <<< conda initialize <<<
-
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH=$BUN_INSTALL/bin:$PATH
@@ -695,3 +713,16 @@ esac
 
 
 [ -f "/home/rontero/.ghcup/env" ] && . "/home/rontero/.ghcup/env" # ghcup-env
+
+# >>> mamba initialize >>>
+# !! Contents within this block are managed by 'mamba init' !!
+export MAMBA_EXE='/home/rontero/.local/bin/micromamba';
+export MAMBA_ROOT_PREFIX='/home/rontero/Documents/Program-Files/micromamba';
+__mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__mamba_setup"
+else
+    alias micromamba="$MAMBA_EXE"  # Fallback on help from mamba activate
+fi
+unset __mamba_setup
+# <<< mamba initialize <<<

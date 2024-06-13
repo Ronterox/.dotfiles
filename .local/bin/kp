@@ -1,0 +1,5 @@
+processes=$(ps -ef | sed 1d | fzf -m --border --header="[Kill:Process]" | awk '{print $2}')
+
+if [ -n "$processes" ]; then
+    echo $processes | xargs kill -${1:-9}
+fi

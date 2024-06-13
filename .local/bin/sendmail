@@ -1,0 +1,53 @@
+#!/bin/env bash
+
+message='You got mail!'
+sender='ricarditomontserrat@gmail.com'
+subject="Sended from $(hostname) $(cat /etc/issue)"
+target=''
+pass='bgou xhfn mygc xcxz' # https://myaccount.google.com/apppasswords
+
+for argv in "$@"; do
+    case $argv in
+        --app-pass=*) pass="${argv#*=}" ;;
+        --text=*) message="${argv#*=}" ;;
+        --sender=*) sender="${argv#*=}" ;;
+        --target=*) target="${argv#*=}" ;;
+        --subject=*) subject="${argv#*=}" ;;
+        -h|--help)
+            echo "Usage: $0 [--help] [--target=[self or example@email.com]] [--sender=] [--app-pass=] [--text=] [--subject=]"
+            echo "Send an email with gmail"
+            echo
+            echo "Options:"
+            echo "  -h, --help    Display this help and exit"
+            echo "  --target      The target email address"
+            echo "  --sender      The sender email address"
+            echo "  --app-pass    The app password for the sender email"
+            echo "  --text        The message to send"
+            echo "  --subject     The subject of the email"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $argv"
+            echo "Try '$0 --help' for more information"
+            exit 1
+            ;;
+    esac
+done
+
+if [ -z "$target" ]; then
+    echo "No target specified"
+    exit 1
+fi
+
+[ $target == 'self' ] && target=$sender
+
+txt='mail.txt'
+echo -e "Subject: $subject\n\n" > "$txt"
+echo "$message" >> "$txt"
+
+echo -e "Sending '$message' from $sender to $target..."
+curl --silent --url 'smtps://smtp.gmail.com:465' --ssl-reqd \
+  --mail-from "$sender" --mail-rcpt "$target" \
+  --upload-file $txt --user "$sender:$pass"
+rm "$txt"
+echo "Done!"

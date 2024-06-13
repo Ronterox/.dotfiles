@@ -22,7 +22,10 @@ vim.api.nvim_create_autocmd("VimEnter", {
     group = autocmd_group,
     callback = function()
         local filepath = vim.fn.expand("%:p")
-        if vim.fn.isdirectory(filepath) == 1 or vim.bo.filetype == "netrw" then require("persistence").load() end
+        if not vim.startswith(filepath, 'scp') and (vim.fn.isdirectory(filepath) == 1 or vim.bo.filetype == "netrw")
+        then
+            require("persistence").load()
+        end
     end,
     nested = true,
 })

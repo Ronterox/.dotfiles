@@ -1,0 +1,8 @@
+if test -f "$1"; then
+  data=$(cat "$1")
+else
+  data=$1
+fi
+link=https://mermaid.ink/img/"$(echo "$data" | base64 -w 0)"; 
+echo $link;
+curl -s $link | kitty +kitten icat

@@ -89,6 +89,20 @@ return {
                             }
                         })
                     end,
+                    emmet_language_server = function()
+                        require('lspconfig').emmet_language_server.setup({
+                            filetypes = {
+                                'html', 'css', 'javascript',
+                                'javascriptreact', 'typescript',
+                                'typescriptreact', 'php', 'scss'
+                            }
+                        })
+                    end,
+                    htmx = function()
+                        require('lspconfig').htmx.setup({
+                            filetypes = { 'html', 'php', 'javascript', 'typescript' }
+                        })
+                    end,
                 }
             })
         end

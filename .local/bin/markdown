@@ -1,0 +1,7 @@
+tmp=$(mktemp --tmpdir=.);
+echo "Generating file...";
+pandoc $1 > $tmp && firefox $tmp
+echo -e "Done!\nSleeping for 500 ms...";
+sleep 0.5
+echo "Removing file...";
+rm $tmp
