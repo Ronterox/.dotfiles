@@ -1,0 +1,14 @@
+#!/bin/env bash
+
+tmux-sessions() {
+    session_name=$(tmux ls | cut -d: -f1 | fzf --prompt="Session: " --border --height=50% --preview="tmux list-windows -t {}")
+    [ ! "$session_name" ] && return
+
+    if [ -z $TMUX ]; then
+        tmux a -t "$session_name"
+    else
+        tmux switch-client -t "$session_name"
+    fi
+}
+
+tmux-sessions

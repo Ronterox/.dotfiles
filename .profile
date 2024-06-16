@@ -26,7 +26,7 @@ if [ -d "$HOME/.local/bin" ] ; then
     PATH="$HOME/.local/bin:$PATH"
 fi
 # Ubuntu make installation of Ubuntu Make binary symlink
-PATH=/home/rontero/.local/share/umake/bin:$PATH
+PATH=$HOME/.local/share/umake/bin:$PATH
 
 # Wine
 
@@ -34,19 +34,15 @@ export WINEPREFIX=~/.wine64/ WINEARCH=win64 wine64 # 64 instead of 32
 
 # GoLang
 
-export PATH=$PATH:/usr/local/go/bin:/home/rontero/Documents/Program-Files/go/bin
+export PATH=$PATH:/usr/local/go/bin:$HOME/Documents/Program-Files/go/bin
 export GOPATH=$HOME/Documents/Program-Files/go
 
 # Flutter
 
-export PATH=$PATH:/home/rontero/Documents/Program-Files/flutter/bin
+export PATH=$PATH:$HOME/Documents/Program-Files/flutter/bin
 export CMAKE_MAKE_PROGRAM=/usr/bin/ninja # Compile fix
 export CMAKE_CXX_COMPILER=/usr/bin/g++ # Compile fix
 export CMAKE_C_COMPILER=/usr/bin/gcc # Compile fix
-
-# Java
-
-export PATH=$PATH:/opt/gradle/gradle-8.4/bin
 
 # Tmux
 
@@ -69,5 +65,19 @@ export PATH=$PATH:$HOME/.local/share/nvim/mason/bin
 . "$HOME/.cargo/env"
 
 
+[ -f "$HOME/.ghcup/env" ] && . "$HOME/.ghcup/env" # ghcup-env
 
-[ -f "/home/rontero/.ghcup/env" ] && . "/home/rontero/.ghcup/env" # ghcup-env
+# >>> juliaup initialize >>>
+
+# !! Contents within this block are managed by juliaup !!
+
+case ":$PATH:" in
+    *:$HOME/.juliaup/bin:*)
+        ;;
+
+    *)
+        export PATH=$HOME/.juliaup/bin${PATH:+:${PATH}}
+        ;;
+esac
+
+# <<< juliaup initialize <<<

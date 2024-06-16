@@ -72,6 +72,7 @@ return {
                 }
             })
 
+            require('lspconfig').mojo.setup {}
             require('mason-lspconfig').setup({
                 ensure_installed = {},
                 handlers = {

@@ -234,7 +234,7 @@ bwp() {
     [ ! "$selected" ] && return
     name=$(echo "$selected" | awk '{print $1}')
     user=$(echo "$selected" | awk '{print $2}')
-    jq -r ".[] | select(.name == \"$name\" and .user == \"$user\") | .password" < "$items" | xclip -selection clipboard
+    jq -r ".[] | select(.name == \"$name\" and .user == \"$user\") | .password" < "$items" | xargs echo -n | xclip -selection clipboard
     echo -e "\nPassword pasted to clipboard for $name ($user)!\n"
     pass_len=$(jq -r ".[] | select(.name == \"$name\" and .user == \"$user\") | .password" < "$items" | wc -c)
     echo -n "Password: "
@@ -413,7 +413,8 @@ condact() {
 alias condeact='conda deactivate'
 
 alias condalist='conda env list'
-alias condel='conda remove --all --name'
+alias condelpkg='conda remove --all --name'
+alias condelenv='conda env remove -n'
 
 alias condaclean='conda clean --all'
 alias condaconfig='conda config list'
@@ -449,6 +450,12 @@ condcreate() {
     fi
 
     echo "$cmd" && $cmd
+}
+
+# ------------------- Rust -------------------
+
+cargo-clean-cache() {
+    rm -rf ~/.cargo/registry/index/* ~/.cargo/.package-cache
 }
 
 # ------------------- Java -------------------
@@ -514,24 +521,20 @@ tmuxuptime() {
 }
 
 tmux-send-cmd() {
-    if [ -z "$1" ]; then
-        echo "Usage: tmux-send-cmd <window-name> <command>"
+    win_title="$1"
+    cmd="$2"
+
+    if [ -z "$win_title" ]; then
+        echo "No window title provided!"
         return
     fi
-    win_name=$1
-    shift 1
-    tmux new-window -d -n "$win_name" && tmux send-keys -t "$win_name" "$*" Enter
-}
 
-tmux-sessions() {
-    session_name=$(tmux ls | cut -d: -f1 | fzf --prompt="Session: " --border --height=50% --preview="tmux list-windows -t {}")
-    [ ! "$session_name" ] && return
-
-    if [ -z $TMUX ]; then
-        tmux a -t "$session_name"
-    else
-        tmux switch-client -t "$session_name"
+    if [ -z "$cmd" ]; then
+        echo "No command provided!"
+        return
     fi
+
+    tmux new-window -n "$win_title" -d && tmux send-keys -t "$win_title" "$cmd" Enter
 }
 
 # ------------------- Project Management -------------------
@@ -726,3 +729,24 @@ else
 fi
 unset __mamba_setup
 # <<< mamba initialize <<<
+
+# >>> juliaup initialize >>>
+
+# !! Contents within this block are managed by juliaup !!
+
+case ":$PATH:" in
+    *:/home/rontero/.juliaup/bin:*)
+        ;;
+
+    *)
+        export PATH=/home/rontero/.juliaup/bin${PATH:+:${PATH}}
+        ;;
+esac
+
+# <<< juliaup initialize <<<
+export MODULAR_HOME="/home/rontero/.modular"
+export PATH="/home/rontero/.modular/pkg/packages.modular.com_mojo/bin:$PATH"
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
