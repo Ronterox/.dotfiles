@@ -322,6 +322,7 @@ alias gitw='git worktree'
 alias gitwa='git worktree add'
 alias gitwl='git worktree list'
 alias git-clone='git clone --bare'
+# git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
 
 git-worktree() {
     folder=$(basename "$PWD")
