@@ -30,6 +30,10 @@ return {
             local cmp = require('cmp')
             local cmp_action = lsp_zero.cmp_action()
 
+            -- Extend the sources, without losing defaults
+            local cmp_config = cmp.get_config()
+            table.insert(cmp_config.sources, { name = 'sonicpi' })
+
             cmp.setup({
                 formatting = lsp_zero.cmp_format(),
                 mapping = cmp.mapping.preset.insert({
@@ -39,7 +43,8 @@ return {
                     ['<C-f>'] = cmp_action.luasnip_jump_forward(),
                     ['<C-b>'] = cmp_action.luasnip_jump_backward(),
                     ['<CR>'] = cmp.mapping.confirm({ select = false })
-                })
+                }),
+                sources = cmp_config.sources,
             })
         end,
     },
@@ -60,6 +65,7 @@ return {
 
             lsp_zero.on_attach(function(client, bufnr)
                 lsp_zero.default_keymaps({ buffer = bufnr, preserve_mappings = false })
+                require('sonicpi').lsp_on_init(client, { server_dir = '/opt/sonic-pi/app/server' })
             end)
 
             lsp_zero.format_on_save({
@@ -72,17 +78,26 @@ return {
                 }
             })
 
-            require('lspconfig').mojo.setup {}
+            local nvim_lsp = require('lspconfig')
+            nvim_lsp.mojo.setup {}
+            nvim_lsp.solargraph.setup {
+                settings = {
+                    solargraph = {
+                        singleFile = true,
+                    }
+                }
+            }
+
             require('mason-lspconfig').setup({
                 ensure_installed = {},
                 handlers = {
                     lsp_zero.default_setup,
                     lua_ls = function()
                         local lua_opts = lsp_zero.nvim_lua_ls()
-                        require('lspconfig').lua_ls.setup(lua_opts)
+                        nvim_lsp.lua_ls.setup(lua_opts)
                     end,
                     hls = function()
-                        require('lspconfig').hls.setup({
+                        nvim_lsp.hls.setup({
                             settings = {
                                 haskell = {
                                     formattingProvider = 'fourmolu',
@@ -91,7 +106,7 @@ return {
                         })
                     end,
                     emmet_language_server = function()
-                        require('lspconfig').emmet_language_server.setup({
+                        nvim_lsp.emmet_language_server.setup({
                             filetypes = {
                                 'html', 'css', 'javascript',
                                 'javascriptreact', 'typescript',
@@ -100,7 +115,7 @@ return {
                         })
                     end,
                     htmx = function()
-                        require('lspconfig').htmx.setup({
+                        nvim_lsp.htmx.setup({
                             filetypes = { 'html', 'php', 'javascript', 'typescript' }
                         })
                     end,

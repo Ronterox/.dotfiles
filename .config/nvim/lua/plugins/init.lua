@@ -1,4 +1,15 @@
 return {
+    -- Sonic Pi
+    {
+        'magicmonty/sonicpi.nvim',
+        requires = { 'hrsh7th/nvim-cmp', 'kyazdani42/nvim-web-devicons' },
+        config = function()
+            local sonicpi = require('sonicpi')
+            sonicpi.setup({ lsp_diagnostics = true, })
+        end,
+        ft = 'sonicpi'
+    },
+
     -- Beautify Vim
     {
         'Mofiqul/vscode.nvim',
@@ -15,8 +26,9 @@ return {
             }
         }
     },
-    { 'rhysd/clever-f.vim' },
 
+    -- Smart basics of vim
+    { 'rhysd/clever-f.vim' },
     { 'tpope/vim-surround' },
 
     -- Code Highlighting
