@@ -242,6 +242,8 @@ bwp() {
     echo -e "\n"
 }
 
+alias sshpass='ssh -o PubkeyAuthentication=no -o PreferredAuthentications=password'
+
 # ------------------- Kitty -------------------
 
 alias k='kitty +kitten'
@@ -540,7 +542,7 @@ tmux-send-cmd() {
 
 # ------------------- Project Management -------------------
 
-PR_DIRS=(~/Documents/Projects/ ~/.dotfiles /media/rontero/EXTRicardo/ProjectsHeavy/)
+PR_DIRS=(~/Documents/Projects/ ~/.dotfiles)
 
 cdpc() { cdp -c ". start || nvim ." $@; }
 

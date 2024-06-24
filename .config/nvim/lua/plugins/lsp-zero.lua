@@ -20,7 +20,7 @@ return {
     {
         'hrsh7th/nvim-cmp',
         event = 'InsertEnter',
-        dependencies = { { 'L3MON4D3/LuaSnip' } },
+        dependencies = { { 'L3MON4D3/LuaSnip' }, { 'saadparwaiz1/cmp_luasnip' } },
         config = function()
             -- Here is where you configure the autocompletion settings.
             local lsp_zero = require('lsp-zero')
@@ -32,6 +32,7 @@ return {
 
             -- Extend the sources, without losing defaults
             local cmp_config = cmp.get_config()
+            table.insert(cmp_config.sources, { name = 'luasnip' })
             table.insert(cmp_config.sources, { name = 'sonicpi' })
 
             cmp.setup({
