@@ -305,7 +305,7 @@ gitp() {
 }
 
 alias gita='git add'
-alias gitr='git restore'
+alias gitr='git rebase -i'
 alias gitac='gitd && gita . && git commit'
 alias gitc='git commit'
 
