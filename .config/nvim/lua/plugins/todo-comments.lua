@@ -1,7 +1,7 @@
 return {
     'folke/todo-comments.nvim',
     dependencies = 'nvim-lua/plenary.nvim',
-    keys = { { '<leader>ft', vim.cmd.TodoTelescope, mode = { 'n' } } },
+    keys = { { '<leader>td', vim.cmd.TodoTelescope, mode = { 'n' } } },
     opts = {
         signs = true,      -- show icons in the signs column
         sign_priority = 8, -- sign priority

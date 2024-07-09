@@ -1,4 +1,7 @@
 return {
+    -- Discord Presence
+    { 'andweeb/presence.nvim', event = "InsertCharPre" },
+
     -- Sonic Pi
     {
         'magicmonty/sonicpi.nvim',
@@ -28,14 +31,14 @@ return {
     },
 
     -- Smart basics of vim
-    { 'rhysd/clever-f.vim' },
-    { 'tpope/vim-surround' },
+    { 'rhysd/clever-f.vim',    keys = 'f' },
+    { 'tpope/vim-surround',    keys = { "cs", "ds", "yss" } },
 
     -- Code Highlighting
-    { 'chaimleib/vim-renpy' },
+    { 'chaimleib/vim-renpy',   ft = 'renpy' },
     -- https://github.com/AVagueNumberOfHumans/renpyls
 
-    { 'fladson/vim-kitty' },
+    { 'fladson/vim-kitty',     ft = 'kitty' },
     {
         'norcalli/nvim-colorizer.lua',
         event = { "VeryLazy", "BufReadPre" },
@@ -43,7 +46,7 @@ return {
     },
     {
         'lukas-reineke/indent-blankline.nvim',
-        event = "VeryLazy",
+        event = { "VeryLazy", "BufReadPre" },
         config = function() require 'ibl'.setup() end
     },
 
@@ -53,12 +56,20 @@ return {
     -- 'tpope/vim-obsession' -- Session Management
     -- Also tpope, is like the god of vim plugins <- I didn't write this, but I agree with it
 
-    { "https://github.com/apple/pkl-neovim.git", as = "pkl" },
+    {
+        "apple/pkl-neovim",
+        as = "pkl",
+        event = {
+            "BufReadPre *.pkl",
+            "BufReadPre *.pcf",
+            "BufReadPre PklProject",
+        },
+    },
 
     -- Fast Typing
-    { "windwp/nvim-autopairs",                   event = "VeryLazy",                                  config = true },
-    { 'numToStr/Comment.nvim',                   event = "VeryLazy",                                  config = true },
+    { "windwp/nvim-autopairs",        event = "InsertCharPre", config = true },
+    { 'numToStr/Comment.nvim',        keys = "gc",             config = true },
 
     -- File Previewer
-    { "iamcco/markdown-preview.nvim",            build = function() vim.fn["mkdp#util#install"]() end },
+    { "iamcco/markdown-preview.nvim", ft = 'markdown',         build = function() vim.fn["mkdp#util#install"]() end },
 }

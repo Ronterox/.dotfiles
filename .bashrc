@@ -297,7 +297,7 @@ alias aptug='apt upgrade'
 # git undo
 
 alias giti='git init'
-alias gitu='git pull'
+alias gitu='git pull --rebase'
 gitp() {
     branch=$(gitb --show-current)
     [ ! "$1" ] && remote="origin" || remote="$1"

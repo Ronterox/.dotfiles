@@ -29,5 +29,4 @@ vim.keymap.set('n', '<C-q>', ':e#<CR>')
 
 vim.keymap.set('t', '<Esc>', '<C-\\><C-n>')
 
--- vim.keymap.set('n', '<leader>td', string.format(':vimgrep /TODO/ {**/*,**/.*}<CR>:cw<CR>'))
-vim.keymap.set('n', '<leader>td', ':vimgrep /TODO/ **/*<CR>:cw<CR>')
+-- vim.keymap.set('n', '<leader>td', ':vimgrep /TODO/ **/*<CR>:cw<CR>')
