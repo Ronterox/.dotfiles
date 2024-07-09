@@ -260,7 +260,7 @@ apti() {
         echo "No results found!"
         return
     fi
-    package=$(echo "$results" | fzf --prompt="Install: " --border)
+    package=$(echo "$results" | fzf --prompt="Install: " --border --query="$*" -e)
     [ ! "$package" ] && return
     echo "Installing $package..."
 
@@ -491,6 +491,7 @@ docker-clean() {
 
     echo "All cleaned up!"
 }
+
 alias py='python'
 
 alias vi='nvim'
