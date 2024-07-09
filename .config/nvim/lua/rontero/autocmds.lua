@@ -18,18 +18,6 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     group = autocmd_group
 })
 
-vim.api.nvim_create_autocmd("VimEnter", {
-    group = autocmd_group,
-    callback = function()
-        local filepath = vim.fn.expand("%:p")
-        if not vim.startswith(filepath, 'scp') and (vim.fn.isdirectory(filepath) == 1 or vim.bo.filetype == "netrw")
-        then
-            require("persistence").load()
-        end
-    end,
-    nested = true,
-})
-
 vim.api.nvim_create_augroup("lualine_augroup", { clear = true })
 vim.api.nvim_create_autocmd("User", {
     group = "lualine_augroup",

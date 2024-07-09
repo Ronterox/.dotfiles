@@ -13,6 +13,7 @@ return {
         ft = 'sonicpi'
     },
 
+
     -- Beautify Vim
     {
         'Mofiqul/vscode.nvim',
