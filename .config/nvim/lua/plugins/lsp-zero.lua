@@ -80,7 +80,6 @@ return {
             })
 
             local nvim_lsp = require('lspconfig')
-            nvim_lsp.mojo.setup {}
             nvim_lsp.solargraph.setup {
                 settings = {
                     solargraph = {

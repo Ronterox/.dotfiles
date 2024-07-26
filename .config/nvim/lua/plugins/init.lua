@@ -68,9 +68,10 @@ return {
     },
 
     -- Fast Typing
-    { "windwp/nvim-autopairs",        event = "InsertCharPre", config = true },
-    { 'numToStr/Comment.nvim',        keys = "gc",             config = true },
+    { "windwp/nvim-autopairs",        event = "InsertCharPre",               config = true },
+    { 'numToStr/Comment.nvim',        keys = { "gc", { "gc", mode = "v" } }, config = true },
 
     -- File Previewer
-    { "iamcco/markdown-preview.nvim", ft = 'markdown',         build = function() vim.fn["mkdp#util#install"]() end },
+    { "iamcco/markdown-preview.nvim", ft = 'markdown',                       build = function() vim.fn
+            ["mkdp#util#install"]() end },
 }

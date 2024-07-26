@@ -152,7 +152,7 @@ lsa() { ls-cd "ls -a" "$@"; }
 lc() { locate "$*" | fzf --border; }
 
 h() {
-    cmd="$(history | fzf +s --tac --prompt='Run command: ' | sed 's/ *[0-9]* *//')"
+    cmd="$(history | cut -c 8- | sort | uniq | fzf +s --tac --prompt='Run command: ' | sed 's/ *[0-9]* *//')"
     [ ! "$cmd" ] && return
     echo "$cmd" | xclip -selection clipboard
     sleep 0.1 && xdotool key --delay {{1}} ctrl+shift+v
@@ -160,10 +160,12 @@ h() {
 alias hcls='cat /dev/null > ~/.bash_history && history -c && clear && nf'
 alias hlen='echo $(history | wc -l)'
 
-alias dirsize='du -h -d 1'
+alias dirsize='du -h -d 1' # I now use dust or k4dirstat
 alias notrunbyshell='grep -l pam_env /etc/pam.d/*' # /etc/environment else /etc/profile
 alias fontcache='sudo fc-cache -fv'
 alias fixaudio='systemctl --user restart wireplumber pipewire pipewire-pulse'
+
+alias textextract='flameshot gui --raw | tesseract stdin stdout'
 
 hc() { h -d 1-$(calc $(hlen)-$HISTFILESIZE); } # Clear history
 man() { command man $1 || command $1 --help | batcat || command $1 -h | batcat; }
@@ -475,7 +477,6 @@ alias javainstall='apti openjdk-*'
 
 # ------------------- Interpreters & Editors  -------------------
 
-alias docker='sudo docker'
 docker-clean-dangling() {
     docker system prune -a --volumes
     docker volume prune -a
@@ -748,8 +749,6 @@ case ":$PATH:" in
 esac
 
 # <<< juliaup initialize <<<
-export MODULAR_HOME="/home/rontero/.modular"
-export PATH="/home/rontero/.modular/pkg/packages.modular.com_mojo/bin:$PATH"
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"

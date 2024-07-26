@@ -1,21 +1,20 @@
 return {
     "folke/which-key.nvim",
     event = { "VeryLazy" },
-    init = function()
-        vim.o.timeout = true
-        vim.o.timeoutlen = 300
-    end,
     opts = {
-        triggers_nowait = {
-            -- marks
-            "`",
-            "g`",
-            "g'",
-            -- registers
-            '"',
-            "<c-r>",
-            -- spelling
-            "z=",
-        },
+        delay = function(ctx)
+            local triggers_nowait = {
+                -- marks
+                "`",
+                "g`",
+                "g'",
+                -- registers
+                '"',
+                "<c-r>",
+                -- spelling
+                "z=",
+            }
+            return vim.tbl_contains(triggers_nowait, ctx.keys) and 0 or 300
+        end
     }
 }
