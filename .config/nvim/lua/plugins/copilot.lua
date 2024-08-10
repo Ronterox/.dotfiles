@@ -1,9 +1,7 @@
 return {
-    -- copilot
-    {
-        "github/copilot.vim",
-        event = { "InsertCharPre" },
-        cmd = "Copilot",
-        build = ":Copilot setup"
-    },
+    'github/copilot.vim',
+    enabled = false,
+    event = { 'BufEnter' },
+    cmd = 'Copilot',
+    build = ':Copilot setup',
 }

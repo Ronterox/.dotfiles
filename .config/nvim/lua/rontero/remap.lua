@@ -28,5 +28,12 @@ vim.keymap.set('n', '<C-k>', ':bnext<CR>zz')
 vim.keymap.set('n', '<C-q>', ':e#<CR>')
 
 vim.keymap.set('t', '<Esc>', '<C-\\><C-n>')
+vim.keymap.set('n', '<leader>o', function()
+    local term = require("harpoon.term")
+    vim.cmd("wa")
+    term.sendCommand(1, "!!\n")
+    term.gotoTerminal(1)
+    vim.api.nvim_feedkeys('G$', 'n', true)
+end)
 
 -- vim.keymap.set('n', '<leader>td', ':vimgrep /TODO/ **/*<CR>:cw<CR>')

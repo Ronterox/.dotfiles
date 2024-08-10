@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+# Initialize the structure and Makefile for C projects
+
+set -euo pipefail
+mkdir -p src
+
+# Add the code for the Makefile to work
+# Use actual tabs for indentation
+
+cat <<EOF > Makefile
+CFLAGS=-Wall -Werror -Wextra -Wpedantic
+CC=gcc
+
+all: run clean
+
+main:
+\t\$(CC) \$(CFLAGS) -o main src/main.c
+
+run: main
+\t./main
+
+clean:
+\trm -f main
+EOF
+
+echo -e "$(cat Makefile)" > Makefile
+
+# Add the code for the main.c to work
+
+cat <<EOF > src/main.c
+#include <stdio.h>
+
+int main() {
+    printf("Hello, World!\n");
+}
+EOF
+
+echo "C project initialized."

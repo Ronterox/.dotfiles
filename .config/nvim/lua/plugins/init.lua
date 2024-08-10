@@ -1,4 +1,15 @@
 return {
+    -- Apple Pkl Generate Config Files
+    {
+        "apple/pkl-neovim",
+        as = "pkl",
+        event = {
+            "BufReadPre *.pkl",
+            "BufReadPre *.pcf",
+            "BufReadPre PklProject",
+        },
+    },
+
     -- Discord Presence
     { 'andweeb/presence.nvim', event = "InsertCharPre" },
 
@@ -54,24 +65,17 @@ return {
     -- Tracking Tools
     { 'wakatime/vim-wakatime' },
 
-    -- 'tpope/vim-obsession' -- Session Management
-    -- Also tpope, is like the god of vim plugins <- I didn't write this, but I agree with it
-
-    {
-        "apple/pkl-neovim",
-        as = "pkl",
-        event = {
-            "BufReadPre *.pkl",
-            "BufReadPre *.pcf",
-            "BufReadPre PklProject",
-        },
-    },
-
     -- Fast Typing
-    { "windwp/nvim-autopairs",        event = "InsertCharPre",               config = true },
-    { 'numToStr/Comment.nvim',        keys = { "gc", { "gc", mode = "v" } }, config = true },
+    { "windwp/nvim-autopairs", event = "InsertCharPre",               config = true },
+    { 'numToStr/Comment.nvim', keys = { "gc", { "gc", mode = "v" } }, config = true },
 
     -- File Previewer
-    { "iamcco/markdown-preview.nvim", ft = 'markdown',                       build = function() vim.fn
-            ["mkdp#util#install"]() end },
+    {
+        "iamcco/markdown-preview.nvim",
+        ft = 'markdown',
+        build = function()
+            vim.fn
+                ["mkdp#util#install"]()
+        end
+    },
 }

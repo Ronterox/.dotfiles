@@ -66,17 +66,23 @@ BLUE="\[\033[01;34m\]"
 WHITE="\[\033[00m\]"
 DARK_CYAN="\[\033[00;36m\]"
 
+if [[ -n $TMUX ]]; then
+    base_path=$(tmux display-message -p "#{pane_current_path}")
+    wd='~/$(tmux display-message -p "#S")${PWD#$base_path}'
+else
+    wd='\w'
+fi
+
 if [ "$color_prompt" = yes ]; then
-    PS1="${debian_chroot:+($debian_chroot)}$CYAN[\!] $YELLOW\t $BLUE\$(parse_git_branch)($DARK_CYAN\u$BLUE)$WHITE:$BLUE\w$WHITE\$ "
+    PS1="${debian_chroot:+($debian_chroot)}$CYAN[\!] $YELLOW\t $BLUE\$(parse_git_branch)($DARK_CYAN\u$BLUE)$WHITE:$BLUE$wd$WHITE\$ "
 else
     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
-unset color_prompt force_color_prompt
+unset color_prompt force_color_prompt wd
 
 # If this is an xterm set the title to user@host:dir
 case "$TERM" in
     xterm*|rxvt*)
-        # PS1="$PS1"
         ;;
     *)
         ;;
@@ -133,7 +139,7 @@ fi
 alias bconf='nvim ~/.dotfiles/.bashrc'
 
 alias q='exit'
-alias nf='neofetch && ls'
+alias nf='echo && neofetch && ls && echo'
 alias cls='clear && ls'
 
 ls-cd() {
@@ -326,6 +332,7 @@ alias gitw='git worktree'
 alias gitwa='git worktree add'
 alias gitwl='git worktree list'
 alias git-clone='git clone --bare'
+# If you bare clone a local repo, the following is a origin fix:
 # git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
 
 git-worktree() {
@@ -581,6 +588,14 @@ cdp() {
     fi
 }
 
+declare -A inits
+inits=(
+    ["Rust"]="cargo init"
+    ["Javascript"]="bun init"
+    ["Java"]="gradle init"
+    ["C"]="cinit"
+)
+
 # develop new project
 devproj() {
     lang=$(find "${PR_DIRS[@]}" -maxdepth 1 -type d -ipath "*$**" -exec basename {} \; | sed s/Projects// | fzf)
@@ -589,14 +604,14 @@ devproj() {
     echo "Language: $lang"
     read -r -p "Project Name (github works 2): " proj_name
     [ ! "$proj_name" ] && return
-    read -r -p "Start File (command or y/n): " start_file
 
-    if [ "$start_file" == "y" ] || [ "$start_file" == "yes" ]; then
+    cmd="${inits[$lang]}"
+    read -r -p "Initialize ($cmd y/n): " start_file
+
+    if [[ "$start_file" =~ ^[yY][eE]?[sS]?$ ]]; then
         tmpfile=$(mktemp)
-        echo '#!/bin/bash' > $tmpfile
+        echo -e "#!/bin/bash\n\n$cmd\n\nrm start" > $tmpfile
         nvim $tmpfile && start_file=$(cat $tmpfile) || start_file=""
-    elif [ "$start_file" == "n" ] || [ "$start_file" == "no" ]; then
-        start_file=""
     fi
 
     cd $(find "${PR_DIRS[@]}" -maxdepth 1 -type d -name "*$lang*" -print -quit)
@@ -635,9 +650,16 @@ bind '"\eq":"\C-aqalc \n"' # alt + q
 
 shopt -s autocd
 
-# clear && figlet 'Hello There' && nf
+if [ "$HOME" == "$PWD" ]; then
+    nf
+else
+    cows=($(ls /usr/share/cowsay/cows/))
+    count=$(echo ${cows[*]} | wc -w)
+    cow=$(($RANDOM % $count))
 
-figlet "Designing and building something new everyday until I'm rich"
+    figlet -f small "Unique everyday until is really unique"
+    fortune | cowsay -f ${cows[$cow]} && echo && la && echo
+fi
 
 # ------------------ Setting APT to be NALA ------------------
 

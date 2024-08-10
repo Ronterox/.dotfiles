@@ -86,6 +86,7 @@ return {
                         singleFile = true,
                     }
                 }
+
             }
 
             require('mason-lspconfig').setup({

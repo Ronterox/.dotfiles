@@ -9,7 +9,7 @@ return {
     dependencies = { { 'nvim-lua/plenary.nvim' }, { 'nvim-telescope/telescope-file-browser.nvim' } },
     keys = {
         {
-            '<leader>ch',
+            '<leader>fk',
             '<Cmd>Telescope keymaps<CR>',
             mode = { 'n' },
             desc = "Find Keymaps"
