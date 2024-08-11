@@ -617,7 +617,7 @@ devproj() {
     cd $(find "${PR_DIRS[@]}" -maxdepth 1 -type d -name "*$lang*" -print -quit)
 
     message="\n--- Don't forget to add a .gitignore file with gh-gitignore! ---\n"
-    cmd="giti && . start 2>/dev/null && tree -L 1 && echo -e \"\n$message\""
+    cmd="clear && giti && . start 2>/dev/null && tree -L 1 && echo -e \"\n$message\""
 
     if [[ "$proj_name" == *"https://github.com"* ]]; then
         proj_name="$(echo "$proj_name" | cut -d'/' -f4)/$(echo "$proj_name" | cut -d'/' -f5)"
@@ -626,7 +626,12 @@ devproj() {
     if [[ "$proj_name" == *"/"* ]]; then
         gh repo clone "$proj_name" -- --bare
         proj_name=$(echo "$proj_name" | cut -d'/' -f 2)
-        cmd="branch=\$(gitb -a | awk '{print \$2 ? \$2 : \$1}'| fzf); gitw add \$branch && echo \"cd \$branch && . start || nvim .\" >> start && cd \$branch && . start 2> /dev/null; tree -L 1"
+
+        select_branch="branch=\$(gitb -a | awk '{print \$2 ? \$2 : \$1}'| fzf)"
+        echo_redirect="echo \"cd \$branch && . start || nvim .\" >> start"
+        start_branch="cd \$branch && . start 2> /dev/null"
+
+        cmd="$select_branch; gitw add \$branch && $echo_redirect && $start_branch; tree -L 1"
         mv "$proj_name.git" "$proj_name"
     fi
 
@@ -658,7 +663,7 @@ else
     cow=$(($RANDOM % $count))
 
     figlet -f small "Unique everyday until is really unique"
-    fortune | cowsay -f ${cows[$cow]} && echo && la && echo
+    fortune ~/.local/share/fortune/quotes | cowsay -f ${cows[$cow]} && echo && la && echo
 fi
 
 # ------------------ Setting APT to be NALA ------------------
