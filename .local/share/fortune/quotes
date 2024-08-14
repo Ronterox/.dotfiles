@@ -1,6 +1,6 @@
 "Talk is cheap. Show me the code." - Linus Torvalds
 %
-"Programs must be written for people to read, and only incidentally for machines to execute." - Harold Abelson
+"Programs must be written for machines to execute, and only incidentally for people to read." - Harold Abelson
 %
 "Any fool can write code that a computer can understand. Good programmers write code that humans can understand." - Martin Fowler
 %
@@ -99,4 +99,6 @@
 "Enjoy the little things in life, for one day you may look back and realize they were the big things." - Robert Breault
 %
 "An executable is just another sequence of bytes after all." - Kronark
+%
+"Life is too short to spend it debugging." - The Primeagen
 %
