@@ -1,12 +1,19 @@
 return {
+    -- Remote Connection
+    {
+        'kenn7/vim-arsync',
+        cond = vim.fn.filereadable('.vim-arsync') == 1,
+        dependencies = { 'prabirshrestha/async.vim' },
+    },
+
     -- Apple Pkl Generate Config Files
     {
-        "apple/pkl-neovim",
-        as = "pkl",
+        'apple/pkl-neovim',
+        as = 'pkl',
         event = {
-            "BufReadPre *.pkl",
-            "BufReadPre *.pcf",
-            "BufReadPre PklProject",
+            'BufReadPre *.pkl',
+            'BufReadPre *.pcf',
+            'BufReadPre PklProject',
         },
     },
 
@@ -16,7 +23,7 @@ return {
     -- Sonic Pi
     {
         'magicmonty/sonicpi.nvim',
-        requires = { 'hrsh7th/nvim-cmp', 'kyazdani42/nvim-web-devicons' },
+        dependencies = { 'hrsh7th/nvim-cmp', 'kyazdani42/nvim-web-devicons' },
         config = function()
             local sonicpi = require('sonicpi')
             sonicpi.setup({ lsp_diagnostics = true, })

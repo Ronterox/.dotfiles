@@ -227,6 +227,10 @@ bwp() {
     token="$bwdir/token"
     items="$bwdir/items.json"
 
+    if [ "$1" == "--force" ]; then
+        rm -f "$token" "$items"
+    fi
+
     echo "Checking Bitwarden items..."
     if [ "$(find "$bwdir" -mmin +30)" ] || [ ! -f "$items" ]; then
         echo "Fetching Bitwarden items..."
@@ -249,8 +253,6 @@ bwp() {
     for i in $(seq 1 $pass_len); do echo -n "*"; done
     echo -e "\n"
 }
-
-alias sshpass='ssh -o PubkeyAuthentication=no -o PreferredAuthentications=password'
 
 # ------------------- Kitty -------------------
 
@@ -515,6 +517,33 @@ alias tmuxnew='tmux new -s'
 tmuxkill() { tmux kill-session -t "$(tmux display-message -p '#S')"; }
 alias tmuxkillall='tmux kill-server'
 
+tmuxmail() {
+    session_name=$1
+    sleeptime=$2
+    mailto=$3
+    mailsuccess=$4
+    mailerror=$5
+
+    if [ $# -lt 5 ]; then
+        echo -e "\nUsage: $0 [session_name] [sleeptime] [mailto] [mailtext]\n"
+        return
+    fi
+
+    checkpane() { tmux capture-pane -pt "$session_name" -S -10; }
+    pane=$(checkpane)
+    while true; do
+        clear
+        echo "Sleeping for $sleeptime seconds, no ocurrences at $(date)..."
+        sleep $sleeptime
+        new_pane=$(checkpane)
+        [ "$new_pane" != "$pane" ] && break
+        pane=$new_pane
+    done
+    echo "Sending mail..."
+    [ "$(echo "$pane" | grep -i -c 'error')" -eq 0 ] && mailtext="$mailsuccess" || mailtext="$mailerror"
+    sendmail --target="$mailto" --text="$mailtext"
+}
+
 tmuxuptime() {
     if [ -z "$1" ]; then
         session_name=$(tmux display-message -p '#S')
@@ -588,6 +617,7 @@ cdp() {
     fi
 }
 
+# develop new project
 declare -A inits
 inits=(
     ["Rust"]="cargo init"
@@ -596,7 +626,6 @@ inits=(
     ["C"]="cinit"
 )
 
-# develop new project
 devproj() {
     lang=$(find "${PR_DIRS[@]}" -maxdepth 1 -type d -ipath "*$**" -exec basename {} \; | sed s/Projects// | fzf)
     [ ! "$lang" ] && return
@@ -664,6 +693,8 @@ else
 
     figlet -f small "Unique everyday until is really unique"
     fortune ~/.local/share/fortune/quotes | cowsay -f ${cows[$cow]} && echo && la && echo
+
+    source ~/.local/share/blesh/ble.sh
 fi
 
 # ------------------ Setting APT to be NALA ------------------
@@ -681,6 +712,8 @@ if hash nala 2> /dev/null; then
         fi
     }
 fi
+
+# ------------------ Finish My Handling ------------------
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
@@ -728,7 +761,6 @@ alias zr='zoxide remove'
 zri() {
     _zoxide_result="$(zoxide query -i -- "$@")" && zoxide remove "$_zoxide_result"
 }
-
 
 _zoxide_hook() {
     if [ -z "${_ZO_PWD}" ]; then
@@ -780,5 +812,3 @@ esac
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-
-source ~/.local/share/blesh/ble.sh

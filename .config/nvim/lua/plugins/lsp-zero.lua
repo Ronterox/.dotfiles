@@ -120,6 +120,18 @@ return {
                             filetypes = { 'html', 'php', 'javascript', 'typescript' }
                         })
                     end,
+                    tsserver = function()
+                        nvim_lsp.tsserver.setup({
+                            commands = {
+                                OrganizeImports = {
+                                    function()
+                                        vim.lsp.buf.execute_command({ command = "_typescript.organizeImports", arguments = { vim.api.nvim_buf_get_name(0) } })
+                                    end,
+                                    description = "Organize Imports"
+                                },
+                            }
+                        })
+                    end
                 }
             })
         end

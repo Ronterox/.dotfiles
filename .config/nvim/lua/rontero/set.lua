@@ -37,3 +37,4 @@ vim.opt.foldmethod = "expr"
 vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
 
 vim.opt.wildignore:append({ '*/node_modules/**', '*/dist/**', '*.log', '*/.git/**' })
+vim.opt.sessionoptions = 'blank,buffers,curdir,folds,help,tabpages,winsize'

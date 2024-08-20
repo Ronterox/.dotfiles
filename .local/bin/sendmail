@@ -2,9 +2,9 @@
 
 message='You got mail!'
 sender='ricarditomontserrat@gmail.com'
-subject="Sended from $(hostname) $(cat /etc/issue)"
+subject="Sended from $(hostname) $(cat /etc/issue) at $(date)"
 target=''
-pass='bgou xhfn mygc xcxz' # https://myaccount.google.com/apppasswords
+pass='dkap bdxr btch scff' # https://myaccount.google.com/apppasswords
 
 for argv in "$@"; do
     case $argv in
