@@ -536,12 +536,28 @@ tmuxmail() {
         echo "Sleeping for $sleeptime seconds, no ocurrences at $(date)..."
         sleep $sleeptime
         new_pane=$(checkpane)
-        [ "$new_pane" != "$pane" ] && break
+        [ "$new_pane" == "$pane" ] && break
         pane=$new_pane
     done
     echo "Sending mail..."
     [ "$(echo "$pane" | grep -i -c 'error')" -eq 0 ] && mailtext="$mailsuccess" || mailtext="$mailerror"
     sendmail --target="$mailto" --text="$mailtext"
+}
+
+tmuxwatch() {
+    sleeptime=$1
+    mailto=$2
+
+    if [ $# -lt 2 ]; then
+        echo -e "\nUsage: tmuxwatch [sleeptime] [mailto]\n"
+        return
+    fi
+
+    [ $TMUX ] && session_name=$(tmux display-message -p '#S')
+    for session in $(tmux ls -F "#S"); do
+        [ "$session_name" ] && [ "$session" == "$session_name" ] && continue
+        tmuxmail "$session" "$sleeptime" "$mailto" "$session stopped!" "$session failed!" &
+    done
 }
 
 tmuxuptime() {

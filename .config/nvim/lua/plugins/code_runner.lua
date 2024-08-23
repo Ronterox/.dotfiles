@@ -11,6 +11,7 @@ return {
             r = 'Rscript $dir/$fileName',
             go = 'go run $dir/$fileName',
             rust = 'cargo run $dir/$fileName || cargo run --bin $fileNameWithoutExt'
-        }
+        },
+        focus = false,
     }
 }

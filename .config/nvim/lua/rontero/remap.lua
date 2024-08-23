@@ -36,12 +36,22 @@ local function run_last_command()
     return term
 end
 
-vim.keymap.set('n', '<leader>O', function()
+local function run_last_command_terminal()
     local term = run_last_command()
     term.gotoTerminal(1)
     vim.api.nvim_feedkeys('G$', 'n', true)
-end)
+end
 
-vim.keymap.set('n', '<leader>o', run_last_command)
+vim.keymap.set('n', '<leader>O', run_last_command_terminal)
+vim.keymap.set('n', '<leader>o', function()
+    local file = vim.fn.expand("%:p")
+    if #vim.api.nvim_list_wins() == 1 then
+        run_last_command_terminal()
+        vim.cmd.split(file)
+        vim.cmd.resize("+8")
+    else
+        run_last_command()
+    end
+end)
 
 -- vim.keymap.set('n', '<leader>td', ':vimgrep /TODO/ **/*<CR>:cw<CR>')
