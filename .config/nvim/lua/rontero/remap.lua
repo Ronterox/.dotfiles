@@ -29,6 +29,17 @@ vim.keymap.set('n', '<C-q>', ':e#<CR>')
 
 vim.keymap.set('t', '<Esc>', '<C-\\><C-n>')
 
+local function search_selection(register, motion)
+    return function()
+        vim.cmd('normal! ' .. motion)
+        local selection = vim.fn.getreg(register)
+        require("harpoon.term").sendCommand(1, "? " .. selection .. "\n")
+    end
+end
+
+vim.keymap.set('n', '<leader>s', search_selection("0", "yiw"))
+vim.keymap.set('v', '<leader>s', search_selection("0", "y"))
+
 local function run_last_command()
     local term = require("harpoon.term")
     vim.cmd("wa")
