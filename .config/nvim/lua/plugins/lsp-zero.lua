@@ -89,6 +89,8 @@ return {
 
             }
 
+            nvim_lsp.perlpls.setup {}
+
             require('mason-lspconfig').setup({
                 ensure_installed = {},
                 handlers = {

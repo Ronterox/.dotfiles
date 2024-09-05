@@ -32,8 +32,8 @@ vim.keymap.set('t', '<Esc>', '<C-\\><C-n>')
 local function search_selection(register, motion)
     return function()
         vim.cmd('normal! ' .. motion)
-        local selection = vim.fn.getreg(register)
-        require("harpoon.term").sendCommand(1, "? " .. selection .. "\n")
+        local selection = string.gsub(vim.fn.getreg(register), "^%s*(.-)%s*$", "%1")
+        require("harpoon.term").sendCommand(1, "? '" .. selection .. "'\n")
     end
 end
 

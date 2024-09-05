@@ -177,13 +177,7 @@ hc() { h -d 1-$(calc $(hlen)-$HISTFILESIZE); } # Clear history
 man() { command man $1 || command $1 --help | batcat || command $1 -h | batcat; }
 wtf() { whatis $1 2> /dev/null; tldr $1 | batcat; }
 
-lastCd=$HOME
-cd() {
-    lastCd=$PWD
-    command cd "$@"
-}
-
-alias cdd='cd "$lastCd"'
+alias cdd='cd -' # omg
 
 # ------------------- File Handling -------------------
 
@@ -828,3 +822,9 @@ esac
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+
+PATH="/home/rontero/perl5/bin${PATH:+:${PATH}}"; export PATH;
+PERL5LIB="/home/rontero/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
+PERL_LOCAL_LIB_ROOT="/home/rontero/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
+PERL_MB_OPT="--install_base \"/home/rontero/perl5\""; export PERL_MB_OPT;
+PERL_MM_OPT="INSTALL_BASE=/home/rontero/perl5"; export PERL_MM_OPT;
