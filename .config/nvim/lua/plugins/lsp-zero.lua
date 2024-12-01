@@ -10,17 +10,27 @@ return {
             vim.g.lsp_zero_extend_lspconfig = 0
         end,
     },
+
     {
         'williamboman/mason.nvim',
         cmd = { 'Mason' },
         config = true,
     },
 
+    {
+        'L3MON4D3/LuaSnip',
+        event = 'InsertEnter',
+        dependencies = { 'rafamadriz/friendly-snippets' },
+        config = function()
+            require("luasnip.loaders.from_vscode").lazy_load()
+        end,
+    },
+
     -- Autocompletion
     {
         'hrsh7th/nvim-cmp',
         event = 'InsertEnter',
-        dependencies = { { 'L3MON4D3/LuaSnip' }, { 'saadparwaiz1/cmp_luasnip' } },
+        dependencies = { { 'saadparwaiz1/cmp_luasnip' } },
         config = function()
             -- Here is where you configure the autocompletion settings.
             local lsp_zero = require('lsp-zero')
@@ -80,16 +90,31 @@ return {
             })
 
             local nvim_lsp = require('lspconfig')
+
             nvim_lsp.solargraph.setup {
                 settings = {
                     solargraph = {
                         singleFile = true,
                     }
                 }
+            }
 
+            nvim_lsp.pylsp.setup {
+                settings = {
+                    pylsp = {
+                        plugins = {
+                            pycodestyle = {
+                                ignore = { 'W391' },
+                                maxLineLength = 100
+                            }
+                        }
+                    }
+                }
             }
 
             nvim_lsp.perlpls.setup {}
+
+            nvim_lsp.arduino_language_server.setup {}
 
             require('mason-lspconfig').setup({
                 ensure_installed = {},

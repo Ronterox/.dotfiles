@@ -178,6 +178,7 @@ man() { command man $1 || command $1 --help | batcat || command $1 -h | batcat; 
 wtf() { whatis $1 2> /dev/null; tldr $1 | batcat; }
 
 alias cdd='cd -' # omg
+# export <- also omg
 
 # ------------------- File Handling -------------------
 
@@ -310,11 +311,18 @@ gitp() {
 
 alias gita='git add'
 alias gitr='git rebase -i'
-alias gitac='gitd && gita . && git commit'
 alias gitc='git commit'
 
 alias gits='git status'
 alias gitd='git diff'
+
+gitac() {
+    if [ $# -eq 0 ]; then
+        gitd && gita . && git commit
+        return
+    fi
+    gita . && gitc -m "$*"
+}
 
 alias gitf='git ls-files'
 alias gitfe='git fetch origin --depth=10000 $(git ls-remote -h -t origin)'

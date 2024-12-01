@@ -53,13 +53,25 @@ local function run_last_command_terminal()
     vim.api.nvim_feedkeys('G$', 'n', true)
 end
 
-vim.keymap.set('n', '<leader>O', run_last_command_terminal)
-vim.keymap.set('n', '<leader>o', function()
+vim.keymap.set('n', '<leader>O', function()
     local file = vim.fn.expand("%:p")
-    if #vim.api.nvim_list_wins() == 1 then
+    run_last_command_terminal()
+    vim.cmd.split(file)
+    vim.cmd.resize("+8")
+end)
+
+vim.keymap.set('n', '<leader>o', function()
+    local function window_count()
+        local total = 0
+        for _, win in ipairs(vim.api.nvim_list_wins()) do
+            if vim.api.nvim_win_get_config(win).relative == "" then
+                total = total + 1
+            end
+        end
+        return total
+    end
+    if window_count() == 1 then
         run_last_command_terminal()
-        vim.cmd.split(file)
-        vim.cmd.resize("+8")
     else
         run_last_command()
     end

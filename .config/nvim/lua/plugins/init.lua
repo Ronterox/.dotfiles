@@ -1,5 +1,20 @@
 return {
     -- Remote Connection
+
+    -- Obligatory
+    -- remote_host     example.com # remote host to connect (must have ssh enabled)
+    -- remote_path     ~/temp/ # remote folder to be synced
+    -- Optional
+    -- remote_user    john # username to connect with
+    -- remote_port    22 # remote ssh port to connect to (default is 22)
+    -- remote_passwd  secret # password to connect with (requires sshpass) (needed if not using ssh-keys)
+    -- local_path    /home/ken/temp/vuetest/ # local folder to be synced (defaults to folder of .vim-arsync)
+    -- ignore_path     ["build/","test/"] # list of ingored files/folders
+    -- ignore_dotfiles 1 # set to 1 to not sync dotfiles (e.g. .vim-arsync)
+    -- auto_sync_up    0 # set to 1 for activating automatic upload syncing on file save
+    -- remote_or_local remote # set to 'local' if you want to perform syncing locally
+    -- sleep_before_sync 0 # set to x seconds if you want to sleep before sync (like compiling a file before syncing)
+
     {
         'kenn7/vim-arsync',
         cond = vim.fn.filereadable('.vim-arsync') == 1,

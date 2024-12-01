@@ -54,6 +54,7 @@ export PATH=$HOME/.config/tmux/plugins/t-smart-tmux-session-manager/bin:$PATH
 # Neovim
 
 export EDITOR='nvim'
+export MANPAGER='nvim +Man!'
 export PATH=$PATH:$HOME/.local/share/nvim/mason/bin
 
 # My Enviroment
@@ -81,3 +82,9 @@ case ":$PATH:" in
 esac
 
 # <<< juliaup initialize <<<
+
+export VCPKG_ROOT=$HOME/Documents/Program-Files/vcpkg
+export PATH=$VCPKG_ROOT:$PATH
+
+export PERL5LIB=$HOME/Documents/Program-Files/perl/lib/perl5:$PERL5LIB
+export PATH=$HOME/Documents/Program-Files/perl/bin:$PATH
