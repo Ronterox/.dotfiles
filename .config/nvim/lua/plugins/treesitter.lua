@@ -4,7 +4,8 @@ return {
     event = { "VeryLazy" },
     dependencies = {
         { "nvim-treesitter/nvim-treesitter-textobjects" },
-        { "nvim-treesitter/nvim-treesitter-context" }
+        { "nvim-treesitter/nvim-treesitter-context" },
+        -- { "HiPhish/rainbow-delimiters.nvim" },
     },
     cmd = { "TSUpdateSync", "TSUpdate", "TSInstall" },
     keys = {

@@ -147,8 +147,8 @@ return {
                             filetypes = { 'html', 'php', 'javascript', 'typescript' }
                         })
                     end,
-                    tsserver = function()
-                        nvim_lsp.tsserver.setup({
+                    ts_ls = function()
+                        nvim_lsp.ts_ls.setup({
                             commands = {
                                 OrganizeImports = {
                                     function()

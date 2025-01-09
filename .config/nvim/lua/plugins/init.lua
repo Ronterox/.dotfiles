@@ -14,12 +14,13 @@ return {
     -- auto_sync_up    0 # set to 1 for activating automatic upload syncing on file save
     -- remote_or_local remote # set to 'local' if you want to perform syncing locally
     -- sleep_before_sync 0 # set to x seconds if you want to sleep before sync (like compiling a file before syncing)
-
     {
         'kenn7/vim-arsync',
         cond = vim.fn.filereadable('.vim-arsync') == 1,
         dependencies = { 'prabirshrestha/async.vim' },
     },
+
+    { 'gpanders/nvim-parinfer' },
 
     -- Apple Pkl Generate Config Files
     {
@@ -65,14 +66,14 @@ return {
     },
 
     -- Smart basics of vim
-    { 'rhysd/clever-f.vim',    keys = 'f' },
-    { 'tpope/vim-surround',    keys = { "cs", "ds", "yss" } },
+    { 'rhysd/clever-f.vim',  keys = 'f' },
+    { 'tpope/vim-surround',  keys = { "cs", "ds", "yss" } },
 
     -- Code Highlighting
-    { 'chaimleib/vim-renpy',   ft = 'renpy' },
+    { 'chaimleib/vim-renpy', ft = 'renpy' },
     -- https://github.com/AVagueNumberOfHumans/renpyls
 
-    { 'fladson/vim-kitty',     ft = 'kitty' },
+    { 'fladson/vim-kitty',   ft = 'kitty' },
     {
         'norcalli/nvim-colorizer.lua',
         event = { "VeryLazy", "BufReadPre" },

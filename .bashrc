@@ -217,6 +217,8 @@ editcrypt() {
 
 # ------------------- Security -------------------
 
+alias bwl='bwp --force'
+
 bwp() {
     bwdir="$HOME/.config/Bitwarden CLI"
     token="$bwdir/token"
@@ -228,13 +230,10 @@ bwp() {
 
     echo "Checking Bitwarden items..."
     if [ "$(find "$bwdir" -mmin +30)" ] || [ ! -f "$items" ]; then
-        echo "Fetching Bitwarden items..."
-        if [ ! -f "$token" ]; then
-            echo "Logging in Bitwarden..."
-            bw login
-            bw unlock --raw > "$token"
-        fi
-        bw list items --session $(cat "$token") | jq 'map({name,user: .login.username,password: .login.password})' > "$items"
+        echo "Logging in Bitwarden..."
+        # bw logout && bw login
+        bw unlock --raw > "$token"
+        bw list items --session "$(cat "$token")" | jq 'map({name,user: .login.username,password: .login.password})' > "$items"
     fi
 
     selected=$(jq -r '.[] | "\(.name) \(.user)"' < "$items" | fzf)
@@ -505,6 +504,7 @@ docker-clean() {
 }
 
 alias py='python'
+alias ipy='ipython -i'
 
 alias vi='nvim'
 alias vim='nvim'
