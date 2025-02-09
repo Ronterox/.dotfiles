@@ -493,6 +493,7 @@ docker-clean-dangling() {
     docker network prune -a
     docker image prune -a
 }
+
 docker-clean() {
     docker-clean-dangling
     # Remove all containers and volumes

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# change this to your favorite terminal
+term_exec="kitty"
+servername="$HOME/.cache/nvim/defold.pipe"
+
+if [ "$#" -eq 2 ]; then
+    command="edit +$2 $1"
+else
+    command="edit $1"
+fi
+
+if [ -e "$servername" ]; then
+    nvim --server "$servername" --remote-send "<C-\\><C-n>:$command<CR>"
+else
+    "$term_exec" -e nvim --listen "$servername" +"$command"
+fi

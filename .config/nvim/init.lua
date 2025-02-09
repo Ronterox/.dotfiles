@@ -11,6 +11,7 @@ end
 function ColorMyPencils(colorscheme)
     colorscheme = colorscheme or "desert"
     vim.cmd.colorscheme(colorscheme)
+    vim.cmd [[ hi StatusLine guibg=NONE ]] -- lualine transparent
 end
 
 ColorMyPencils('vscode')

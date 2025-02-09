@@ -19,6 +19,7 @@ return {
     {
         'nvim-lualine/lualine.nvim',
         event = "VeryLazy",
+        dependencies = { 'nvim-tree/nvim-web-devicons', 'linrongbin16/lsp-progress.nvim', 'arkav/lualine-lsp-progress' },
         opts = {
             sections = {
                 lualine_a = { 'mode' },
@@ -28,7 +29,6 @@ return {
                 lualine_y = { 'progress' },
                 lualine_z = { 'location' }
             },
-            dependencies = { 'nvim-tree/nvim-web-devicons', 'linrongbin16/lsp-progress.nvim' },
         },
         config = function(_, opts)
             local custom_theme = require('lualine.themes.vscode')
@@ -43,5 +43,4 @@ return {
             require('lualine').setup(opts)
         end
     },
-    { 'arkav/lualine-lsp-progress' },
 }
