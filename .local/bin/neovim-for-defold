@@ -13,5 +13,6 @@ fi
 if [ -e "$servername" ]; then
     nvim --server "$servername" --remote-send "<C-\\><C-n>:$command<CR>"
 else
-    "$term_exec" -e nvim --listen "$servername" +"$command"
+    # TODO: Open this on tmux
+    "$term_exec" -e nvim --listen "$servername" +"$command" +"LspStart lua_ls"
 fi

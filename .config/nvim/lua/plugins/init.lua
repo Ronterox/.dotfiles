@@ -1,5 +1,19 @@
 return {
     {
+        "S1M0N38/love2d.nvim",
+        cmd = "LoveRun",
+        enabled = false,
+        ft = 'lua',
+        keys = {
+            { '<leader>v',  ft = 'lua',                          desc = 'LÖVE' },
+            { '<leader>vv', '<CMD>LoveRun<CR>',                  ft = 'lua',   desc = 'Run LÖVE' },
+            { '<leader>vs', '<CMD>LoveStop<CR>',                 ft = 'lua',   desc = 'Stop LÖVE' },
+            { '<F5>',       '<CMD>LoveStop<CR><CMD>LoveRun<CR>', ft = 'lua',   desc = 'Rerun LÖVE' },
+        },
+    },
+
+    -- TODO: Organize everything on their own stuff
+    {
         "monkoose/DoNe",
         lazy = true,
         event = { 'BufReadPre *.script' },
@@ -7,6 +21,7 @@ return {
         config = function()
             -- as example adding some keybindings
             vim.keymap.set('n', '<F5>', '<Cmd>DoNe build<CR>')
+            vim.keymap.set('n', '<F6>', '<Cmd>DoNe reload<CR>')
             --- ...
         end,
     },
@@ -109,8 +124,7 @@ return {
         "iamcco/markdown-preview.nvim",
         ft = 'markdown',
         build = function()
-            vim.fn
-                ["mkdp#util#install"]()
+            vim.fn["mkdp#util#install"]()
         end
     },
 }
