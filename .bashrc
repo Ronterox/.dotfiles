@@ -413,60 +413,6 @@ psearch(){ firefox --private-window "https://www.google.com/search?q=$*"; }
 alias ?='search'
 alias ??='psearch'
 
-# ------------------- Conda -------------------
-
-alias conda='micromamba'
-conda="micromamba"
-
-condact() {
-    if [ $# -eq 0 ]; then
-        conda activate $(condalist | awk '{print $1}' | fzf);
-        return
-    fi
-    conda activate $1
-}
-alias condeact='conda deactivate'
-
-alias condalist='conda env list'
-alias condelpkg='conda remove --all --name'
-alias condelenv='conda env remove -n'
-
-alias condaclean='conda clean --all'
-alias condaconfig='conda config list'
-
-condcreate() {
-    pattern='envs_dirs:(\s*- (/.*/envs))*'
-    if [[ "$(condaconfig)" =~ $pattern ]]; then
-        i=0
-        for match in ${BASH_REMATCH[2]}; do
-            [[ $match == '-' ]] && continue
-            echo "[$i] $match"
-            paths["$i"]=$match
-            i=$((i+1))
-        done
-    fi
-
-    if [ $# -lt 2 ]; then
-        echo -e "\nUsage: condacreate [env name] [env path num] [packages...]\n"
-        return
-    fi
-
-    path=${paths[$2]}
-    [[ ! "$path" ]] && [[ -n "${paths[*]}" ]] && echo "Error: Path not found!" && return
-
-    if [[ -n "${paths[*]}" ]]; then
-        path+=/$1
-        shift 2
-        cmd="$conda create -p $path $*"
-    else
-        env_name=$1
-        shift 2
-        cmd="$conda create -n $env_name $*"
-    fi
-
-    echo "$cmd" && $cmd
-}
-
 # ------------------- Rust -------------------
 
 cargo-clean-cache() {
@@ -799,19 +745,6 @@ esac
 
 
 [ -f "/home/rontero/.ghcup/env" ] && . "/home/rontero/.ghcup/env" # ghcup-env
-
-# >>> mamba initialize >>>
-# !! Contents within this block are managed by 'mamba init' !!
-export MAMBA_EXE='/home/rontero/.local/bin/micromamba';
-export MAMBA_ROOT_PREFIX='/home/rontero/Documents/Program-Files/micromamba';
-__mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__mamba_setup"
-else
-    alias micromamba="$MAMBA_EXE"  # Fallback on help from mamba activate
-fi
-unset __mamba_setup
-# <<< mamba initialize <<<
 
 # >>> juliaup initialize >>>
 

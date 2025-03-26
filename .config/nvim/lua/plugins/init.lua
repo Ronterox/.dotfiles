@@ -2,7 +2,8 @@ return {
     {
         "S1M0N38/love2d.nvim",
         cmd = "LoveRun",
-        enabled = false,
+        enabled = true,
+        opts = {},
         ft = 'lua',
         keys = {
             { '<leader>v',  ft = 'lua',                          desc = 'LÖVE' },
