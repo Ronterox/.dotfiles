@@ -37,8 +37,8 @@ local function search_selection(register, motion)
     end
 end
 
-vim.keymap.set('n', '<leader>s', search_selection("0", "yiw"))
-vim.keymap.set('v', '<leader>s', search_selection("0", "y"))
+vim.keymap.set('n', '<leader>s', search_selection("0", "yiw"), { desc = "Search selection" })
+vim.keymap.set('v', '<leader>s', search_selection("0", "y"), { desc = "Search selection" })
 
 local function run_last_command()
     local term = require("harpoon.term")
@@ -58,7 +58,7 @@ vim.keymap.set('n', '<leader>O', function()
     run_last_command_terminal()
     vim.cmd.split(file)
     vim.cmd.resize("+8")
-end)
+end, { desc = "Run last command in a new split terminal" })
 
 vim.keymap.set('n', '<leader>o', function()
     local function window_count()
@@ -75,6 +75,6 @@ vim.keymap.set('n', '<leader>o', function()
     else
         run_last_command()
     end
-end)
+end, { desc = "Run last command in the terminal" })
 
 -- vim.keymap.set('n', '<leader>td', ':vimgrep /TODO/ **/*<CR>:cw<CR>')
