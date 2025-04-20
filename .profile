@@ -61,10 +61,6 @@ export PATH=$PATH:$HOME/.local/share/nvim/mason/bin
 
 . "$HOME/.dotfiles/.env"
 
-# Rust
-
-. "$HOME/.cargo/env"
-
 
 [ -f "$HOME/.ghcup/env" ] && . "$HOME/.ghcup/env" # ghcup-env
 
@@ -88,3 +84,7 @@ export PATH=$VCPKG_ROOT:$PATH
 
 export PERL5LIB=$HOME/Documents/Program-Files/perl/lib/perl5:$PERL5LIB
 export PATH=$HOME/Documents/Program-Files/perl/bin:$PATH
+
+# Rust
+
+. "$HOME/.cargo/env"

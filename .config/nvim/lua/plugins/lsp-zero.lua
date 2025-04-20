@@ -1,5 +1,16 @@
 return {
     {
+        "folke/lazydev.nvim",
+        ft = "lua", -- only load on lua files
+        opts = {
+            library = {
+                -- See the configuration section for more details
+                -- Load luvit types when the `vim.uv` word is found
+                { path = "${3rd}/luv/library", words = { "vim%.uv" } },
+            },
+        },
+    },
+    {
         'VonHeikemen/lsp-zero.nvim',
         branch = 'v3.x',
         lazy = true,
@@ -90,7 +101,6 @@ return {
             })
 
             local nvim_lsp = require('lspconfig')
-
             nvim_lsp.solargraph.setup {
                 settings = {
                     solargraph = {
@@ -98,7 +108,6 @@ return {
                     }
                 }
             }
-
             nvim_lsp.pylsp.setup {
                 settings = {
                     pylsp = {
@@ -111,12 +120,11 @@ return {
                     }
                 }
             }
-
             nvim_lsp.perlpls.setup {}
-
             nvim_lsp.arduino_language_server.setup {}
 
             require('mason-lspconfig').setup({
+                automatic_installation = true,
                 ensure_installed = {},
                 handlers = {
                     lsp_zero.default_setup,
@@ -152,7 +160,9 @@ return {
                             commands = {
                                 OrganizeImports = {
                                     function()
-                                        vim.lsp.buf.execute_command({ command = "_typescript.organizeImports", arguments = { vim.api.nvim_buf_get_name(0) } })
+                                        for _, client in pairs(vim.lsp.get_clients()) do
+                                            client:exec_cmd({ title="Organize Imports", command = "_typescript.organizeImports", arguments = { vim.api.nvim_buf_get_name(0) } })
+                                        end
                                     end,
                                     description = "Organize Imports"
                                 },
