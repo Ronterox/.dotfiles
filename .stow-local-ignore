@@ -1,5 +1,5 @@
 \.env
-\.enviroment
+env
 \.gitignore
 \.git
 start

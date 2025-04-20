@@ -57,7 +57,7 @@ return {
             table.insert(cmp_config.sources, { name = 'sonicpi' })
 
             cmp.setup({
-                formatting = lsp_zero.cmp_format(),
+                formatting = lsp_zero.cmp_format({}),
                 mapping = cmp.mapping.preset.insert({
                     ['<C-Space>'] = cmp.mapping.complete(),
                     ['<C-u>'] = cmp.mapping.scroll_docs(-4),
@@ -91,7 +91,7 @@ return {
             end)
 
             lsp_zero.format_on_save({
-                format_opts = { async = true, timeout_ms = 10000 },
+                format_opts = { async = true, timeout_ms = 5000 },
                 servers = {
                     ['pylsp'] = { 'python' },
                     ['lua_ls'] = { 'lua' },
@@ -161,7 +161,11 @@ return {
                                 OrganizeImports = {
                                     function()
                                         for _, client in pairs(vim.lsp.get_clients()) do
-                                            client:exec_cmd({ title="Organize Imports", command = "_typescript.organizeImports", arguments = { vim.api.nvim_buf_get_name(0) } })
+                                            client:exec_cmd({
+                                                title = "Organize Imports",
+                                                command = "_typescript.organizeImports",
+                                                arguments = { vim.api.nvim_buf_get_name(0) }
+                                            })
                                         end
                                     end,
                                     description = "Organize Imports"
