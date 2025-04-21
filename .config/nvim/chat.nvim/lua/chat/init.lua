@@ -1,8 +1,8 @@
 local M = {}
 local links = {
-    DeepSeek='https://chat.deepseek.com/',
-    Claude='https://claude.ai/new',
-    ChatGPT='https://chat.openai.com/',
+    DeepSeek = 'https://chat.deepseek.com/',
+    Claude = 'https://claude.ai/new',
+    ChatGPT = 'https://chat.openai.com/',
 }
 
 function M.chat(args)
@@ -21,9 +21,7 @@ end
 
 function M.chat_browser(url)
     if url == nil then return end
-
-    local term = require("harpoon.term")
-    term.sendCommand(1, "open " .. url .. "\n")
+    vim.cmd('silent !open ' .. url)
     print("Opening on browser " .. url)
 end
 
