@@ -21,6 +21,7 @@ return {
                     },
                 },
             })
+            vim.cmd([[cab cc CodeCompanion]])
         end
     },
 

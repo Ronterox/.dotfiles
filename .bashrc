@@ -309,6 +309,7 @@ gitp() {
 }
 
 alias gita='git add'
+alias gitap='git add -p'
 alias gitr='git rebase -i'
 alias gitc='git commit'
 
@@ -317,7 +318,7 @@ alias gitd='git diff'
 
 gitac() {
     if [ $# -eq 0 ]; then
-        gitd && gita . && git commit
+        gitd && gita . && gitc
         return
     fi
     gita . && gitc -m "$*"
