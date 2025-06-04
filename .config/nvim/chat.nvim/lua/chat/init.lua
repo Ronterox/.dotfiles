@@ -1,15 +1,19 @@
 local M = {}
 local links = {
     DeepSeek = 'https://chat.deepseek.com/',
-    Claude = 'https://claude.ai/new',
+    Claude = 'https://claude.ai/new/',
     ChatGPT = 'https://chat.openai.com/',
 }
+
 
 function M.chat(args)
     local name = args.args
 
     if links[name] ~= nil then
-        M.chat_browser(links[name])
+        vim.ui.input({ prompt = "What's the query?" }, function(input)
+            if input == nil then return end
+            M.chatBrowser(links[name], input)
+        end)
         return
     end
 
@@ -19,9 +23,20 @@ function M.chat(args)
     vim.api.nvim_feedkeys('i', 'n', true)
 end
 
-function M.chat_browser(url)
-    if url == nil then return end
-    vim.cmd('silent !open ' .. url)
+local function textEncode(query)
+    return string.gsub(query, "[^%w%-%_%.%~]", function(c)
+        return string.format("%%%02X", string.byte(c))
+    end)
+end
+
+function M.chatBrowser(url, query)
+    if query ~= "" then
+        url = url .. "?q="
+        query = textEncode(query)
+    end
+
+    url = url .. query
+    vim.fn.system({ "open", url })
     print("Opening on browser " .. url)
 end
 
