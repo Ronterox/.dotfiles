@@ -142,6 +142,8 @@ alias q='exit'
 alias nf='echo && neofetch && ls && echo'
 alias cls='clear && ls'
 
+alias battery='upower -i $(upower -e | grep battery) | egrep "percentage|time to empty"'
+
 ls-cd() {
     lscmd="$1" && shift
     [ $# -eq 0 ] && path="." || path="$*"
@@ -318,7 +320,7 @@ alias gitd='git diff'
 
 gitac() {
     if [ $# -eq 0 ]; then
-        gitd && gita . && gitc
+        gitap && gitc
         return
     fi
     gita . && gitc -m "$*"
@@ -390,7 +392,12 @@ gh-gitignore() {
 
 # ------------------- Web Dev -------------------
 
-localh() { python3 -m http.server $@; }
+serve() {
+    port=${1:-8000}
+    shift
+    echo "Setting up server on http://localhost:$port, please wait..."
+    python3 -m http.server "$port" "$@"
+}
 
 # ------------------- Viewer -------------------
 
@@ -452,7 +459,7 @@ docker-clean() {
 }
 
 alias py='python'
-alias ipy='ipython -i'
+alias ipy='uvx ipython -i'
 
 alias vi='nvim'
 alias vim='nvim'
@@ -768,4 +775,6 @@ PERL5LIB="/home/rontero/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"; export PERL5L
 PERL_LOCAL_LIB_ROOT="/home/rontero/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
 PERL_MB_OPT="--install_base \"/home/rontero/perl5\""; export PERL_MB_OPT;
 PERL_MM_OPT="INSTALL_BASE=/home/rontero/perl5"; export PERL_MM_OPT;
+
 . "$HOME/.cargo/env"
+
