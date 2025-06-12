@@ -331,7 +331,7 @@ alias gitfe='git fetch origin --depth=10000 $(git ls-remote -h -t origin)'
 alias gitrm='git rm'
 
 alias gitb='git branch'
-alias gitbc='git checkout'
+alias gitbc='git checkout -b'
 alias gitl='git log'
 
 alias gitw='git worktree'
