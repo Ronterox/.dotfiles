@@ -1,4 +1,6 @@
 return {
+    { 'subnut/nvim-ghost.nvim', enabled = false },
+
     {
         "S1M0N38/love2d.nvim",
         cmd = "LoveRun",
@@ -94,14 +96,14 @@ return {
     },
 
     -- Smart basics of vim
-    { 'rhysd/clever-f.vim',  keys = 'f' },
-    { 'tpope/vim-surround',  keys = { "cs", "ds", "yss" } },
+    { 'rhysd/clever-f.vim',    keys = 'f' },
+    { 'tpope/vim-surround',    keys = { "cs", "ds", "yss" } },
 
     -- Code Highlighting
-    { 'chaimleib/vim-renpy', ft = 'renpy' },
+    { 'chaimleib/vim-renpy',   ft = 'renpy' },
     -- https://github.com/AVagueNumberOfHumans/renpyls
 
-    { 'fladson/vim-kitty',   ft = 'kitty' },
+    { 'fladson/vim-kitty',     ft = 'kitty' },
     {
         'norcalli/nvim-colorizer.lua',
         event = { "VeryLazy", "BufReadPre" },
@@ -123,9 +125,8 @@ return {
     -- File Previewer
     {
         "iamcco/markdown-preview.nvim",
-        ft = 'markdown',
-        build = function()
-            vim.fn["mkdp#util#install"]()
-        end
+        cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
+        ft = { "markdown" },
+        build = function() vim.fn["mkdp#util#install"]() end,
     },
 }

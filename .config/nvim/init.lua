@@ -1,4 +1,5 @@
 require("rontero.set")
+require("rontero.lsp")
 require("rontero.lazy")
 require("rontero.remap")
 require("rontero.autocmds")

@@ -143,6 +143,7 @@ alias nf='echo && neofetch && ls && echo'
 alias cls='clear && ls'
 
 alias battery='upower -i $(upower -e | grep battery) | egrep "percentage|time to empty"'
+alias ny='TZ=America/New_York date'
 
 ls-cd() {
     lscmd="$1" && shift
@@ -458,7 +459,18 @@ docker-clean() {
     echo "All cleaned up!"
 }
 
+dockersize() {
+    docker manifest inspect -v "$1" | jq -c 'if type == "array" then .[] else . end | select(.Descriptor.platform.architecture != "unknown")' |  jq -r '[ ( .Descriptor.platform | [ .os, .architecture, .variant, ."os.version" ] | del(..|nulls) | join("/") ), ( [ ( .OCIManifest // .SchemaV2Manifest ).layers[].size ] | add ) ] | join(" ")' | numfmt --to iec --format '%.2f' --field 2 | sort | column -t ;
+}
+
 alias py='python'
+ipy() {
+    if ! command -v ipython >/dev/null 2>&1; then
+        uvx ipython -i
+    else
+        ipython -i
+    fi
+}
 alias ipy='uvx ipython -i'
 
 alias vi='nvim'

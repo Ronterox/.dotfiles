@@ -22,11 +22,7 @@ return {
         end,
     },
 
-    {
-        'williamboman/mason.nvim',
-        cmd = { 'Mason' },
-        config = true,
-    },
+    { 'williamboman/mason.nvim', cmd = { 'Mason' }, config = true },
 
     {
         'L3MON4D3/LuaSnip',
@@ -154,28 +150,16 @@ return {
                         nvim_lsp.htmx.setup({
                             filetypes = { 'html', 'php', 'javascript', 'typescript' }
                         })
-                    end,
-                    ts_ls = function()
-                        nvim_lsp.ts_ls.setup({
-                            commands = {
-                                OrganizeImports = {
-                                    function()
-                                        for _, client in pairs(vim.lsp.get_clients()) do
-                                            client:exec_cmd({
-                                                title = "Organize Imports",
-                                                command = "_typescript.organizeImports",
-                                                arguments = { vim.api.nvim_buf_get_name(0) }
-                                            })
-                                        end
-                                    end,
-                                    description = "Organize Imports"
-                                },
-                            }
-                        })
                     end
                 }
             })
         end
+    },
+
+    {
+        "pmizio/typescript-tools.nvim",
+        dependencies = { "nvim-lua/plenary.nvim", "neovim/nvim-lspconfig" },
+        opts = {},
     },
 
     -- Pretty Hover
