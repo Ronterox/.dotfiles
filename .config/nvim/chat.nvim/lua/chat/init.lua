@@ -10,7 +10,7 @@ function M.chat(args)
     local name = args.args
 
     if links[name] ~= nil then
-        vim.ui.input({ prompt = "What's the query?" }, function(input)
+        vim.ui.input({ prompt = "What's the query for " .. name .. "?" }, function(input)
             if input == nil then return end
             M.chatBrowser(links[name], input)
         end)

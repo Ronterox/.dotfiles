@@ -11,7 +11,7 @@ endif
 syntax case match
 
 " Pine Script keywords
-syntax keyword pinescriptKeyword const var if else switch for while to by return type
+syntax keyword pinescriptKeyword const var if else switch for while to by return type enum
 syntax keyword pinescriptKeyword true false na null and or not
 
 " Pine Script functions

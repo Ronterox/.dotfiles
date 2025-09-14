@@ -89,7 +89,7 @@ return {
             lsp_zero.format_on_save({
                 format_opts = { async = true, timeout_ms = 5000 },
                 servers = {
-                    ['pylsp'] = { 'python' },
+                    ['pylsp'] = { 'py', 'python' },
                     ['lua_ls'] = { 'lua' },
                     ['clangd'] = { 'c', 'cpp', 'objc', 'objcpp' },
                     ['hls'] = { 'haskell' },
@@ -104,20 +104,29 @@ return {
                     }
                 }
             }
-            nvim_lsp.pylsp.setup {
+            nvim_lsp.perlpls.setup {}
+            nvim_lsp.arduino_language_server.setup {}
+
+            local capabilities = require('cmp_nvim_lsp').default_capabilities()
+            nvim_lsp.pylsp.setup({
+                capabilities = capabilities,
                 settings = {
                     pylsp = {
                         plugins = {
+                            ruff = {
+                                enabled = true,
+                                formatEnabled = true,
+                                lineLength = 100,
+                            },
                             pycodestyle = {
+                                enabled = false,
                                 ignore = { 'W391' },
                                 maxLineLength = 100
                             }
                         }
                     }
                 }
-            }
-            nvim_lsp.perlpls.setup {}
-            nvim_lsp.arduino_language_server.setup {}
+            })
 
             require('mason-lspconfig').setup({
                 automatic_installation = true,
