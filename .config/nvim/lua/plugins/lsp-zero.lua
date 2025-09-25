@@ -96,20 +96,16 @@ return {
                 }
             })
 
-            local nvim_lsp = require('lspconfig')
-            nvim_lsp.solargraph.setup {
+            vim.lsp.config('solargraph', {
                 settings = {
                     solargraph = {
                         singleFile = true,
-                    }
-                }
-            }
-            nvim_lsp.perlpls.setup {}
-            nvim_lsp.arduino_language_server.setup {}
+                    },
+                },
+            })
 
-            local capabilities = require('cmp_nvim_lsp').default_capabilities()
-            nvim_lsp.pylsp.setup({
-                capabilities = capabilities,
+            vim.lsp.config('pylsp', {
+                capabilities = require('cmp_nvim_lsp').default_capabilities(),
                 settings = {
                     pylsp = {
                         plugins = {
@@ -128,41 +124,42 @@ return {
                 }
             })
 
-            require('mason-lspconfig').setup({
-                automatic_installation = true,
-                ensure_installed = {},
-                handlers = {
-                    lsp_zero.default_setup,
-                    lua_ls = function()
-                        local lua_opts = lsp_zero.nvim_lua_ls()
-                        nvim_lsp.lua_ls.setup(lua_opts)
-                    end,
-                    hls = function()
-                        nvim_lsp.hls.setup({
-                            settings = {
-                                haskell = {
-                                    formattingProvider = 'fourmolu',
-                                }
-                            }
-                        })
-                    end,
-                    emmet_language_server = function()
-                        nvim_lsp.emmet_language_server.setup({
-                            filetypes = {
-                                'html', 'css', 'javascript',
-                                'javascriptreact', 'typescript',
-                                'typescriptreact', 'php', 'scss'
-                            }
-                        })
-                    end,
-                    htmx = function()
-                        nvim_lsp.htmx.setup({
-                            filetypes = { 'html', 'php', 'javascript', 'typescript' }
-                        })
-                    end
-                }
+            vim.lsp.config('lua_ls', {
+                settings = {
+                    Lua = {
+                        runtime = { version = 'LuaJIT' },
+                        diagnostics = { globals = { 'vim', 'require' } },
+                    },
+                },
             })
+
+            vim.lsp.config('emmet_language_server', {
+                filetypes = { 'html', 'css', 'php', 'blade' },
+            })
+
+            require('mason-lspconfig').setup({ ensure_installed = {} })
         end
+    },
+
+    {
+        'stevearc/conform.nvim',
+        opts = {
+            formatters_by_ft = {
+                blade = { 'blade-formatter' },
+            },
+            format_on_save = {
+                -- These options will be passed to conform.format()
+                timeout_ms = 500,
+                lsp_format = "fallback",
+            },
+        },
+    },
+
+    {
+        'ricardoramirezr/blade-nav.nvim',
+        dependencies = { 'hrsh7th/nvim-cmp' },
+        ft = { 'blade', 'php' },
+        opts = { close_tag_on_complete = true },
     },
 
     {

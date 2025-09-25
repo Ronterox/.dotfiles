@@ -1,7 +1,15 @@
 return {
     'CRAG666/code_runner.nvim',
     keys = {
-        { '<C-M-n>', vim.cmd.RunCode,  mode = { 'n' }, desc = "Run code" },
+        {
+            '<C-M-n>',
+            function()
+                vim.cmd.update()
+                vim.cmd.RunCode()
+            end,
+            mode = { 'n' },
+            desc = "Run code"
+        },
         { '<C-M-m>', vim.cmd.RunClose, mode = { 'n' }, desc = "Run code and close" }
     },
     opts = {
