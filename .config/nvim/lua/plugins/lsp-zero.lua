@@ -105,18 +105,34 @@ return {
             })
 
             vim.lsp.config('pyright', {
+                on_attach = function(client, bufnr)
+                    -- Disable Pyright's autocompletion
+                    client.server_capabilities.completionProvider = false
+
+                    -- Disable "go to" features
+                    client.server_capabilities.definitionProvider = false
+                    client.server_capabilities.referencesProvider = false
+                    client.server_capabilities.implementationProvider = false
+                    client.server_capabilities.typeDefinitionProvider = false
+                    client.server_capabilities.declarationProvider = false
+                end,
                 settings = {
                     python = {
                         analysis = {
                             autoSearchPaths = true,
                             useLibraryCodeForTypes = true,
                             diagnosticMode = 'openFilesOnly',
+                            typeCheckingMode = "off",
                         },
                     },
                 },
             })
 
             vim.lsp.config('pylsp', {
+                on_attach = function(client, bufnr)
+                    -- Disable hover hints
+                    client.server_capabilities.hoverProvider = false
+                end,
                 capabilities = require('cmp_nvim_lsp').default_capabilities(),
                 settings = {
                     pylsp = {
