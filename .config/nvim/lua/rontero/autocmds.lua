@@ -24,3 +24,16 @@ vim.api.nvim_create_autocmd("User", {
     pattern = "LspProgressStatusUpdated",
     callback = require("lualine").refresh,
 })
+
+vim.api.nvim_create_autocmd("LspAttach", {
+    callback = function(args)
+        local bufnr = args.buf
+        -- Override 'K' for this buffer only
+        vim.keymap.set(
+            "n",
+            "K",
+            "<CMD>lua require('pretty_hover').hover()<CR>",
+            { buffer = bufnr, noremap = true, silent = true }
+        )
+    end,
+})

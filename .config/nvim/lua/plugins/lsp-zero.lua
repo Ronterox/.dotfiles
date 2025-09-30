@@ -1,12 +1,14 @@
 return {
     {
         "folke/lazydev.nvim",
+        enabled = true,
         ft = "lua", -- only load on lua files
         opts = {
             library = {
                 -- See the configuration section for more details
                 -- Load luvit types when the `vim.uv` word is found
-                { path = "${3rd}/luv/library", words = { "vim%.uv" } },
+                { path = "${3rd}/luv/library",    words = { "vim%.uv" } },
+                { path = "${3rd}/love2d/library", words = { "love%." } },
             },
         },
     },
@@ -107,7 +109,7 @@ return {
             vim.lsp.config('pyright', {
                 on_attach = function(client, bufnr)
                     -- Disable Pyright's autocompletion
-                    client.server_capabilities.completionProvider = false
+                    -- client.server_capabilities.completionProvider = true
 
                     -- Disable "go to" features
                     client.server_capabilities.definitionProvider = false
@@ -116,16 +118,6 @@ return {
                     client.server_capabilities.typeDefinitionProvider = false
                     client.server_capabilities.declarationProvider = false
                 end,
-                settings = {
-                    python = {
-                        analysis = {
-                            autoSearchPaths = true,
-                            useLibraryCodeForTypes = true,
-                            diagnosticMode = 'openFilesOnly',
-                            typeCheckingMode = "off",
-                        },
-                    },
-                },
             })
 
             vim.lsp.config('pylsp', {
@@ -150,15 +142,6 @@ return {
                         }
                     }
                 }
-            })
-
-            vim.lsp.config('lua_ls', {
-                settings = {
-                    Lua = {
-                        runtime = { version = 'LuaJIT' },
-                        diagnostics = { globals = { 'vim', 'require' } },
-                    },
-                },
             })
 
             vim.lsp.config('emmet_language_server', {
@@ -196,10 +179,10 @@ return {
         opts = {},
     },
 
-    -- Pretty Hover
     {
         "Fildo7525/pretty_hover",
         event = "LspAttach",
+        -- keys = { { 'K', '<CMD>lua require("pretty_hover").hover()<CR>', mode = { 'n' } } },
         opts = {}
     },
 }
