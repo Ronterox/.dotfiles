@@ -88,3 +88,9 @@ export PATH=$HOME/Documents/Program-Files/perl/bin:$PATH
 # Rust
 
 . "$HOME/.cargo/env"
+
+# Android
+
+export ANDROID_HOME=$HOME/Documents/Program-Files/Android/
+export PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
+

@@ -586,7 +586,7 @@ cdp() {
     done
 
     # foreach ignoredir -name $ignoredir -o
-    session_path=$(find ${PR_DIRS[@]} -maxdepth 2 \( -name '.git' \) -prune -o -type d -ipath "*$**" | fzf --query=$* --prompt="Project: " --border)
+    session_path=$(find ${PR_DIRS[@]} -maxdepth 2 \( -name '.git' \) -prune -o -type d -ipath "*$**" | fzf --query="$*" --prompt="Project: " --border)
     [ ! "$session_path" ] && return
     session_name=$(basename "$session_path" | tr -d '.' )
 

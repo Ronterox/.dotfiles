@@ -12,6 +12,7 @@ return {
             },
         },
     },
+
     {
         'VonHeikemen/lsp-zero.nvim',
         branch = 'v3.x',
@@ -177,12 +178,5 @@ return {
         "pmizio/typescript-tools.nvim",
         dependencies = { "nvim-lua/plenary.nvim", "neovim/nvim-lspconfig" },
         opts = {},
-    },
-
-    {
-        "Fildo7525/pretty_hover",
-        event = "LspAttach",
-        -- keys = { { 'K', '<CMD>lua require("pretty_hover").hover()<CR>', mode = { 'n' } } },
-        opts = {}
     },
 }
