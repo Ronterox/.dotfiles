@@ -187,19 +187,30 @@ alias cdd='cd -' # omg
 
 jkl() {
     url="http://richserver:6040/"
-    if [ $1 -eq '-h' ] || [ $1 -eq '--help' ]; then
-        echo -e "\nUsage: jkl [method] [filepath/query] [name]\n"
-        echo -e "\nMethods:\n  delete\n  upload\n"
-        echo -e "\nExamples:\n  jkl delete /path/to/file\n  jkl upload /path/to/file\n  jkl upload /path/to/file newname.txt\n"
+    if [ "$1" == '-h' ] || [ "$1" == '--help' ]; then
+        echo -e "Usage: jkl [method] [filepath/query] [name]\n"
+        echo -e "Methods:\n  get\n  upload\n  delete\n"
+        echo -e "Examples:\n  jkl /path/to/file \n  jkl delete /path/to/file\n  jkl upload /path/to/file\n  jkl upload /path/to/file newname.txt\n"
         return
     fi
 
     case "$1" in
         "delete")
+            if [ -z "$2" ]; then
+                echo "Cannot delete without a filepath!"
+                return
+            fi
             curl -X DELETE "$url$2"
             ;;
         "upload")
+            if [ -z "$2" ]; then
+                echo "Cannot upload without a filepath!"
+                return
+            fi
             curl -X POST -F "file=@$2" "$url${3:-$2}"
+            ;;
+        "get")
+            curl -X GET "$url$2"
             ;;
         *)
             curl -X GET "$url$1"
