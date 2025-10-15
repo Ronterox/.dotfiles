@@ -185,9 +185,31 @@ alias cdd='cd -' # omg
 
 # ------------------- File Handling -------------------
 
-rename-file() {
+jkl() {
+    url="http://richserver:6040/"
+    if [ $1 -eq '-h' ] || [ $1 -eq '--help' ]; then
+        echo -e "\nUsage: jkl [method] [filepath/query] [name]\n"
+        echo -e "\nMethods:\n  delete\n  upload\n"
+        echo -e "\nExamples:\n  jkl delete /path/to/file\n  jkl upload /path/to/file\n  jkl upload /path/to/file newname.txt\n"
+        return
+    fi
+
+    case "$1" in
+        "delete")
+            curl -X DELETE "$url$2"
+            ;;
+        "upload")
+            curl -X POST -F "file=@$2" "$url${3:-$2}"
+            ;;
+        *)
+            curl -X GET "$url$1"
+            ;;
+    esac
+}
+
+rename-correct() {
     if [ $# -lt 1 ]; then
-        echo -e "\nUsage: rename-file [files path]\n"
+        echo -e "\nUsage: rename-correct [files path]\n"
         return
     fi
     rename 's/ /_/g; s/([A-Z])/$1/g; $_ = lc($_)' "$@"
