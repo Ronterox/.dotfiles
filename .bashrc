@@ -195,21 +195,28 @@ jkl() {
     fi
 
     case "$1" in
-        "delete")
+        delete)
             if [ -z "$2" ]; then
                 echo "Cannot delete without a filepath!"
                 return
             fi
             curl -X DELETE "$url$2"
             ;;
-        "upload")
+        upload)
             if [ -z "$2" ]; then
                 echo "Cannot upload without a filepath!"
                 return
             fi
             curl -X POST -F "file=@$2" "$url${3:-$2}"
             ;;
-        "get")
+        fzf)
+            result=$(curl -X GET "$url$2" | fzf --border)
+            if [ -z "$result" ]; then
+                return
+            fi
+            curl -X GET "$url$result"
+            ;;
+        get)
             curl -X GET "$url$2"
             ;;
         *)
@@ -226,63 +233,7 @@ rename-correct() {
     rename 's/ /_/g; s/([A-Z])/$1/g; $_ = lc($_)' "$@"
 }
 
-encrypt() {
-    if [ $# -lt 2 ]; then
-        echo -e "\nUsage: encrypt [input file] [output file]\n"
-        return
-    fi
-    ansible-vault encrypt "$1" --output "$2"
-}
-
-decrypt() {
-    if [ $# -lt 2 ]; then
-        echo -e "\nUsage: decrypt [input file] [output file]\n"
-        return
-    fi
-    ansible-vault decrypt "$1" --output "$2"
-}
-
-editcrypt() {
-    if [ $# -lt 2 ]; then
-        echo -e "\nUsage: editcrypt [edit file] [output encrypted file]\n"
-        return
-    fi
-    filemod=$(stat -c %y "$1")
-    nvim "$1" && [ "$filemod" != "$(stat -c %y "$1")" ] && encrypt "$1" "$2"
-}
-
 # ------------------- Security -------------------
-
-alias bwl='bwp --force'
-
-bwp() {
-    bwdir="$HOME/.config/Bitwarden CLI"
-    token="$bwdir/token"
-    items="$bwdir/items.json"
-
-    if [ "$1" == "--force" ]; then
-        rm -f "$token" "$items"
-    fi
-
-    echo "Checking Bitwarden items..."
-    if [ "$(find "$bwdir" -mmin +30)" ] || [ ! -f "$items" ]; then
-        echo "Logging in Bitwarden..."
-        # bw logout && bw login
-        bw unlock --raw > "$token"
-        bw list items --session "$(cat "$token")" | jq 'map({name,user: .login.username,password: .login.password})' > "$items"
-    fi
-
-    selected=$(jq -r '.[] | "\(.name) \(.user)"' < "$items" | fzf)
-    [ ! "$selected" ] && return
-    name=$(echo "$selected" | awk '{print $1}')
-    user=$(echo "$selected" | awk '{print $2}')
-    jq -r ".[] | select(.name == \"$name\" and .user == \"$user\") | .password" < "$items" | xargs echo -n | xclip -selection clipboard
-    echo -e "\nPassword pasted to clipboard for $name ($user)!\n"
-    pass_len=$(jq -r ".[] | select(.name == \"$name\" and .user == \"$user\") | .password" < "$items" | wc -c)
-    echo -n "Password: "
-    for i in $(seq 1 $pass_len); do echo -n "*"; done
-    echo -e "\n"
-}
 
 # ------------------- Kitty -------------------
 
@@ -306,7 +257,7 @@ apti() {
 
     sudo apt install "$package"
 }
-alias aptr='apt remove'
+alias aptre='apt remove'
 alias aptup='apt update'
 alias aptug='apt upgrade'
 
