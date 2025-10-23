@@ -139,7 +139,7 @@ fi
 alias bconf='nvim ~/.dotfiles/.bashrc'
 
 alias q='exit'
-alias nf='echo && neofetch && backup --show && echo && ls && echo'
+alias nf='echo && neofetch && backup --show && ls && echo'
 alias cls='clear && ls'
 
 alias battery='upower -i $(upower -e | grep battery) | egrep "percentage|time to empty"'
@@ -236,11 +236,18 @@ rename-correct() {
 # ------------------- Security -------------------
 
 backup() {
-    logfile="$HOME/.dotfiles/backup.log"
+    logfile="$HOME/.dotfiles/.local/share/backup.log"
     case "$1" in
         --run)
+            borgdaily && \
             bw list items --session "$(pass show env/bitwarden)" | pass insert -m -f bitwarden/backup
-            date >> "$logfile"
+
+            if [ $? -eq 0 ]; then
+                echo "Backup successful!"
+                date >> "$logfile"
+            else
+                echo "Backup failed!"
+            fi
             ;;
         --show)
             if [ -f "$logfile" ]; then
@@ -250,9 +257,9 @@ backup() {
                 else
                     color=32
                 fi
-                echo -e "\e[${color}mLast backup: $(stat -c %y "$logfile")\e[0m"
+                echo -e "\e[${color}mLast backup: $(stat -c %y "$logfile")\e[0m\n"
             else
-                echo -e "\e[31mLast backup: Never\e[0m"
+                echo -e "\e[31mLast backup: Never\e[0m\n"
             fi
             ;;
         -h|--help)
@@ -261,6 +268,8 @@ backup() {
             echo
             echo "Options:"
             echo "  --show    Show the backup status"
+            echo "  --run     Run the backup command"
+            echo "  --help    Display this help and exit"
             ;;
         *)
             echo "Unknown option: $1"

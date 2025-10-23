@@ -1,0 +1,48 @@
+#!/bin/bash
+# Simple Borg backup script
+
+# Configuration
+REPOSITORY="/media/rontero/LinuxBackup/Backup/"
+BACKUP_NAME="auto-{now}"  # auto-2024-01-15T10:30:00
+LOG_FILE="/var/log/borg-backup.log"
+
+# What to backup (add more as needed)
+BACKUP_DIRS="/home /etc /opt /var/www"
+
+# Compression (lz4 is fast, zstd is good balance)
+COMPRESSION="lz4"
+
+# Start backup
+echo "Starting backup: $(date)" | sudo tee -a $LOG_FILE
+
+if [ ! -d "$REPOSITORY" ]; then
+    echo "Error: Repository not found: $REPOSITORY" | sudo tee -a $LOG_FILE
+    exit 1
+fi
+
+borg create \
+    --progress \
+    --verbose \
+    --filter AME \
+    --list \
+    --stats \
+    --show-rc \
+    --compression $COMPRESSION \
+    --exclude-caches \
+    --exclude '/home/*/.cache/*' \
+    --exclude '/var/cache/*' \
+    --exclude '/var/tmp/*' \
+    $REPOSITORY::$BACKUP_NAME \
+    $BACKUP_DIRS
+
+# Prune old backups (keep 7 daily, 4 weekly, 6 monthly)
+borg prune \
+    --list \
+    --prefix auto- \
+    --show-rc \
+    --keep-daily 2 \
+    --keep-weekly 1 \
+    --keep-monthly 0 \
+    $REPOSITORY
+
+echo "Backup completed: $(date)" | sudo tee -a $LOG_FILE
