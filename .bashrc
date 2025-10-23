@@ -139,7 +139,7 @@ fi
 alias bconf='nvim ~/.dotfiles/.bashrc'
 
 alias q='exit'
-alias nf='echo && neofetch && ls && echo'
+alias nf='echo && neofetch && backup --show && echo && ls && echo'
 alias cls='clear && ls'
 
 alias battery='upower -i $(upower -e | grep battery) | egrep "percentage|time to empty"'
@@ -234,6 +234,41 @@ rename-correct() {
 }
 
 # ------------------- Security -------------------
+
+backup() {
+    logfile="$HOME/.dotfiles/backup.log"
+    case "$1" in
+        --run)
+            bw list items --session "$(pass show env/bitwarden)" | pass insert -m -f bitwarden/backup
+            date >> "$logfile"
+            ;;
+        --show)
+            if [ -f "$logfile" ]; then
+                # If file older than 2 days show in red
+                if [ $(find "$logfile" -mmin +1440) ]; then
+                    color=31
+                else
+                    color=32
+                fi
+                echo -e "\e[${color}mLast backup: $(stat -c %y "$logfile")\e[0m"
+            else
+                echo -e "\e[31mLast backup: Never\e[0m"
+            fi
+            ;;
+        -h|--help)
+            echo "Usage: backup [--show]"
+            echo "Backup your files to your external hard drive or cloud storage"
+            echo
+            echo "Options:"
+            echo "  --show    Show the backup status"
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Try 'backup --help' for more information"
+            return 1
+            ;;
+    esac
+}
 
 # ------------------- Kitty -------------------
 
