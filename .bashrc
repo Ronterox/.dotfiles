@@ -216,6 +216,10 @@ jkl() {
             fi
             curl -X GET "$url$result"
             ;;
+        ssh)
+            echo "Connecting to server..."
+            ssh rontero@richserver
+            ;;
         get)
             curl -X GET "$url$2"
             ;;

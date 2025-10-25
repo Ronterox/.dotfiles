@@ -519,3 +519,44 @@ else
 fi
 
 # ex: ts=4 sw=4 et filetype=sh
+
+_jkl_completion() {
+    local cur prev words cword
+    _init_completion || return
+
+    case ${cword} in
+        1)
+            # First argument - complete with methods and common options
+            COMPREPLY=($(compgen -W "get upload delete fzf ssh --help" -- "$cur"))
+            ;;
+        2)
+            # Second argument - context-aware completion based on first argument
+            case ${words[1]} in
+                get|upload|delete|fzf)
+                    # Complete with files/directories for file operations
+                    _filedir
+                    ;;
+                ssh)
+                    # No completion needed for ssh
+                    COMPREPLY=()
+                    ;;
+                *)
+                    # Default case - complete with files/directories
+                    _filedir
+                    ;;
+            esac
+            ;;
+        3)
+            # Third argument - only for upload with new name
+            if [ "${words[1]}" = "upload" ]; then
+                # Complete with files/directories for the new name
+                _filedir
+            fi
+            ;;
+        *)
+            COMPREPLY=()
+            ;;
+    esac
+}
+
+complete -F _jkl_completion jkl
