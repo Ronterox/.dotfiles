@@ -88,17 +88,8 @@ case "$TERM" in
         ;;
 esac
 
-# enable color support of ls and also add handy aliases
-if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
-fi
+alias ls='eza --icons --header --git'
+alias grep='rg'
 
 # colored GCC warnings and errors
 #export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
@@ -145,19 +136,18 @@ alias cls='clear && ls'
 alias battery='upower -i $(upower -e | grep battery) | egrep "percentage|time to empty"'
 alias ny='TZ=America/New_York date'
 
-ls-cd() {
-    lscmd="$1" && shift
+lsz() {
+    lscmd="${1:-ls}" && shift
     [ $# -eq 0 ] && path="." || path="$*"
     dir=$($lscmd "$path" | fzf --height=50% --preview "batcat \"$path\"/{} 2> /dev/null || tree -L 1 \"$path\"/{}")
     if [ ! "$dir" ]; then
         cd "$path"
         return
     fi
-    path="$path/$dir" && ls-cd "$lscmd" "$path"
+    path="$path/$dir" && lsz "$lscmd" "$path"
 }
 
-lsd() { ls-cd "ls" "$@"; }
-lsa() { ls-cd "ls -a" "$@"; }
+lsa() { lsz "ls -a" "$@"; }
 lc() { locate "$*" | fzf --border; }
 
 h() {
@@ -181,53 +171,25 @@ man() { command man $1 || command $1 --help | batcat || command $1 -h | batcat; 
 wtf() { whatis $1 2> /dev/null; tldr $1 | batcat; }
 
 alias cdd='cd -' # omg
+
+# fd -p to match full path
+# fd -e to match extension
+# fd -g to match glob
+# fd -t to match type
+# Second parameters is folder
+# -i ignorecase
+# -x parallalel -X for all results
+# {} path (optional else is passed as | command)
+# {.} path without extension
+# {/} just name
+# {//} parent directory
+# {/.} name without extension
+alias fd='fdfind'
+
 # export <- also omg
+eval "$(thefuck --alias)"
 
 # ------------------- File Handling -------------------
-
-jkl() {
-    url="http://richserver:6040/"
-    if [ "$1" == '-h' ] || [ "$1" == '--help' ]; then
-        echo -e "Usage: jkl [method] [filepath/query] [name]\n"
-        echo -e "Methods:\n  get\n  upload\n  delete\n"
-        echo -e "Examples:\n  jkl /path/to/file \n  jkl delete /path/to/file\n  jkl upload /path/to/file\n  jkl upload /path/to/file newname.txt\n"
-        return
-    fi
-
-    case "$1" in
-        delete)
-            if [ -z "$2" ]; then
-                echo "Cannot delete without a filepath!"
-                return
-            fi
-            curl -X DELETE "$url$2"
-            ;;
-        upload)
-            if [ -z "$2" ]; then
-                echo "Cannot upload without a filepath!"
-                return
-            fi
-            curl -X POST -F "file=@$2" "$url${3:-$2}"
-            ;;
-        fzf)
-            result=$(curl -X GET "$url$2" | fzf --border)
-            if [ -z "$result" ]; then
-                return
-            fi
-            curl -X GET "$url$result"
-            ;;
-        ssh)
-            echo "Connecting to server..."
-            ssh rontero@richserver
-            ;;
-        get)
-            curl -X GET "$url$2"
-            ;;
-        *)
-            curl -X GET "$url$1"
-            ;;
-    esac
-}
 
 rename-correct() {
     if [ $# -lt 1 ]; then
@@ -236,8 +198,6 @@ rename-correct() {
     fi
     rename 's/ /_/g; s/([A-Z])/$1/g; $_ = lc($_)' "$@"
 }
-
-# ------------------- Security -------------------
 
 backup() {
     logfile="$HOME/.dotfiles/.local/share/backup.log"
@@ -305,23 +265,24 @@ apti() {
 
     sudo apt install "$package"
 }
-alias aptre='apt remove'
-alias aptup='apt update'
-alias aptug='apt upgrade'
+alias aptr='apt remove'
+alias aptu='apt update'
+alias aptg='apt upgrade'
 
 # ------------------- Git -------------------
 
 # Interesting git commands
 
+# git authors -- Who worked on what
+# git effort && git whatchanged -- It shows what its been worked on
+# git count -- Number of commits
+# git archive-file -- Zip without .git
+
 # git alias
-# git authors
-# git effort
 # git contrib
 # git bulk
 # git abort
-# git archive-file
 # git clear && git clear-soft
-# git count
 # git ignore && git ignore-io
 # git fresh-branch
 # git blame && git guilt
@@ -344,16 +305,16 @@ gitp() {
 }
 
 alias gita='git add'
-alias gitap='git add -p'
 alias gitr='git rebase -i'
 alias gitc='git commit'
 
 alias gits='git status'
 alias gitd='git diff'
+gitv(){ git count | grep -o '[0-9]' | paste -sd. | awk -F. '{print (NF<3?"0.":"")$0}'; }
 
 gitac() {
     if [ $# -eq 0 ]; then
-        gitap && gitc
+        gita -p && gitc
         return
     fi
     gita . && gitc -m "$*"

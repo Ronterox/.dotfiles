@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+url="http://richserver:6040/"
+# url="http://localhost:6040/"
+
+case "$1" in
+    --help|-h)
+        echo -e "Usage: $0 [method] [filepath/query] [name]\n"
+        echo -e "Methods:\n  :get\n  :upload\n  :delete\n  :fzf\n  :ssh\n"
+        echo -e "Examples:\n  $0 /path/to/file \n  $0 :delete /path/to/file\n  $0 :upload /path/to/file\n  $0 :upload /path/to/file newname.txt\n"
+        ;;
+    :delete)
+        if [ -z "$2" ]; then
+            echo "Cannot delete without a filepath!"
+            return
+        fi
+        curl -X DELETE -# "$url$2"
+        ;;
+    :upload)
+        if [ -z "$2" ]; then
+            echo "Cannot upload without a filepath!"
+            return
+        fi
+        curl -# -F "file=@$2" "$url${3:-$2}"
+        ;;
+    :fzf)
+        result=$(curl "$url$2" | fzf --border)
+        if [ -z "$result" ]; then
+            return
+        fi
+        $0 get "$result"
+        ;;
+    :ssh)
+        echo "Connecting to server..."
+        ssh rontero@richserver
+        ;;
+    :get)
+        $0 get "$2"
+        ;;
+    *)
+        curl -# "$url$1"
+        ;;
+esac

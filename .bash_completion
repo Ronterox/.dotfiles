@@ -527,7 +527,7 @@ _jkl_completion() {
     case ${cword} in
         1)
             # First argument - complete with methods and common options
-            COMPREPLY=($(compgen -W "get upload delete fzf ssh --help" -- "$cur"))
+            COMPREPLY=($(compgen -W ":get :upload :delete :fzf :ssh --help" -- "$cur"))
             ;;
         2)
             # Second argument - context-aware completion based on first argument
