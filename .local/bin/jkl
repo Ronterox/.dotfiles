@@ -3,11 +3,16 @@
 url="http://richserver:6040/"
 # url="http://localhost:6040/"
 
+repourl="https://raw.githubusercontent.com/Ronterox/.dotfiles/refs/heads/linux/.local/bin/jkl"
+
 case "$1" in
     --help|-h)
         echo -e "Usage: $0 [method] [filepath/query] [name]\n"
         echo -e "Methods:\n  :get\n  :upload\n  :delete\n  :fzf\n  :ssh\n"
         echo -e "Examples:\n  $0 /path/to/file \n  $0 :delete /path/to/file\n  $0 :upload /path/to/file\n  $0 :upload /path/to/file newname.txt\n"
+        ;;
+    :update)
+        curl "$repourl" > "$0"
         ;;
     :delete)
         if [ -z "$2" ]; then
@@ -28,14 +33,14 @@ case "$1" in
         if [ -z "$result" ]; then
             return
         fi
-        $0 get "$result"
+        $0 "$result"
         ;;
     :ssh)
         echo "Connecting to server..."
         ssh rontero@richserver
         ;;
     :get)
-        $0 get "$2"
+        $0 "$2"
         ;;
     *)
         curl -# "$url$1"
