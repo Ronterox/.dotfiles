@@ -532,7 +532,7 @@ _jkl_completion() {
         2)
             # Second argument - context-aware completion based on first argument
             case ${words[1]} in
-                get|upload|delete|fzf)
+                :get|:upload|:delete|:fzf)
                     # Complete with files/directories for file operations
                     _filedir
                     ;;
@@ -548,7 +548,7 @@ _jkl_completion() {
             ;;
         3)
             # Third argument - only for upload with new name
-            if [ "${words[1]}" = "upload" ]; then
+            if [ "${words[1]}" = ":upload" ]; then
                 # Complete with files/directories for the new name
                 _filedir
             fi
