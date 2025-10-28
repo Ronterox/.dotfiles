@@ -1,0 +1,19 @@
+colors:
+  body: white
+  date: yellow
+  tags: red
+  title: white
+default_hour: 9
+default_minute: 0
+editor: nvim
+encrypt: false
+highlight: true
+indent_character: ">"
+journals:
+  default:
+    journal: $HOME/Documents/Projects/MarkdownProjects/ANX
+linewrap: 79
+tagsymbols: "#@"
+template: false
+timeformat: "%F %r"
+version: v4.2.1

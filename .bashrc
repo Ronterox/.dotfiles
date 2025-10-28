@@ -78,6 +78,7 @@ if [ "$color_prompt" = yes ]; then
 else
     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
+
 unset color_prompt force_color_prompt wd
 
 # If this is an xterm set the title to user@host:dir
@@ -127,9 +128,6 @@ fi
 
 # ------------------- Defaults -------------------
 
-alias bconf='nvim ~/.dotfiles/.bashrc'
-
-alias q='exit'
 alias nf='echo && neofetch && backup --show && ls && echo'
 alias cls='clear && ls'
 
@@ -159,19 +157,17 @@ h() {
 alias hcls='cat /dev/null > ~/.bash_history && history -c && clear && nf'
 alias hlen='echo $(history | wc -l)'
 
-alias dirsize='du -h -d 1' # I now use dust or k4dirstat
+alias dirsize='du -h -d 1' # I now use dust or ncdu, sometimes k4dirstat
 alias notrunbyshell='grep -l pam_env /etc/pam.d/*' # /etc/environment else /etc/profile
 alias fontcache='sudo fc-cache -fv'
 alias fixaudio='systemctl --user restart wireplumber pipewire pipewire-pulse'
-
 alias textextract='flameshot gui --raw | tesseract stdin stdout'
 
 hc() { h -d 1-$(calc $(hlen)-$HISTFILESIZE); } # Clear history
 man() { command man $1 || command $1 --help | batcat || command $1 -h | batcat; }
 wtf() { whatis $1 2> /dev/null; tldr $1 | batcat; }
 
-alias cdd='cd -' # omg
-
+alias zz='z -' # omg
 # fd -p to match full path
 # fd -e to match extension
 # fd -g to match glob
@@ -309,7 +305,7 @@ alias gitr='git rebase -i'
 alias gitc='git commit'
 
 alias gits='git status'
-alias gitd='git diff'
+alias gitd='git diff' # remember diff-so-fancy
 gitv(){ git count | grep -o '[0-9]' | paste -sd. | awk -F. '{print (NF<3?"0.":"")$0}'; }
 
 gitac() {
@@ -417,9 +413,7 @@ alias ??='psearch'
 
 # ------------------- Rust -------------------
 
-cargo-clean-cache() {
-    rm -rf ~/.cargo/registry/index/* ~/.cargo/.package-cache
-}
+cargo-clean-cache() { rm -rf ~/.cargo/registry/index/* ~/.cargo/.package-cache; }
 
 # ------------------- Java -------------------
 
@@ -457,18 +451,10 @@ dockersize() {
 }
 
 alias py='python'
-ipy() {
-    if ! command -v ipython >/dev/null 2>&1; then
-        uvx ipython -i
-    else
-        ipython -i
-    fi
-}
 alias ipy='uvx ipython -i'
 
 alias vi='nvim'
 alias vim='nvim'
-alias viconf='cd ~/.config/nvim && nvim .'
 
 # ------------------- Tmux  -------------------
 
@@ -657,7 +643,6 @@ bind '"\C-f":"\C-acdpc \n"'
 bind '"\C-t":"\C-atmux-sessions \n"'
 bind '"\C-h":"\C-acheat \n"'
 bind '"\C-r":"\C-ah \n"'
-bind '"\C-b":"\C-abwp \n"'
 bind '"\eq":"\C-aqalc \n"' # alt + q
 
 shopt -s autocd
@@ -729,13 +714,13 @@ zi() {
     _zoxide_result="$(zoxide query -i -- "$@")" && _z_cd "$_zoxide_result"
 }
 
-
 alias za='zoxide add'
 
 alias zq='zoxide query'
 alias zqi='zoxide query -i'
 
 alias zr='zoxide remove'
+
 zri() {
     _zoxide_result="$(zoxide query -i -- "$@")" && zoxide remove "$_zoxide_result"
 }
