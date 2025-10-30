@@ -17,21 +17,21 @@ case "$1" in
     :delete)
         if [ -z "$2" ]; then
             echo "Cannot delete without a filepath!"
-            return
+            exit 1
         fi
         curl -X DELETE -# "$url$2"
         ;;
     :upload)
         if [ -z "$2" ]; then
             echo "Cannot upload without a filepath!"
-            return
+            exit 1
         fi
         curl -# -F "file=@$2" "$url${3:-$2}"
         ;;
     :fzf)
         result=$(curl "$url$2" | fzf --border)
         if [ -z "$result" ]; then
-            return
+            exit 1
         fi
         $0 "$result"
         ;;
