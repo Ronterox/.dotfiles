@@ -634,6 +634,276 @@ devproj() {
     cdp -c "$cmd" "$proj_name"
 }
 
+rules() {
+    echo "
+    - [Inspiration] then now. Do now! Right now! Don't do anything else forget it all, enjoy focus
+    - [Stress] close them eyes. Don't think about it, but instead about how easy it is and relax until well found solution chillax.
+    - [Relax] look at list of stuff to do, pick one. And iterate on these 3 rules
+    "
+}
+
+mread() {
+    echo "$1 (Ctrl+D to finish)"
+    eval "$2=\$(cat)"
+}
+
+project() {
+    AFFIRMATIONS=(Awesome Good Great Cool Nice Perfect Amazing "Well Done")
+    read -r -p "Name of the project: " proj_name
+
+    echo "
+    Name every project, and name the scope. Make sure the name of the project represents the scope of it.
+    MAKE SURE YOU KNOW THE SCOPE OF IT. Always scale down.
+    "
+
+    read -r -p "Are you satisfied with the name? [y/n]: " confirm
+    if [[ "$confirm" =~ ^[nN][oO]? ]]; then
+        echo "Okay, let's try again."
+        project
+        return
+    fi
+
+    figlet -f small "$proj_name" | lolcat -a
+
+    echo "${AFFIRMATIONS[$RANDOM % ${#AFFIRMATIONS[@]}]}."
+    read -r -p "Are you thinking of any other project right now? [y/n]: " confirm
+
+    echo "
+    Finish them off, know whether the project payed for the effort already AND if it can pay it (most important)
+    else scratch, make version 2 like I did with mikop. And just save the handful of useful part, drop the rest
+    "
+
+    read -r -p "Are you sure is worth to work on this project? [y/n]: " confirm
+    if [[ "$confirm" =~ ^[nN][oO]? ]]; then
+        echo "Okay, let's try again."
+        project
+        return
+    fi
+
+    echo "${AFFIRMATIONS[$RANDOM % ${#AFFIRMATIONS[@]}]}."
+    mread "Explain to me why is this worth to work on: " explanation
+
+    echo "
+    You may have the intelligence, but you don't have enough reasons to do it (Is what they say).
+    But you don't need any more reasons, just one good one, make sure is one that will always occur with effort alone
+    "
+
+    read -r -p "Are you still sure is worth to work on this project? [y/n]: " confirm
+    if [[ "$confirm" =~ ^[nN][oO]? ]]; then
+        echo "Okay, let's try again."
+        project
+        return
+    fi
+
+    figlet -f small "$proj_name" | lolcat
+    echo "$explanation" | lolcat -a
+
+    echo "${AFFIRMATIONS[$RANDOM % ${#AFFIRMATIONS[@]}]}."
+    mread "Describe what would the first step of the project be:" first_step
+
+    echo "
+    Never do the fun stuff first. It will suck all of it out of the project.
+    Do what you must do to be more productive, and do it well. The 20% that does the 80%.
+    "
+
+    read -r -p "Knowing all of this, can you do this step today, right now? [y/n]: " confirm
+    if [[ "$first_step" =~ ^[nN][oO]? ]]; then
+        echo "Okay, let's try again."
+        project
+        return
+    fi
+
+    figlet -f small "$proj_name" | lolcat
+    echo "$explanation" | lolcat
+    echo "
+    ======================================================
+    Path to completion:
+    - $first_step
+    - ...
+    - ...
+    - ...
+    - ...
+    "  | lolcat -a
+
+    echo "${AFFIRMATIONS[$RANDOM % ${#AFFIRMATIONS[@]}]}."
+    mread "Describe what the complete project would be like: " complete_project
+
+    echo "
+    Always have an exit plan, every moment has to be deliverable. It will never be ready.
+    Perfectionism is the killer of productivity and progress. If it works, it's done. You can always make a part 2
+    "
+
+    read -r -p "So, is this project achievable, can it be completed in a fixed date? [y/n]: " confirm
+    if [[ "$complete_project" =~ ^[nN][oO]? ]]; then
+        echo "Okay, let's try again."
+        project
+        return
+    fi
+
+    figlet -f small "$proj_name" | lolcat
+    echo "$explanation" | lolcat
+    echo "
+    ======================================================
+    Path to completion:
+    - $first_step
+    - ...
+    - ...
+    - ...
+    - ...
+    "  | lolcat
+    echo "
+    ======================================================
+    What makes it finished?
+    ======================================================
+    $complete_project
+    " | lolcat -a
+
+    deadline=""
+    taken=""
+    echo "${AFFIRMATIONS[$RANDOM % ${#AFFIRMATIONS[@]}]}."
+    read -r -p "Let's talk about deadlines. Will it take one day? [y/n]: " confirm
+    if [[ "$confirm" =~ ^[yY][eE]? ]]; then
+        deadline=$(date -d "tomorrow")
+        taken="one day"
+    else
+        declare -i deadlines
+        deadlines=(
+            [two days]="2 days"
+            [three days]="3 days"
+            [four days]="4 days"
+            [five days]="5 days"
+            [one week]="next week"
+            [two weeks]="2 weeks"
+            [three weeks]="3 weeks"
+            [one month]="next month"
+            [two months]="2 months"
+            [four months]="4 months"
+            [six months]="6 months"
+            [one year]="next year"
+            [two years]="2 years"
+            [five years]="5 years"
+        )
+        # Iterate over the associative array
+        for dl in "${!deadlines[@]}"; do
+            read -n 1 -r -p "Will it take $dl? [y/n]: " confirm
+            if [[ "$confirm" =~ ^[yY][eE]? ]]; then
+                taken=$dl
+                deadline=$(date -d "${deadlines[$dl]}")
+                break
+            fi
+        done
+    fi
+
+    if [[ -z "$deadline" ]]; then
+        read -r -p "How long will it take then? " taken
+        read -r -p "Write the dateline as a full exact date: " deadline
+    fi
+
+    figlet -f small "$proj_name" | lolcat
+    echo "$explanation" | lolcat
+    echo "
+    ======================================================
+    Path to completion:
+    - $first_step
+    - ...
+    - ...
+    - ...
+    - ...
+    "  | lolcat
+    echo "
+    ======================================================
+    What makes it finished?
+    ======================================================
+    $complete_project
+    " | lolcat
+    echo "
+    ======================================================
+    Deadline:
+    ======================================================
+    Will be in finished in $taken by $deadline, else it won't be finished
+    " | lolcat -a
+
+    echo "${AFFIRMATIONS[$RANDOM % ${#AFFIRMATIONS[@]}]}."
+    read -r -p "How do you feel? " feeling
+
+    rules
+
+    read -r -p "And what about the project? " project_feeling
+
+    figlet -f small "$proj_name" | lolcat
+    echo "$explanation" | lolcat
+    echo "
+    ======================================================
+    Path to completion:
+    - $first_step
+    - ...
+    - ...
+    - ...
+    - ...
+    "  | lolcat
+    echo "
+    ======================================================
+    What makes it finished?
+    ======================================================
+    $complete_project
+    " | lolcat
+    echo "
+    ======================================================
+    Deadline:
+    ======================================================
+    Will be in finished in $taken by $deadline, else it won't be finished
+    " | lolcat
+    echo "
+    ======================================================
+    Notes:
+    ======================================================
+    > $feeling
+    > $project_feeling
+    " | lolcat -a
+
+    echo "${AFFIRMATIONS[$RANDOM % ${#AFFIRMATIONS[@]}]} Success! Done."
+    md="README.md"
+
+    formatted_explanation=$(echo "$explanation" | fold -s -w 80 | awk '{
+        print
+        if (NR % 3 == 0) print ""
+    }')
+
+cat <<EOF >>"$md"
+# $proj_name
+
+*$formatted_explanation*
+
+**Path to completion:**
+- $first_step
+- ...
+- ...
+- ...
+- ...
+
+---
+
+#### What makes it finished?
+
+$complete_project
+
+---
+
+#### Deadline:
+
+Will be finished in $taken by $deadline, else it won't be finished
+
+---
+
+#### Notes:
+
+> $feeling.
+> $project_feeling.
+
+EOF
+    echo "$md generated"
+}
+
 # ------------------- Startup -------------------
 
 bind '"\e\e[C": forward-word' # Jump words with ctrl
@@ -654,9 +924,8 @@ else
     count=$(echo ${cows[*]} | wc -w)
     cow=$(($RANDOM % $count))
 
-    figlet -f small "Unique everyday until is really unique"
-    fortune ~/.local/share/fortune/quotes | cowsay -f ${cows[$cow]} && echo && la && echo
-
+    fortune ~/.local/share/fortune/quotes | cowsay -f ${cows[$cow]} | lolcat && echo && la && echo
+    rules | shuf -n 1 | lolcat && echo
     source ~/.local/share/blesh/ble.sh
 fi
 
