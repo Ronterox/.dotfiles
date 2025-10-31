@@ -116,6 +116,14 @@ case "$1" in
         fi
         eval "$selected"
         ;;
+    :yt-url)
+        url=$2
+        if [ -z "$url" ]; then
+            echo "No URL provided!"
+            exit 1
+        fi
+        xhs -b "$url" user-agent:curl/7.64.1 | pup 'link[href*="/channel/"] attr{href}'
+        ;;
     :*)
         echo "Invalid method!"
         echo "Try 'jkl --help' for more information"

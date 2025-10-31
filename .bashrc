@@ -688,7 +688,7 @@ project() {
     But you don't need any more reasons, just one good one, make sure is one that will always occur with effort alone
     "
 
-    read -r -p "Are you still sure is worth to work on this project? [y/n]: " confirm
+    read -r -p "Is this that good enough reason, that makes it worth it to work on this project? [y/n]: " confirm
     if [[ "$confirm" =~ ^[nN][oO]? ]]; then
         echo "Okay, let's try again."
         project
@@ -707,7 +707,7 @@ project() {
     "
 
     read -r -p "Knowing all of this, can you do this step today, right now? [y/n]: " confirm
-    if [[ "$first_step" =~ ^[nN][oO]? ]]; then
+    if [[ "$confirm" =~ ^[nN][oO]? ]]; then
         echo "Okay, let's try again."
         project
         return
@@ -766,7 +766,7 @@ project() {
         deadline=$(date -d "tomorrow")
         taken="one day"
     else
-        declare -i deadlines
+        declare -A deadlines
         deadlines=(
             [two days]="2 days"
             [three days]="3 days"
@@ -785,6 +785,7 @@ project() {
         )
         # Iterate over the associative array
         for dl in "${!deadlines[@]}"; do
+            echo ""
             read -n 1 -r -p "Will it take $dl? [y/n]: " confirm
             if [[ "$confirm" =~ ^[yY][eE]? ]]; then
                 taken=$dl
@@ -932,9 +933,7 @@ fi
 # ------------------ Setting APT to be NALA ------------------
 
 if hash nala 2> /dev/null; then
-    apt() {
-        sudo nala "$@"
-    }
+    apt() { sudo nala "$@"; }
     sudo() {
         if [ "$1" = "apt" ]; then
             shift
