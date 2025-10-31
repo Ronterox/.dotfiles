@@ -8,18 +8,11 @@ repourl="https://raw.githubusercontent.com/Ronterox/.dotfiles/refs/heads/linux/.
 case "$1" in
     --help|-h)
         echo -e "Usage: $0 [method] [filepath/query] [name]\n"
-        echo -e "Methods:\n  :get\n  :upload\n  :delete\n  :fzf\n  :ssh\n"
+        echo -e "Methods:\n  :get\n  :upload\n  :delete\n  :fzf\n  :ssh\n  :ip\n  :update\n"
         echo -e "Examples:\n  $0 /path/to/file \n  $0 :delete /path/to/file\n  $0 :upload /path/to/file\n  $0 :upload /path/to/file newname.txt\n"
         ;;
-    :update)
-        curl "$repourl" > "$0"
-        ;;
-    :delete)
-        if [ -z "$2" ]; then
-            echo "Cannot delete without a filepath!"
-            exit 1
-        fi
-        curl -X DELETE -# "$url$2"
+    :get)
+        $0 "$2"
         ;;
     :upload)
         if [ -z "$2" ]; then
@@ -27,6 +20,13 @@ case "$1" in
             exit 1
         fi
         curl -# -F "file=@$2" "$url${3:-$2}"
+        ;;
+    :delete)
+        if [ -z "$2" ]; then
+            echo "Cannot delete without a filepath!"
+            exit 1
+        fi
+        curl -X DELETE -# "$url$2"
         ;;
     :fzf)
         result=$(curl "$url$2" | fzf --border)
@@ -39,8 +39,34 @@ case "$1" in
         echo "Connecting to server..."
         ssh rontero@richserver
         ;;
-    :get)
-        $0 "$2"
+    :ip)
+        xh -b ifconfig.me user-agent:curl
+        ;;
+    :location)
+        xh -b api.ip2location.io
+        ;;
+    :update)
+        curl "$repourl" > "$0"
+        ;;
+    :link)
+        if [ -z "$2" ]; then
+            echo "Cannot upload without a filepath!"
+            exit 1
+        fi
+        xhs -b 0x0.st -f "file@$2"
+        ;;
+    :text-link)
+        if [ -z "$2" ]; then
+            echo "Won't upload empty text!"
+            exit 1
+        fi
+        shift
+        echo "$*" | xhs -b 0x0.st -f file@-
+        ;;
+    :*)
+        echo "Invalid method!"
+        echo "Try 'jkl --help' for more information"
+        exit 1
         ;;
     *)
         curl -# "$url$1"
