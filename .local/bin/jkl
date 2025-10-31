@@ -40,7 +40,7 @@ case "$1" in
         ssh rontero@richserver
         ;;
     :ip)
-        xh -b ifconfig.me user-agent:curl
+        xh -b ifconfig.me user-agent:curl/7.64.1
         ;;
     :location)
         xh -b api.ip2location.io
@@ -61,7 +61,60 @@ case "$1" in
             exit 1
         fi
         shift
-        echo "$*" | xhs -b 0x0.st -f file@-
+        xhs -b --ignore-stdin 0x0.st -f file@- <<< "$@"
+        ;;
+    :shorta)
+        if [ -z "$2" ]; then
+            echo "No URL provided!"
+            exit 1
+        fi
+        xhs -b shorta.link -f url="$2"
+        ;;
+    :weather)
+        xhs -b wttr.in/${2:-}
+        ;;
+    :mapscii)
+        xhs -b mapscii.me
+        ;;
+    :uptime)
+        email=$2
+        url=$3
+        if [ -z "$email" ]; then
+            echo "No email provided!"
+            exit 1
+        fi
+        if [ -z "$url" ]; then
+            echo "No URL provided!"
+            exit 1
+        fi
+        xhs "ping.gl/$email/$url"
+        ;;
+    :joke)
+        xhs -b icanhazdadjoke.com user-agent:curl/7.64.1
+        ;;
+    :nyan)
+        curl ascii.live/nyan
+        ;;
+    :games)
+        games=(
+            "ssh sshtron.zachlatta.com"
+            "ssh netris.rocketnine.space"
+            "sshpass -p 'play' ssh -o StrictHostKeyChecking=no -p 2222 play@anonymine-demo.oskog97.com"
+            "ssh gameroom@bitreich.org"
+            "sshpass -p intricacy intricacy@sshgames.thegonz.net"
+            "sshpass -p lag slashem@slashem.me"
+            "ssh slashem@slashem.me"
+            "ssh -p 8080 -l magnetic magneticscrolls.net" # 259CN
+            "nc aardmud.org 23" # Ricamont
+            "nc freechess.org 23"
+            "telnet dungeon.name 20028"
+            "telnet multizork.icculus.org"
+        )
+        selected=$(printf "%s\n" "${games[@]}" | fzf --preview="eval '{}'" --cycle --layout=reverse)
+        if [ -z "$selected" ]; then
+            exit 1
+        fi
+        eval "$selected"
         ;;
     :*)
         echo "Invalid method!"
