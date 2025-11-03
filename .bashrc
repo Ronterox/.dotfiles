@@ -339,7 +339,7 @@ git-worktree() {
     [ "$confirm" != "y" ] && return
 
     cd .. && git-clone "$folder"
-    rm -rf "$folder" && mv "$folder.git" "$folder"
+    rip "$folder" && mv "$folder.git" "$folder"
 
     cd "$folder" && gitwa "$current_branch"
     echo "cd $current_branch && nvim ." > start
@@ -413,7 +413,7 @@ alias ??='psearch'
 
 # ------------------- Rust -------------------
 
-cargo-clean-cache() { rm -rf ~/.cargo/registry/index/* ~/.cargo/.package-cache; }
+cargo-clean-cache() { rip -i ~/.cargo/registry/index/* ~/.cargo/.package-cache; }
 
 # ------------------- Java -------------------
 
@@ -424,7 +424,7 @@ javajdk() {
     java -version && javac -version
 }
 
-alias javaclean='rm -f *.class'
+alias javaclean='rip *.class'
 alias javainstall='apti openjdk-*'
 
 # ------------------- Interpreters & Editors  -------------------
@@ -603,7 +603,7 @@ devproj() {
 
     if [[ "$start_file" =~ ^[yY][eE]?[sS]?$ ]]; then
         tmpfile=$(mktemp)
-        echo -e "#!/bin/bash\n\n$cmd\n\nrm start" > $tmpfile
+        echo -e "#!/bin/bash\n\n$cmd\n\nrip start" > $tmpfile
         nvim $tmpfile && start_file=$(cat $tmpfile) || start_file=""
     fi
 
@@ -930,6 +930,16 @@ else
     source ~/.local/share/blesh/ble.sh
 fi
 
+# ------------------ Forced to use this ------------------
+
+cd() {
+    echo "Use zoxide instead!"
+}
+
+rm() {
+    echo "Use rip instead!"
+}
+
 # ------------------ Setting APT to be NALA ------------------
 
 if hash nala 2> /dev/null; then
@@ -956,7 +966,7 @@ export NVM_DIR="$HOME/.nvm"
 
 # Zoxide
 _z_cd() {
-    cd "$@" || return "$?"
+    builtin cd "$@" || return "$?"
 
     if [ "$_ZO_ECHO" = "1" ]; then
         echo "$PWD"
@@ -988,6 +998,7 @@ alias zq='zoxide query'
 alias zqi='zoxide query -i'
 
 alias zr='zoxide remove'
+alias z..='zoxide ..'
 
 zri() {
     _zoxide_result="$(zoxide query -i -- "$@")" && zoxide remove "$_zoxide_result"
