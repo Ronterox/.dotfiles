@@ -1007,18 +1007,18 @@ case "$PROMPT_COMMAND" in
     *) PROMPT_COMMAND="_zoxide_hook${PROMPT_COMMAND:+;${PROMPT_COMMAND}}" ;;
 esac
 
-[ -f "/home/rontero/.ghcup/env" ] && . "/home/rontero/.ghcup/env" # ghcup-env
+[ -f "$HOME/.ghcup/env" ] && . "$HOME/.ghcup/env" # ghcup-env
 
 # >>> juliaup initialize >>>
 
 # !! Contents within this block are managed by juliaup !!
 
 case ":$PATH:" in
-    *:/home/rontero/.juliaup/bin:*)
+    *:$HOME/.juliaup/bin:*)
         ;;
 
     *)
-        export PATH=/home/rontero/.juliaup/bin${PATH:+:${PATH}}
+        export PATH=$HOME/.juliaup/bin${PATH:+:${PATH}}
         ;;
 esac
 
@@ -1028,11 +1028,11 @@ esac
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
 
-PATH="/home/rontero/perl5/bin${PATH:+:${PATH}}"; export PATH;
-PERL5LIB="/home/rontero/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
-PERL_LOCAL_LIB_ROOT="/home/rontero/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
-PERL_MB_OPT="--install_base \"/home/rontero/perl5\""; export PERL_MB_OPT;
-PERL_MM_OPT="INSTALL_BASE=/home/rontero/perl5"; export PERL_MM_OPT;
+PROGRAM_FILES="$HOME/Documents/Program-Files/"
+PATH="$PROGRAM_FILES/perl/${PATH:+:${PATH}}"; export PATH;
+PERL5LIB="$PROGRAM_FILES/perl/lib/perl5/${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
+PERL_LOCAL_LIB_ROOT="$PROGRAM_FILES/perl/${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
+PERL_MB_OPT="--install_base \"$PROGRAM_FILES/perl/\""; export PERL_MB_OPT;
+PERL_MM_OPT="INSTALL_BASE=$PROGRAM_FILES/perl5"; export PERL_MM_OPT;
 
 . "$HOME/.cargo/env"
-

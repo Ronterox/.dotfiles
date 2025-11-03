@@ -121,6 +121,8 @@ return {
                 end,
             })
 
+            vim.lsp.enable('perlpls')
+
             vim.lsp.config('pylsp', {
                 on_attach = function(client, bufnr)
                     -- Disable hover hints
