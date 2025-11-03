@@ -1,34 +1,37 @@
-path=$(realpath $0 | xargs dirname)
+#!/usr/bin/env bash
 
-extract() { command cat $path/$*; }
+path=$(realpath "$0" | xargs dirname)
+
+extract() { cat "$path/$*"; }
 
 run_query() {
-    output=$($path/cheat.sh $1 $2)
+    output=$("$path/cheat.sh" "$1" "$2")
     clean_output=$(echo "$output" | sed -e 's/\x1b\[[0-9;]*m//g')
 
     if grep -q '404 NOT FOUND' <<< "$clean_output" || [ -z "$clean_output" ]; then
         echo "No cheatsheet found for '$2'"
         ask_query
-    elif grep -q ':' <<< $1; then
+    elif grep -q ':' <<< "$1"; then
         echo "$output" | less -R
     else
-        echo "$clean_output" | batcat -l $3
+        echo "$clean_output" | batcat -l "$3"
     fi
 }
 
 ask_query() {
     read -rp "Your query (~keyword): " query
 
-    if grep -q "$selected" <<< "$(extract langs.txt)"; then
-        run_query /$selected "$query" $selected
+    if [ "$selected" == "navi" ]; then
+        navi --cheatsh "$query" || navi --query "$query"
+    elif grep -q "$selected" <<< "$(extract langs.txt)"; then
+        run_query "/$selected" "$query" "$selected"
     else
         run_query "$selected~$query" "" bash
     fi
 }
 
-selected=$(extract cheats.txt | fzf --border --prompt="Select a cheat sheet: ")
+selected=$(extract cheats.txt | fzf --border --prompt="Select a cheat sheet: " -q "$*")
 [ -z "$selected" ] && exit 0
 
 echo "You selected $selected"
 ask_query
-

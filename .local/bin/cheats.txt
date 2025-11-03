@@ -2568,6 +2568,7 @@ named
 namei
 nano
 nasm
+navi
 nativefier
 nautilus
 nbtscan
