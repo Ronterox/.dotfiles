@@ -405,7 +405,17 @@ alias mermaidlive='firefox --new-window https://mermaid.live/'
 alias wordcounter='firefox --new-window https://wordcounter.net/'
 alias imagebackground='firefox --new-window https://www.cutout.pro/'
 
-bang() { ddgr --gb --np "!$1"; }
+bang() {
+    if [ -z "$1" ]; then
+        selected="$(xh -b https://duckduckgo.com/bang.js | jq -c '.[] | {s,t}' | fzf --prompt="Bang!")"
+        if [ -n "$selected" ]; then
+            read -r -p "Searching $(echo "$selected" | jq -r '.s'): " search
+            ddgr --gb --np "!$(echo "$selected" | jq -r '.t') $search"
+        fi
+    else
+        ddgr --gb --np "!$*"
+    fi
+}
 
 alias ?='ddgr'
 alias ??='bang'
