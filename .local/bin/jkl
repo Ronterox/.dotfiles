@@ -54,7 +54,7 @@ case "$1" in
         ;;
     :send)
         shift
-        if [ -z "$2" ]; then
+        if [ -z "$1" ]; then
             croc
         else
             croc send "$@"
