@@ -4,11 +4,15 @@ url="http://richserver:6040/"
 # url="http://localhost:6040/"
 
 repourl="https://raw.githubusercontent.com/Ronterox/.dotfiles/refs/heads/linux/.local/bin/jkl"
+methods=(get upload delete fzf ssh ip location update transfer 0x0 0x0text shorta weather mapscii uptime joke nyan games yt-url)
 
 case "$1" in
     --help|-h)
         echo -e "Usage: $0 [method] [filepath/query] [name]\n"
-        echo -e "Methods:\n  :get\n  :upload\n  :delete\n  :fzf\n  :ssh\n  :ip\n  :update\n"
+        echo "Available methods:"
+        for method in "${methods[@]}"; do
+            echo "  $method"
+        done
         echo -e "Examples:\n  $0 /path/to/file \n  $0 :delete /path/to/file\n  $0 :upload /path/to/file\n  $0 :upload /path/to/file newname.txt\n"
         ;;
     :get)
@@ -48,14 +52,18 @@ case "$1" in
     :update)
         curl "$repourl" > "$0"
         ;;
-    :link)
+    :transfer)
+        shift
+        croc "$@"
+        ;;
+    :0x0)
         if [ -z "$2" ]; then
             echo "Cannot upload without a filepath!"
             exit 1
         fi
         xhs -b 0x0.st -f "file@$2"
         ;;
-    :text-link)
+    :0x0text)
         if [ -z "$2" ]; then
             echo "Won't upload empty text!"
             exit 1
