@@ -524,7 +524,7 @@ _jkl_completion() {
     local cur prev words cword
     _init_completion || return
 
-    methods=(:get :upload :update :delete :fzf :ssh :ip :location :transfer :0x0 :0x0text :shorta :weather :mapscii :uptime :joke :nyan :games :yt-url)
+    methods=(:get :upload :update :delete :fzf :ssh :ip :location :send :0x0 :0x0text :shorta :weather :mapscii :uptime :joke :nyan :games :yt-url)
     case ${cword} in
         1)
             # First argument - complete with methods and common options

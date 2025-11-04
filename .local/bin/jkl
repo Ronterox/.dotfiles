@@ -4,7 +4,7 @@ url="http://richserver:6040/"
 # url="http://localhost:6040/"
 
 repourl="https://raw.githubusercontent.com/Ronterox/.dotfiles/refs/heads/linux/.local/bin/jkl"
-methods=(get upload delete fzf ssh ip location update transfer 0x0 0x0text shorta weather mapscii uptime joke nyan games yt-url)
+methods=(get upload delete fzf ssh ip location update send 0x0 0x0text shorta weather mapscii uptime joke nyan games yt-url)
 
 case "$1" in
     --help|-h)
@@ -52,9 +52,13 @@ case "$1" in
     :update)
         curl "$repourl" > "$0"
         ;;
-    :transfer)
+    :send)
         shift
-        croc "$@"
+        if [ -z "$2" ]; then
+            croc
+        else
+            croc send "$@"
+        fi
         ;;
     :0x0)
         if [ -z "$2" ]; then
