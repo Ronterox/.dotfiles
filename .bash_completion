@@ -530,24 +530,6 @@ _jkl_completion() {
             # First argument - complete with methods and common options
             COMPREPLY=($(compgen -W "${methods[*]} --help" -- "$cur"))
             ;;
-        2)
-            # Second argument - context-aware completion based on first argument
-            case ${words[1]} in
-                *)
-                    # Default case - complete with files/directories
-                    _filedir
-                    ;;
-            esac
-            ;;
-        3)
-            # Third argument
-            case ${words[1]} in
-                *)
-                    # Default case - complete with files/directories
-                    _filedir
-                    ;;
-            esac
-            ;;
         *)
             COMPREPLY=()
             ;;
