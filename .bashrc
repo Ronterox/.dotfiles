@@ -404,12 +404,11 @@ alias imagetotext='firefox --new-window https://www.imagetotext.io/'
 alias mermaidlive='firefox --new-window https://mermaid.live/'
 alias wordcounter='firefox --new-window https://wordcounter.net/'
 alias imagebackground='firefox --new-window https://www.cutout.pro/'
-yt(){ firefox --new-window "https://www.youtube.com/search?q=$*"; }
-search(){ firefox --new-window "https://www.google.com/search?q=$*"; }
-psearch(){ firefox --private-window "https://www.google.com/search?q=$*"; }
 
-alias ?='search'
-alias ??='psearch'
+bang() { ddgr --gb --np "!$1"; }
+
+alias ?='ddgr'
+alias ??='bang'
 
 # ------------------- Rust -------------------
 
