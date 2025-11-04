@@ -936,6 +936,10 @@ cd() {
     echo "Use zoxide instead!"
 }
 
+# find() {
+#     echo "Use fdfind instead!"
+# }
+
 rm() {
     echo "Use rip instead!"
 }
