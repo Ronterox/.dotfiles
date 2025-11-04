@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-clear && figlet "ANX" | lolcat
-
 if [ $# -eq 0 ]; then
+    clear && figlet "ANX" | lolcat
     jrnl @should @annoying @will @need -not @done && doing today
     exit 0
 fi

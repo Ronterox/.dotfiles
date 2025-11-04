@@ -313,7 +313,7 @@ gitac() {
         gita -p && gitc
         return
     fi
-    gita . && gitc -m "$*"
+    printf "\n" | git-magic -ap -m "$*"
 }
 
 alias gitf='git ls-files'
