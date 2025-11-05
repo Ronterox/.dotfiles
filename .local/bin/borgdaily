@@ -1,6 +1,4 @@
 #!/bin/bash
-# Simple Borg backup script
-export BORG_PASSCOMMAND="sudo -u $USER pass show env/borg"
 
 # Configuration
 REPOSITORY="${1:-/default/path/to/a/repository}"
@@ -21,7 +19,7 @@ if [ ! -d "$REPOSITORY" ]; then
     exit 1
 fi
 
-sudo --preserve-env=BORG_PASSCOMMAND borg create \
+sudo -E borg create \
     --progress \
     --verbose \
     --filter AME \
@@ -37,7 +35,7 @@ sudo --preserve-env=BORG_PASSCOMMAND borg create \
     $BACKUP_DIRS
 
 # Prune old backups (keep 7 daily, 4 weekly, 6 monthly)
-sudo borg prune \
+sudo -E borg prune \
     --list \
     --prefix auto- \
     --show-rc \

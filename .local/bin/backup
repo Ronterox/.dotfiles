@@ -3,14 +3,14 @@
 REPOSITORY="/media/rontero/LinuxBackup/Backup/"
 LOGFILE="$HOME/.dotfiles/.local/share/backup.log"
 
-export BORG_PASSCOMMAND="pass show env/borg"
+export BORG_PASSCOMMAND="sudo -u $USER pass show env/borg"
 
 case "$1" in
     --run)
         echo "Starting backup... Calculating ETA..."
         durations=()
-        for a in $(borg list --short "$REPOSITORY"); do
-            taken=$(borg info --json "$REPOSITORY::$a" | jq '.archives | .[0] | .duration')
+        for a in $(sudo -E borg list --short "$REPOSITORY"); do
+            taken=$(sudo -E borg info --json "$REPOSITORY::$a" | jq '.archives | .[0] | .duration')
             durations+=("$taken")
             echo "$a took $taken seconds"
         done
