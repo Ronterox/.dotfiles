@@ -160,7 +160,8 @@ alias hlen='echo $(history | wc -l)'
 
 alias df='duf'
 alias dirsize='du -h -d 1 | sort -h' # I now use dust or ncdu, sometimes k4dirstat
-alias ping='gping'
+alias netcheck='tmuxhs "sudo bandwhich" && gping google.com'
+alias clean='tmuxhs "jdupes -r -m . && read && jdupes -r -d ." && tmuxvs "echo +7d Old && dust $(fdfind --changed-before 7d) && read" && ncdu'
 
 alias notrunbyshell='grep -l pam_env /etc/pam.d/*' # /etc/environment else /etc/profile
 alias fontcache='sudo fc-cache -fv'
@@ -430,6 +431,8 @@ alias vim='nvim'
 alias tmuxls='tmux ls'
 alias tmuxa='tmux attach -t'
 alias tmuxnew='tmux new -s'
+alias tmuxvs='tmux \; split-window -v'
+alias tmuxhs='tmux \; split-window -h'
 
 tmuxkill() { tmux kill-session -t "$(tmux display-message -p '#S')"; }
 alias tmuxkillall='tmux kill-server'
@@ -957,7 +960,11 @@ z() {
             return 1
         fi
     else
-        _zoxide_result="$(zoxide query -- "$@")" && _z_cd "$_zoxide_result"
+        _zoxide_result="$(zoxide query -- "$@" 2>/dev/null)"
+        if [ -z "$_zoxide_result" ]; then
+            _zoxide_result=$(zoxide query --list --score | fzf --query "$*" --filter "$*" --exit-0 | head -1 | awk '{print $NF}')
+        fi
+        [ -n "$_zoxide_result" ] && _z_cd "$_zoxide_result"
     fi
 }
 
@@ -971,7 +978,7 @@ alias zq='zoxide query'
 alias zqi='zoxide query -i'
 
 alias zr='zoxide remove'
-alias z..='zoxide ..'
+alias z..='z ..'
 
 zri() {
     _zoxide_result="$(zoxide query -i -- "$@")" && zoxide remove "$_zoxide_result"
