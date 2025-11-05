@@ -161,7 +161,7 @@ alias hlen='echo $(history | wc -l)'
 alias df='duf'
 alias dirsize='du -h -d 1 | sort -h' # I now use dust or ncdu, sometimes k4dirstat
 alias netcheck='tmuxhs "sudo bandwhich" && gping google.com'
-alias clean='tmuxhs "jdupes -r -m . && read && jdupes -r -d ." && tmuxvs "echo +7d Old && dust $(fdfind --changed-before 7d) && read" && ncdu'
+alias clean='tmuxhs "jdupes -r -m . && read && jdupes -r -d ." && tmuxvs "echo +7d Old && dust \$(fdfind --changed-before 7d) && read" && ncdu'
 
 alias notrunbyshell='grep -l pam_env /etc/pam.d/*' # /etc/environment else /etc/profile
 alias fontcache='sudo fc-cache -fv'
