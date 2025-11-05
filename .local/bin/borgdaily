@@ -1,5 +1,6 @@
 #!/bin/bash
 # Simple Borg backup script
+export BORG_PASSCOMMAND="sudo -u $USER pass show env/borg"
 
 # Configuration
 REPOSITORY="${1:-/default/path/to/a/repository}"
@@ -20,7 +21,7 @@ if [ ! -d "$REPOSITORY" ]; then
     exit 1
 fi
 
-sudo borg create \
+sudo --preserve-env=BORG_PASSCOMMAND borg create \
     --progress \
     --verbose \
     --filter AME \
@@ -32,17 +33,17 @@ sudo borg create \
     --exclude '/home/*/.cache/*' \
     --exclude '/var/cache/*' \
     --exclude '/var/tmp/*' \
-    $REPOSITORY::$BACKUP_NAME \
+    "$REPOSITORY::$BACKUP_NAME" \
     $BACKUP_DIRS
 
 # Prune old backups (keep 7 daily, 4 weekly, 6 monthly)
-borg prune \
+sudo borg prune \
     --list \
     --prefix auto- \
     --show-rc \
     --keep-daily 2 \
     --keep-weekly 1 \
     --keep-monthly 0 \
-    $REPOSITORY
+    "$REPOSITORY"
 
 echo "Backup completed: $(date)" | sudo tee -a $LOG_FILE
