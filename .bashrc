@@ -90,6 +90,7 @@ case "$TERM" in
 esac
 
 alias ls='eza --icons --header --git'
+alias tree='tre'
 alias grep='rg'
 
 # colored GCC warnings and errors
