@@ -195,50 +195,6 @@ rename-correct() {
     rename 's/ /_/g; s/([A-Z])/$1/g; $_ = lc($_)' "$@"
 }
 
-backup() {
-    logfile="$HOME/.dotfiles/.local/share/backup.log"
-    case "$1" in
-        --run)
-            borgdaily && \
-            bw list items --session "$(pass show env/bitwarden)" | pass insert -m -f bitwarden/backup
-
-            if [ $? -eq 0 ]; then
-                echo "Backup successful!"
-                date >> "$logfile"
-            else
-                echo "Backup failed!"
-            fi
-            ;;
-        --show)
-            if [ -f "$logfile" ]; then
-                # If file older than 2 days show in red
-                if [ $(find "$logfile" -mmin +1440) ]; then
-                    color=31
-                else
-                    color=32
-                fi
-                echo -e "\e[${color}mLast backup: $(stat -c %y "$logfile")\e[0m\n"
-            else
-                echo -e "\e[31mLast backup: Never\e[0m\n"
-            fi
-            ;;
-        -h|--help)
-            echo "Usage: backup [--show]"
-            echo "Backup your files to your external hard drive or cloud storage"
-            echo
-            echo "Options:"
-            echo "  --show    Show the backup status"
-            echo "  --run     Run the backup command"
-            echo "  --help    Display this help and exit"
-            ;;
-        *)
-            echo "Unknown option: $1"
-            echo "Try 'backup --help' for more information"
-            return 1
-            ;;
-    esac
-}
-
 # ------------------- Kitty -------------------
 
 alias k='kitty +kitten'

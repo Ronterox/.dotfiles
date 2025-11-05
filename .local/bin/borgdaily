@@ -2,7 +2,7 @@
 # Simple Borg backup script
 
 # Configuration
-REPOSITORY="/media/rontero/LinuxBackup/Backup/"
+REPOSITORY="${1:-/default/path/to/a/repository}"
 BACKUP_NAME="auto-{now}"  # auto-2024-01-15T10:30:00
 LOG_FILE="/var/log/borg-backup.log"
 
