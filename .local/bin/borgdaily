@@ -20,7 +20,7 @@ if [ ! -d "$REPOSITORY" ]; then
     exit 1
 fi
 
-borg create \
+sudo borg create \
     --progress \
     --verbose \
     --filter AME \
