@@ -131,6 +131,7 @@ fi
 alias nf='echo && neofetch && backup --show && ls && echo'
 alias cls='clear && ls'
 
+alias stats="typefilesize && scc --cocomo-project-type 'optimal,0.4,0.85,1.2,0.35'"
 alias battery='upower -i $(upower -e | grep battery) | egrep "percentage|time to empty"'
 alias ny='TZ=America/New_York date'
 
@@ -157,7 +158,10 @@ h() {
 alias hcls='cat /dev/null > ~/.bash_history && history -c && clear && nf'
 alias hlen='echo $(history | wc -l)'
 
-alias dirsize='du -h -d 1' # I now use dust or ncdu, sometimes k4dirstat
+alias df='duf'
+alias dirsize='du -h -d 1 | sort -h' # I now use dust or ncdu, sometimes k4dirstat
+alias ping='gping'
+
 alias notrunbyshell='grep -l pam_env /etc/pam.d/*' # /etc/environment else /etc/profile
 alias fontcache='sudo fc-cache -fv'
 alias fixaudio='systemctl --user restart wireplumber pipewire pipewire-pulse'
