@@ -171,7 +171,10 @@ alias fixaudio='systemctl --user restart wireplumber pipewire pipewire-pulse'
 alias textextract='flameshot gui --raw | tesseract stdin stdout'
 
 hc() { h -d 1-$(calc $(hlen)-$HISTFILESIZE); } # Clear history
-man() { command man $1 || command $1 --help | batcat || command $1 -h | batcat; }
+man() {
+    lookup="${2:-$1}"
+    command man $1 $2 || command $lookup --help | batcat || command $lookup -h | batcat;
+}
 wtf() { whatis $1 2> /dev/null; tldr $1 | batcat; }
 
 alias zz='z -' # omg
@@ -192,6 +195,7 @@ alias fd='fdfind'
 # export <- also omg
 eval "$(thefuck --alias)"
 eval "$(caddy completion bash)"
+eval "$(argc --argc-completions bash)"
 
 # ------------------- File Handling -------------------
 
