@@ -991,7 +991,7 @@ z() {
     else
         _zoxide_result="$(zoxide query -- "$@" 2>/dev/null)"
         if [ -z "$_zoxide_result" ]; then
-            _zoxide_result=$(zoxide query --list --score | fzf --query "$*" --filter "$*" --exit-0 | head -1 | awk '{print $NF}')
+            _zoxide_result=$(zoxide query --list --score | fzf --delimiter / --with-nth -1 --filter "$*" | sort -hr | head -1 | awk '{print $NF}')
         fi
         [ -n "$_zoxide_result" ] && _z_cd "$_zoxide_result"
     fi
