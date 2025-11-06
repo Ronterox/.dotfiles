@@ -348,16 +348,23 @@ gh-gitignore() {
 
 serve() {
     port=${1:-2015}
-    echo "Setting up server on http://localhost:$port, please wait..."
+    echo "Setting up server on http://localhost:$port..."
     caddy file-server -r . -l ":$port" --browse
 }
 
 api() {
     port=${1:-2015}
+
     echo "Running faker on background..."
-    watch 'faker profile > data.json' &
-    echo "Setting up api on http://localhost:$port, please wait..."
-    caddy file-server -r . -l ":$port" --browse
+    nohup watch 'faker profile > data.json' >/dev/null 2>&1 &
+    WATCH_PID=$!
+
+    echo "Setting up api on http://localhost:$port..."
+    nohup caddy file-server -r . -l ":$port" >/dev/null 2>&1 &
+    CADDY_PID=$!
+
+    read -r -p "Press any key to stop api..."
+    kill $WATCH_PID $CADDY_PID 2>/dev/null || true
 }
 
 # ------------------- Viewer -------------------
