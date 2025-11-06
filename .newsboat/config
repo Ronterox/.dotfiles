@@ -1,6 +1,6 @@
 # general settings
 auto-reload yes
-max-items 50
+max-items 100
 
 # externel browser
 browser "w3m %u"
@@ -37,6 +37,6 @@ highlight article "https?://[^ ]+" red default
 highlight article "\\[image\\ [0-9]+\\]" green default
 
 # Scripts
-# pager "~/.local/bin/nbparser"
-html-renderer "/bin/batcat"
+# pager "caddy file-server -r /tmp/ -l :2015 & browsh http://localhost:2015/$(mv %f %f.html && basename %f).html"
+# html-renderer "batcat"
 

@@ -191,6 +191,7 @@ alias fd='fdfind'
 
 # export <- also omg
 eval "$(thefuck --alias)"
+eval "$(caddy completion bash)"
 
 # ------------------- File Handling -------------------
 
@@ -346,10 +347,17 @@ gh-gitignore() {
 # ------------------- Web Dev -------------------
 
 serve() {
-    port=${1:-8000}
-    shift
+    port=${1:-2015}
     echo "Setting up server on http://localhost:$port, please wait..."
-    python3 -m http.server "$port" "$@"
+    caddy file-server -r . -l ":$port" --browse
+}
+
+api() {
+    port=${1:-2015}
+    echo "Running faker on background..."
+    watch 'faker profile > data.json' &
+    echo "Setting up api on http://localhost:$port, please wait..."
+    caddy file-server -r . -l ":$port" --browse
 }
 
 # ------------------- Viewer -------------------
