@@ -206,7 +206,7 @@ rename-correct() {
 # ------------------- Kitty -------------------
 
 alias k='kitty +kitten'
-alias icat='kitty +kitten icat'
+# alias icat='kitty +kitten icat'
 alias tconf='nvim ~/.dotfiles/.config/kitty/kitty.conf'
 
 kitty-reload() { kill -SIGUSR1 $(pidof kitty); } # Problem: There is no kitty process, like ever
@@ -370,6 +370,8 @@ api() {
 # ------------------- Viewer -------------------
 
 alias cat='batcat'
+alias icat='timg'
+alias asciicat='img2txt'
 # Markdown Command
 # Mermaid Command
 
