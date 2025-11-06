@@ -92,7 +92,6 @@ esac
 alias ls='eza --icons --header --git'
 alias tree='tre'
 alias grep='rg'
-alias sed='sd'
 
 # colored GCC warnings and errors
 #export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
@@ -152,7 +151,7 @@ lsa() { lsz "ls -a" "$@"; }
 lc() { locate "$*" | fzf --border; }
 
 h() {
-    cmd="$(history | cut -c 8- | sort | uniq | fzf +s --tac --prompt='Run command: ' | sed 's/ *[0-9]* *//')"
+    cmd="$(history | cut -c 8- | sort | uniq | fzf +s --tac --prompt='Run command: ')"
     [ ! "$cmd" ] && return
     echo "$cmd" | xclip -selection clipboard
     sleep 0.1 && xdotool key --delay {{1}} ctrl+shift+v
@@ -294,10 +293,13 @@ alias gitl='git log'
 
 alias gitw='git worktree'
 alias gitwa='git worktree add'
+alias gitwr='git worktree remove'
 alias gitwl='git worktree list'
-alias git-clone='git clone --bare'
-# If you bare clone a local repo, the following is a origin fix:
-# git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+git-clone() {
+    # If you bare clone a local repo, the following is a origin fix:
+    # git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+    git clone --bare "$1" && z "$1.git" && git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*" && zz
+}
 
 git-worktree() {
     folder=$(basename "$PWD")
@@ -934,6 +936,10 @@ cd() {
 # find() {
 #     echo "Use fdfind instead!"
 # }
+
+sed() {
+    echo "Use sd instead!"
+}
 
 rm() {
     echo "Use rip instead!"
