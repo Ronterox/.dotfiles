@@ -195,6 +195,7 @@ alias fd='fdfind'
 eval "$(thefuck --alias)"
 eval "$(caddy completion bash)"
 eval "$(argc --argc-completions bash)"
+eval "$(start-tool)"
 
 # ------------------- File Handling -------------------
 
@@ -539,11 +540,13 @@ tmux-send-cmd() {
     tmux new-window -n "$win_title" -d && tmux send-keys -t "$win_title" "$cmd" Enter
 }
 
+send() { tmux-send-cmd "$@" "$0 $*"; }
+
 # ------------------- Project Management -------------------
 
 PR_DIRS=(~/Documents/Projects/ ~/.dotfiles)
 
-cdpc() { cdp -c ". start || nvim ." $@; }
+cdpc() { cdp -c "start" "$@"; }
 
 export -f cdpc
 
@@ -936,10 +939,6 @@ cd() {
 # find() {
 #     echo "Use fdfind instead!"
 # }
-
-sed() {
-    echo "Use sd instead!"
-}
 
 rm() {
     echo "Use rip instead!"

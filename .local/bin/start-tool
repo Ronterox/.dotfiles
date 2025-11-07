@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# @describe Framework extension for bashrc and my start file system
+# @version 0.0.1
+# @meta require-tools argc
+
+set -e
+
+main() {
+    cat <<EOF
+    start() {
+        if [ \$# -eq 0 ]; then
+            . start || ./start
+        else
+            start-tool "\$@"
+        fi
+    }
+EOF
+}
+
+# @cmd Extends your shell with special functions
+extend() {
+    depts=(tmux-send-cmd z send)
+    regex=""
+    for dept in "${depts[@]}"; do
+        patterns="^$dept\(\)\s*\{([^{}]|\{[^{}]*\})*\}|^alias $dept"
+        if [ -n "$regex" ]; then
+            regex="$regex|$patterns"
+        else
+            regex="$patterns"
+        fi
+    done
+    rg -U "$regex" < ~/.bashrc
+}
+
+# @cmd Creates a new start file or upgrades an existing one
+# @arg fn*
+# @meta require-tools sd
+create() {
+    isclassic=false
+    if [ -f start ]; then
+        isclassic=true
+        lines="---------------------------------------------"
+        echo -e "##### $PWD/start #####\n$lines"
+        cat start
+        echo -ne "\n$lines\nThere is already a start file, do you want to upgrade it to a framework? [y/n]: "
+        read -r confirm
+        [[ "$confirm" =~ ^[nN][oO]? ]] && return
+    fi
+
+    cd /tmp && [ -f Argcfile.sh ] && rm Argcfile.sh
+    argc --argc-create main "${argc_fn[@]}" > /dev/null
+    [ $isclassic ] && sd 'echo TODO main' "$(cat start)" Argcfile.sh
+
+    sed -i '$i eval "$(start extend)"' Argcfile.sh
+
+    cd - && mv /tmp/Argcfile.sh start && chmod +x start
+    echo "start file created!"
+}
+
+# See more details at https://github.com/sigoden/argc
+eval "$(argc --argc-eval "$0" "$@")"
