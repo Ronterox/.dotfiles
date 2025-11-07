@@ -36,6 +36,8 @@ gh-lsf() {
 asdf-plugins() { gh-lsf asdf-vm asdf-plugins master | rg ^plugins | cut -d'/' -f2; }
 
 # @cmd List all dependencies of the start file.
+# @alias requirements
+# @alias dependencies
 deps() {
     deps=$(rg '@meta\s*requirements\s*([^#]+)|@meta\s*require-tools\s*([^#]+)' -o -r '$1$2' "start" | tr ',' '\n' | sort | uniq)
     if [ -z "$deps" ]; then
@@ -50,6 +52,7 @@ deps() {
 }
 
 # @cmd Installs all the start file runtime dependencies through asdf.
+# @alias i
 install() {
     deps=$(rg '@meta\s*requirements\s*([^#]+)' -o -r '$1' "start" | tr ',' '\n' | sort | uniq)
     if [ -z "$deps" ]; then
