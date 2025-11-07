@@ -32,7 +32,7 @@ gh-lsf() {
     curl -s "$GH_BASE_URL/repos/$user/$repo/git/trees/$branch?recursive=${recursive:-0}" | jq -r '.tree[] | select(.type == "blob") | .path'
 }
 
-# @cmd
+# @cmd List all asdf (runtime dependencies manager) plugins available.
 asdf-plugins() { gh-lsf asdf-vm asdf-plugins master | rg ^plugins | cut -d'/' -f2; }
 
 # @cmd List all dependencies of the start file.
@@ -49,7 +49,7 @@ deps() {
     done
 }
 
-# @cmd Installs all the runtime dependencies through asdf
+# @cmd Installs all the start file runtime dependencies through asdf.
 install() {
     deps=$(rg '@meta\s*requirements\s*([^#]+)' -o -r '$1' "start" | tr ',' '\n' | sort | uniq)
     if [ -z "$deps" ]; then
