@@ -63,7 +63,7 @@ install() {
         else
             echo "Installing $dep..."
             if asdf plugin add "$dep"; then
-                asdf install "$dep"
+                asdf install "$dep" || asdf install "$dep" latest
             else
                 results=$(asdf-plugins | fzf --filter "$dep" | tr '\n' ',')
                 echo "Did you mean any of these?" $results
