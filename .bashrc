@@ -196,6 +196,7 @@ eval "$(thefuck --alias)"
 eval "$(caddy completion bash)"
 eval "$(argc --argc-completions bash)"
 eval "$(start-tool)"
+eval "$(asdf completion bash)"
 
 # ------------------- File Handling -------------------
 

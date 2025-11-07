@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # @describe Framework extension for bashrc and my start file system
-# @version 0.0.1
-# @meta require-tools argc
+# @version 1
+# @meta requirements argc,fzf,rust
+# @meta require-tools argc,asdf
 
 set -e
 
@@ -19,6 +20,56 @@ main() {
         fi
     }
 EOF
+}
+
+GH_BASE_URL="https://api.github.com"
+
+gh-lsf() {
+    user=$1
+    repo=$2
+    branch=$3
+    recursive=$4
+    curl -s "$GH_BASE_URL/repos/$user/$repo/git/trees/$branch?recursive=${recursive:-0}" | jq -r '.tree[] | select(.type == "blob") | .path'
+}
+
+# @cmd
+asdf-plugins() { gh-lsf asdf-vm asdf-plugins master | rg ^plugins | cut -d'/' -f2; }
+
+# @cmd List all dependencies of the start file.
+deps() {
+    deps=$(rg '@meta\s*requirements\s*([^#]+)|@meta\s*require-tools\s*([^#]+)' -o -r '$1' "start" | tr ',' '\n' | sort | uniq)
+    if [ -z "$deps" ]; then
+        echo "No dependencies found."
+        return
+    fi
+
+    echo "Dependencies:"
+    for dep in $deps; do
+        echo "- $dep"
+    done
+}
+
+# @cmd Installs all the runtime dependencies through asdf
+install() {
+    deps=$(rg '@meta\s*requirements\s*([^#]+)' -o -r '$1' "start" | tr ',' '\n' | sort | uniq)
+    if [ -z "$deps" ]; then
+        echo "No dependencies found."
+        return
+    fi
+
+    for dep in $deps; do
+        if hash "$dep" 2>/dev/null; then
+            echo "$dep already installed."
+        else
+            echo "Installing $dep..."
+            if asdf plugin add "$dep"; then
+                asdf install "$dep"
+            else
+                results=$(asdf-plugins | fzf --filter "$dep" | tr '\n' ',')
+                echo "Did you mean any of these?" $results
+            fi
+        fi
+    done
 }
 
 # @cmd Extends your shell with special functions
