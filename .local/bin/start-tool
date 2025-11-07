@@ -9,7 +9,11 @@ main() {
     cat <<EOF
     start() {
         if [ \$# -eq 0 ]; then
-            . start || ./start
+            if [ -x start ]; then
+                ./start
+            else
+                . start
+            fi
         else
             start-tool "\$@"
         fi
@@ -51,7 +55,7 @@ create() {
     argc --argc-create main "${argc_fn[@]}" > /dev/null
     [ $isclassic ] && sd 'echo TODO main' "$(cat start)" Argcfile.sh
 
-    sed -i '$i eval "$(start extend)"' Argcfile.sh
+    sed -i '$i eval "$(start-tool extend)"' Argcfile.sh
 
     cd - && mv /tmp/Argcfile.sh start && chmod +x start
     echo "start file created!"
