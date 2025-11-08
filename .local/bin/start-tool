@@ -41,7 +41,11 @@ main() {
                 . start
             fi
         else
-            start-tool "\$@"
+            if [ -x start ]; then
+                start-tool "\$@" || ./start "\$@"
+            else
+                start-tool "\$@"
+            fi
         fi
     }
 EOF
