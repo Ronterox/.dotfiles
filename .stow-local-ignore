@@ -4,3 +4,4 @@ env
 \.git
 start
 README\.md
+Dockerfile

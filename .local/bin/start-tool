@@ -1,8 +1,27 @@
 #!/usr/bin/env bash
 # @describe Framework extension for bashrc and my start file system
-# @version 1
-# @meta requirements argc,fzf,rust
-# @meta require-tools argc,asdf
+# @version 1.2
+# @meta require-tools argc
+
+install_missing() {
+    declare -A PKG_INSTALL=([apt]="install" [dnf]="install" [yum]="install" [pacman]="-S" [apk]="add" [brew]="install")
+
+    for pkg in "${!PKG_INSTALL[@]}"; do
+        if hash "$pkg" 2>/dev/null; then
+            PKG="$pkg"
+            break
+        fi
+    done
+
+    for req in "${@}"; do
+        if ! hash "$req" 2>/dev/null; then
+            echo "$req is not installed, proceeding to install it through $PKG"
+            $PKG "${PKG_INSTALL[$PKG]}" "$req"
+        fi
+    done
+}
+
+install_missing git curl
 
 set -e
 
@@ -35,6 +54,32 @@ gh-lsf() {
 # @cmd List all asdf (runtime dependencies manager) plugins available.
 asdf-plugins() { gh-lsf asdf-vm asdf-plugins master | rg ^plugins | cut -d'/' -f2; }
 
+# @cmd Installs asdf if not installed.
+asdf-install() {
+    version="v0.18.0"
+    repo="https://github.com/asdf-vm/asdf"
+    if ! hash asdf 2>/dev/null; then
+        echo "asdf is not installed, proceeding to install it."
+        if [[ "$(uname -s)" == "Linux" ]]; then
+            declare -A archs=([x86_64]="amd64" [arm64]="arm64" [aarch64]="arm64" [i686]="386" [i386]="386")
+            target="asdf-$version-linux-${archs[$(arch)]}.tar.gz"
+            wget "$repo/releases/download/$version/$target"
+            tar xvzf "$target" && rm "$target"
+        else
+            install_missing go make
+            if hash go 2>/dev/null; then
+                git clone $repo.git --branch $version
+                mv asdf /tmp && cd /tmp/asdf && make
+            else
+                echo "No method of automatic installation available for asdf on your system"
+                echo "Please checkout $repo/releases"
+                exit 1
+            fi
+        fi
+        mv asdf /usr/local/bin && echo 'export PATH=$PATH:$HOME/.asdf/shims' >> ~/.bashrc
+    fi
+}
+
 # @cmd List all dependencies of the start file.
 # @alias deps,requirements
 dependencies() {
@@ -59,6 +104,8 @@ install() {
         return
     fi
 
+    asdf-install
+
     for dep in $deps; do
         if hash "$dep" 2>/dev/null; then
             echo "$dep already installed."
@@ -66,6 +113,7 @@ install() {
             echo "Installing $dep..."
             if asdf plugin add "$dep"; then
                 asdf install "$dep" || asdf install "$dep" latest
+                asdf reshim "$dep"
             else
                 results=$(asdf-plugins | fzf --filter "$dep" | tr '\n' ',')
                 echo "Did you mean any of these?" $results
@@ -91,14 +139,14 @@ extend() {
 
 # @cmd Creates a new start file or upgrades an existing one
 # @arg fn*
-# @meta require-tools sd
+# @meta require-tools sed
 create() {
-    isclassic=false
+    contents=""
     if [ -f start ]; then
-        isclassic=true
+        contents="$(cat start)"
         lines="---------------------------------------------"
         echo -e "##### $PWD/start #####\n$lines"
-        cat start
+        echo "$contents"
         echo -ne "\n$lines\nThere is already a start file, do you want to upgrade it to a framework? [y/n]: "
         read -r confirm
         [[ "$confirm" =~ ^[nN][oO]? ]] && return
@@ -106,13 +154,22 @@ create() {
 
     cd /tmp && [ -f Argcfile.sh ] && rm Argcfile.sh
     argc --argc-create main "${argc_fn[@]}" > /dev/null
-    [ $isclassic ] && sd 'echo TODO main' "$(cat start)" Argcfile.sh
-
+    if [ -n "$contents" ]; then
+        sed "s/^/    /g" <(echo "$contents") > /tmp/contents
+        sed -i -e '/echo TODO main/{r /tmp/contents' -e 'd}' Argcfile.sh
+    fi
     sed -i '$i eval "$(start-tool extend)"' Argcfile.sh
 
     cd - && mv /tmp/Argcfile.sh start && chmod +x start
     echo "start file created!"
 }
+
+if ! hash argc 2>/dev/null; then
+    echo "argc is not installed, proceeding to look for asdf installation method"
+    asdf-install && asdf plugin add argc && asdf install argc latest && asdf reshim argc && echo "argc $(asdf latest argc)" >> ~/.tool-versions
+    echo "Restart your shell to apply the changes."
+    exit 0
+fi
 
 # See more details at https://github.com/sigoden/argc
 eval "$(argc --argc-eval "$0" "$@")"
