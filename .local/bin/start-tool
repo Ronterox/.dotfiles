@@ -14,14 +14,20 @@ install_missing() {
     done
 
     for req in "${@}"; do
+        if [[ "$req" =~ ^([^:]+):([^:]+)$ ]]; then
+            req="${BASH_REMATCH[1]}"
+            pkg="${BASH_REMATCH[2]}"
+        else
+            pkg="$req"
+        fi
         if ! hash "$req" 2>/dev/null; then
-            echo "$req is not installed, proceeding to install it through $PKG"
-            $PKG "${PKG_INSTALL[$PKG]}" "$req"
+            echo "$pkg is not installed, proceeding to install it through $PKG"
+            $PKG "${PKG_INSTALL[$PKG]}" "$pkg"
         fi
     done
 }
 
-install_missing git curl
+install_missing git curl rg:ripgrep
 
 set -e
 
@@ -113,7 +119,7 @@ install() {
             echo "Installing $dep..."
             if asdf plugin add "$dep"; then
                 asdf install "$dep" || asdf install "$dep" latest
-                asdf reshim "$dep"
+                echo "$dep $(asdf latest "$dep")" >> ~/.tool-versions
             else
                 results=$(asdf-plugins | fzf --filter "$dep" | tr '\n' ',')
                 echo "Did you mean any of these?" $results
@@ -166,7 +172,7 @@ create() {
 
 if ! hash argc 2>/dev/null; then
     echo "argc is not installed, proceeding to look for asdf installation method"
-    asdf-install && asdf plugin add argc && asdf install argc latest && asdf reshim argc && echo "argc $(asdf latest argc)" >> ~/.tool-versions
+    asdf-install && asdf plugin add argc && asdf install argc latest && echo "argc $(asdf latest argc)" >> ~/.tool-versions
     echo "Restart your shell to apply the changes."
     exit 0
 fi
