@@ -1,6 +1,6 @@
 # general settings
 auto-reload yes
-max-items 100
+max-items 1000
 
 # externel browser
 browser "w3m %u"

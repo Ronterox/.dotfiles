@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
-url="http://richserver:6040/"
+HOSTURL="http://richserver:6040/"
 # url="http://localhost:6040/"
 
-repourl="https://raw.githubusercontent.com/Ronterox/.dotfiles/refs/heads/linux/.local/bin/jkl"
-methods=(get upload delete fzf ssh ip location update send 0x0 0x0text shorta weather mapscii uptime joke nyan games yt-url)
+REPO="https://raw.githubusercontent.com/Ronterox/.dotfiles/refs/heads/linux/.local/bin/jkl"
+METHODS=(get upload delete fzf ssh ip location update send 0x0 0x0text shorta weather mapscii uptime joke nyan games yt-url)
 
 case "$1" in
     --help|-h)
         echo -e "Usage: $0 [method] [filepath/query] [name]\n"
         echo "Available methods:"
-        for method in "${methods[@]}"; do
+        for method in "${METHODS[@]}"; do
             echo "  $method"
         done
         echo -e "Examples:\n  $0 /path/to/file \n  $0 :delete /path/to/file\n  $0 :upload /path/to/file\n  $0 :upload /path/to/file newname.txt\n"
@@ -23,17 +23,17 @@ case "$1" in
             echo "Cannot upload without a filepath!"
             exit 1
         fi
-        curl -# -F "file=@$2" "$url${3:-$2}"
+        curl -# -F "file=@$2" "$HOSTURL${3:-$2}"
         ;;
     :delete)
         if [ -z "$2" ]; then
             echo "Cannot delete without a filepath!"
             exit 1
         fi
-        curl -X DELETE -# "$url$2"
+        curl -X DELETE -# "$HOSTURL$2"
         ;;
     :fzf)
-        result=$(curl "$url$2" | fzf --border)
+        result=$(curl "$HOSTURL$2" | fzf --border)
         if [ -z "$result" ]; then
             exit 1
         fi
@@ -50,7 +50,7 @@ case "$1" in
         xh -b api.ip2location.io
         ;;
     :update)
-        curl "$repourl" > "$0"
+        curl "$REPO" > "$0"
         ;;
     :send)
         shift
@@ -90,16 +90,16 @@ case "$1" in
         ;;
     :uptime)
         email=$2
-        url=$3
+        HOSTURL=$3
         if [ -z "$email" ]; then
             echo "No email provided!"
             exit 1
         fi
-        if [ -z "$url" ]; then
+        if [ -z "$HOSTURL" ]; then
             echo "No URL provided!"
             exit 1
         fi
-        xhs "ping.gl/$email/$url"
+        xhs "ping.gl/$email/$HOSTURL"
         ;;
     :joke)
         xhs -b icanhazdadjoke.com user-agent:curl/7.64.1
@@ -129,12 +129,12 @@ case "$1" in
         eval "$selected"
         ;;
     :yt-url)
-        url=$2
-        if [ -z "$url" ]; then
+        HOSTURL=$2
+        if [ -z "$HOSTURL" ]; then
             echo "No URL provided!"
             exit 1
         fi
-        xhs -b "$url" user-agent:curl/7.64.1 | pup 'link[href*="/channel/"] attr{href}'
+        xhs -b "$HOSTURL" user-agent:curl/7.64.1 | pup 'link[href*="/channel/"] attr{href}'
         ;;
     :*)
         echo "Invalid method!"
@@ -142,6 +142,6 @@ case "$1" in
         exit 1
         ;;
     *)
-        curl -# "$url$1"
+        curl -# "$HOSTURL$1"
         ;;
 esac

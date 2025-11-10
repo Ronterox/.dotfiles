@@ -2,13 +2,16 @@
 
 if [ $# -eq 0 ]; then
     clear && figlet "ANX" | lolcat
-    jrnl @should @annoying @will @need -not @done && doing today
+    jrnl @should @annoying @will @need -not @done && "$0" todo ~/Documents/Projects/ && doing recent
     exit 0
 fi
 
 case "$1" in
-    today|now|done|later|did|select|recent|undo)
+    today|now|next|done|later|did|select|recent|undo|begin)
         doing "$@"
+        ;;
+    todo)
+        rg --max-depth 5 TODO: "${2:-.}"
         ;;
     *)
         jrnl "$@"
