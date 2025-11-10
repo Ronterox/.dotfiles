@@ -3,7 +3,7 @@
 HOSTURL="http://richserver:6040/"
 # url="http://localhost:6040/"
 
-REPO="https://raw.githubusercontent.com/Ronterox/.dotfiles/refs/heads/linux/.local/bin/jkl"
+REPO="https://shorta.link/stSYx29a"
 METHODS=(get upload delete fzf ssh ip location update send 0x0 0x0text shorta weather mapscii uptime joke nyan games yt-url)
 
 case "$1" in
@@ -104,9 +104,6 @@ case "$1" in
     :joke)
         xhs -b icanhazdadjoke.com user-agent:curl/7.64.1
         ;;
-    :nyan)
-        curl ascii.live/nyan
-        ;;
     :games)
         games=(
             "ssh sshtron.zachlatta.com"
@@ -135,6 +132,105 @@ case "$1" in
             exit 1
         fi
         xhs -b "$HOSTURL" user-agent:curl/7.64.1 | pup 'link[href*="/channel/"] attr{href}'
+        ;;
+    :upload-config)
+        if [ -z "$2" ]; then
+            echo "No filepath provided!"
+            exit 1
+        fi
+        baseurl="https://api.jsonbin.io/v3"
+        name=$(basename "$2")
+        yq -o=json "$2" | xh "$baseurl/b" X-Master-key:"$(pass show api/jsonbin)" X-Bin-Name:"$name" | yq .metadata
+        ;;
+    :get-config)
+        if [ -z "$2" ]; then
+            echo "No filepath provided!"
+            exit 1
+        fi
+        baseurl="https://api.jsonbin.io/v3"
+        xh "$baseurl/b/$2" X-Master-key:"$(pass show api/jsonbin)" | yq .record -o=yaml -P
+        ;;
+    :httpbin)
+        baseurl="http(s)://httpbin.org"
+        echo "Download $baseurl/image/[format] E.g png,jpeg,etc"
+        echo "Test methods: $baseurl/[method] E.g get,post,etc"
+        echo "Get Status code: $baseurl/status/[code] E.g 200,404,etc, supports any method"
+        echo "Get Headers: $baseurl/headers"
+        echo "Get IP: $baseurl/ip"
+        echo "Get User Agent: $baseurl/user-agent"
+        echo "Return format: $baseurl/[format] E.g json,xml,gzip,etc"
+        echo "Delay request: $baseurl/delay/[seconds], supports any method"
+        echo "Streaming: $baseurl/stream/[n], n is the number of chunks to stream"
+        echo "stream=json,stream-bytes=bytes"
+        ;;
+    :compile)
+        baseurl="https://wandbox.org/api"
+        compiler=$(xh -F "$baseurl/list.json" | jq -c '.[] | {language,name}' | fzf --layout=reverse) && [ -z "$compiler" ] && exit 1
+        language=$(echo "$compiler" | jq -r .language) && name=$(echo "$compiler" | jq -r .name)
+        if [ -z "$2" ]; then
+            tmp=$(mktemp)
+            nvim "$tmp" -c "set filetype=${language,,}"
+            code=$(cat "$tmp")
+            if [ -z "$code" ]; then
+                echo "No code provided!"
+                exit 1
+            fi
+        else
+            code=$(cat "$2")
+        fi
+        echo "Compiling..."
+        echo "$code"
+        xh --json "$baseurl/compile.json" compiler="$name" code="$code" | yq -P
+        ;;
+    :waifu)
+        declare -A categories=(
+            [sfw]="waifu neko shinobu megumin bully cuddle cry hug awoo kiss lick pat smug bonk yeet blush smile wave highfive handhold nom bite glomp slap kill kick happy wink poke dance cringe"
+            [nsfw]="waifu neko trap blowjob"
+        )
+
+        echo "Selecting category..."
+        category=$(printf "%s\n" "${!categories[@]}" | fzf --layout=reverse)
+        [ -z "$category" ] && exit 1
+
+        # Split the space-separated tags into an array
+        IFS=' ' read -r -a tags <<< "${categories[$category]}"
+
+        # Select image/tag
+        echo "Selecting image..."
+        image=$(printf "%s\n" "${tags[@]}" | fzf --layout=reverse)
+        [ -z "$image" ] && exit 1
+
+        while true; do
+            tmp=$(mktemp)
+            url=$(xhs -b "https://api.waifu.pics/$category/$image" | jq -r .url)
+            xh -b "$url" -d -o="$tmp" && timg "$tmp" && rip "$tmp"
+            echo "url: $url" && read -r -p "Press enter to continue, or ctrl+c to exit: "
+        done
+        ;;
+    :waifu2)
+        declare -A categories=(
+            [sfw]="waifu maid oppai selfies uniform"
+            [nsfw]="ero ass hentai milf oral paizuri ecchi"
+        )
+
+        echo "Selecting category..."
+        category=$(printf "%s\n" "${!categories[@]}" | fzf --layout=reverse)
+        [ -z "$category" ] && exit 1
+
+        # Split the space-separated tags into an array
+        IFS=' ' read -r -a tags <<< "${categories[$category]}"
+
+        # Select image/tag
+        echo "Selecting image..."
+        image=$(printf "%s\n" "${tags[@]}" | fzf --layout=reverse)
+        [ -z "$image" ] && exit 1
+
+        while true; do
+            tmp=$(mktemp)
+            url=$(xh 'https://api.waifu.im/search' "included_tags==$image" | jq -r '.images | .[0].url')
+            xh -b "$url" -d -o="$tmp" && timg "$tmp" && rip "$tmp"
+            echo "url: $url" && read -r -p "Press enter to continue, or ctrl+c to exit: "
+        done
         ;;
     :*)
         echo "Invalid method!"
