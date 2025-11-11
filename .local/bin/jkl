@@ -3,9 +3,9 @@
 HOSTURL="http://richserver:6040/"
 # url="http://localhost:6040/"
 
+ME="jkl"
 REPO="shorta.link/stSYx29a"
-METHODS=(get upload delete fzf ssh ip location update send 0x0 0x0text shorta weather mapscii uptime joke nyan games yt-url)
-ME=${BASH_SOURCE[0]}
+METHODS=(get upload delete fzf ssh ip location update send 0x0 0x0text shorta weather mapscii uptime joke games yt-url)
 
 case "$1" in
     --help|-h)
@@ -239,11 +239,12 @@ case "$1" in
             exit 1
         fi
 		cache=$(mktemp)
-		cat <<- END
+		echo "#!/usr/bin/env -S $ME :run"
+		cat <<- END | brotli | base64 -w 0
 			#!/usr/bin/env bash
-			eval \$(echo $(echo "[ -x $cache ] && $cache \"\$@\" && exit \$?" | base64 -w 0) | base64 -d)
-			echo $(cat $2 | "$ME" :encrypt) | $ME :decrypt > "\$(echo $(echo $cache | base64 -w 0) | base64 -d)"
-			eval \$(echo $(echo "chmod +x $cache && $cache \"\$@\"" | base64 -w 0) | base64 -d)
+			[ -x $cache ] && $cache "\$@" && exit \$?
+			echo $(cat $2 | "$ME" :encrypt) | $ME :decrypt > $cache
+			chmod +x $cache && $cache "\$@"
 		END
         ;;
     :encrypt)
@@ -260,6 +261,11 @@ case "$1" in
         fi
         cat $2 | base64 -d | openssl enc -aes-256-cbc -d -pbkdf2 -salt -pass "pass:$(pass show phrase/openssl)" | brotli -d
         ;;
+	:run)
+		data=$2
+		shift 2
+		eval "$(cat "$data" | tail -n +2 | base64 -d | brotli -d)"
+		;;
     :*)
         echo "Invalid method!"
         echo "Try 'jkl --help' for more information"
