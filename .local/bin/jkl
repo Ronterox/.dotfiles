@@ -232,19 +232,33 @@ case "$1" in
             echo "url: $url" && read -r -p "Press enter to continue, or ctrl+c to exit: "
         done
         ;;
-    encrypt)
+    :xencrypt)
         if [ -t 0 ] && [ -z "$2" ]; then
             echo "No text/filepath provided!"
             exit 1
         fi
-        cat $2 | gzip | openssl enc -aes-256-cbc -salt -pbkdf2 -a
+        out=$(cat $2 | "$0" :encrypt)
+		cat <<- END
+			#!/usr/bin/env bash
+
+			cat << EOF | jkl :decrypt | bash -s -- "\$@"
+			$out
+			EOF
+		END
         ;;
-    decrypt)
+    :encrypt)
         if [ -t 0 ] && [ -z "$2" ]; then
             echo "No text/filepath provided!"
             exit 1
         fi
-        cat $2 | openssl enc -aes-256-cbc -d -a -pbkdf2 -salt | gunzip
+        cat $2 | gzip | openssl enc -aes-256-cbc -salt -pbkdf2 -a -pass "pass:$(pass show phrase/openssl)"
+        ;;
+    :decrypt)
+        if [ -t 0 ] && [ -z "$2" ]; then
+            echo "No text/filepath provided!"
+            exit 1
+        fi
+        cat $2 | openssl enc -aes-256-cbc -d -a -pbkdf2 -salt -pass "pass:$(pass show phrase/openssl)" | gunzip
         ;;
     :*)
         echo "Invalid method!"
