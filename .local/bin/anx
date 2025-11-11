@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
+todo() { rg --max-depth 5 TODO: "$1"; }
+
 if [ $# -eq 0 ]; then
     clear && figlet "ANX" | lolcat
-    jrnl @should @annoying @will @need -not @done && "$0" todo ~/Documents/Projects/ && doing recent
+    jrnl @should @annoying @will @need -not @done && todo ~/Documents/Projects/ && doing recent
     exit 0
 fi
 
@@ -11,7 +13,7 @@ case "$1" in
         doing "$@"
         ;;
     todo)
-        rg --max-depth 5 TODO: "${2:-.}"
+		todo "${2:-.}"
         ;;
     *)
         jrnl "$@"

@@ -237,12 +237,11 @@ case "$1" in
             echo "No text/filepath provided!"
             exit 1
         fi
-        out=$(cat $2 | "$0" :encrypt)
 		cat <<- END
 			#!/usr/bin/env bash
 
 			cat << EOF | jkl :decrypt | bash -s -- "\$@"
-			$out
+			$(cat $2 | "$0" :encrypt)
 			EOF
 		END
         ;;
