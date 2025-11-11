@@ -266,6 +266,9 @@ case "$1" in
 		shift 2
 		eval "$(cat "$data" | tail -n +2 | base64 -d | brotli -d)"
 		;;
+	:fact)
+		xhs uselessfacts.jsph.pl/api/v2/facts/random | yq .text
+		;;
     :*)
         echo "Invalid method!"
         echo "Try 'jkl --help' for more information"
