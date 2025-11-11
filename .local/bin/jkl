@@ -237,14 +237,14 @@ case "$1" in
             echo "No text/filepath provided!"
             exit 1
         fi
-        ${cat:-2} | gzip | openssl enc -aes-256-cbc -salt -pbkdf2 -a
+        cat $2 | gzip | openssl enc -aes-256-cbc -salt -pbkdf2 -a
         ;;
     decrypt)
         if [ -t 0 ] && [ -z "$2" ]; then
             echo "No text/filepath provided!"
             exit 1
         fi
-        ${cat:-2} | openssl enc -aes-256-cbc -d -a -pbkdf2 -salt | gunzip
+        cat $2 | openssl enc -aes-256-cbc -d -a -pbkdf2 -salt | gunzip
         ;;
     :*)
         echo "Invalid method!"
