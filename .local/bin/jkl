@@ -241,11 +241,9 @@ case "$1" in
 		cache=$(mktemp)
 		cat <<- END
 			#!/usr/bin/env bash
-			[ -x "$cache" ] && "$cache" "\$@" && exit \$?
-			cat << EOF | ${BASH_SOURCE[0]} :decrypt > "$cache"
-			$(cat $2 | "${BASH_SOURCE[0]}" :encrypt)
-			EOF
-			chmod +x "$cache" && "$cache" "\$@"
+			eval \$(echo $(echo "[ -x $cache ] && $cache \"\$@\" && exit \$?" | base64 -w 0) | base64 -d)
+			echo $(cat $2 | "$ME" :encrypt) | $ME :decrypt > "\$(echo $(echo $cache | base64 -w 0) | base64 -d)"
+			eval \$(echo $(echo "chmod +x $cache && $cache \"\$@\"" | base64 -w 0) | base64 -d)
 		END
         ;;
     :encrypt)
