@@ -5,18 +5,19 @@ HOSTURL="http://richserver:6040/"
 
 REPO="shorta.link/stSYx29a"
 METHODS=(get upload delete fzf ssh ip location update send 0x0 0x0text shorta weather mapscii uptime joke nyan games yt-url)
+ME=${BASH_SOURCE[0]}
 
 case "$1" in
     --help|-h)
-        echo -e "Usage: $0 [method] [filepath/query] [name]\n"
+        echo -e "Usage: $ME [method] [filepath/query] [name]\n"
         echo "Available methods:"
         for method in "${METHODS[@]}"; do
             echo "  $method"
         done
-        echo -e "Examples:\n  $0 /path/to/file \n  $0 :delete /path/to/file\n  $0 :upload /path/to/file\n  $0 :upload /path/to/file newname.txt\n"
+        echo -e "Examples:\n  $ME /path/to/file \n  $ME :delete /path/to/file\n  $ME :upload /path/to/file\n  $ME :upload /path/to/file newname.txt\n"
         ;;
     :get)
-        $0 "$2"
+        $ME "$2"
         ;;
     :upload)
         if [ -z "$2" ]; then
@@ -37,7 +38,7 @@ case "$1" in
         if [ -z "$result" ]; then
             exit 1
         fi
-        $0 "$result"
+        $ME "$result"
         ;;
     :ssh)
         echo "Connecting to server..."
@@ -50,7 +51,7 @@ case "$1" in
         xh -b api.ip2location.io
         ;;
     :update)
-        xhs -F -b "$REPO" > "$0"
+        xhs -F -b "$REPO" > "$ME"
         ;;
     :send)
         shift
@@ -86,7 +87,7 @@ case "$1" in
         xhs -b wttr.in/${2:-}
         ;;
     :mapscii)
-        xhs -b mapscii.me
+        telnet mapscii.me
         ;;
     :uptime)
         email=$2
@@ -237,12 +238,14 @@ case "$1" in
             echo "No text/filepath provided!"
             exit 1
         fi
+		cache=$(mktemp)
 		cat <<- END
 			#!/usr/bin/env bash
-
-			cat << EOF | jkl :decrypt | bash -s -- "\$@"
-			$(cat $2 | "$0" :encrypt)
+			[ -x "$cache" ] && "$cache" "\$@" && exit \$?
+			cat << EOF | ${BASH_SOURCE[0]} :decrypt > "$cache"
+			$(cat $2 | "${BASH_SOURCE[0]}" :encrypt)
 			EOF
+			chmod +x "$cache" && "$cache" "\$@"
 		END
         ;;
     :encrypt)
@@ -250,14 +253,14 @@ case "$1" in
             echo "No text/filepath provided!"
             exit 1
         fi
-		cat $2 | brotli | openssl enc -aes-256-cbc -salt -pbkdf2 -a -pass "pass:$(pass show phrase/openssl)"
+		cat $2 | brotli | openssl enc -aes-256-cbc -salt -pbkdf2 -pass "pass:$(pass show phrase/openssl)" | base64 -w 0
         ;;
     :decrypt)
         if [ -t 0 ] && [ -z "$2" ]; then
             echo "No text/filepath provided!"
             exit 1
         fi
-        cat $2 | openssl enc -aes-256-cbc -d -a -pbkdf2 -salt -pass "pass:$(pass show phrase/openssl)" | brotli -d
+        cat $2 | base64 -d | openssl enc -aes-256-cbc -d -pbkdf2 -salt -pass "pass:$(pass show phrase/openssl)" | brotli -d
         ;;
     :*)
         echo "Invalid method!"
