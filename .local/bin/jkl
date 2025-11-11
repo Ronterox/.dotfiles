@@ -251,14 +251,14 @@ case "$1" in
             echo "No text/filepath provided!"
             exit 1
         fi
-        cat $2 | gzip | openssl enc -aes-256-cbc -salt -pbkdf2 -a -pass "pass:$(pass show phrase/openssl)"
+		cat $2 | brotli | openssl enc -aes-256-cbc -salt -pbkdf2 -a -pass "pass:$(pass show phrase/openssl)"
         ;;
     :decrypt)
         if [ -t 0 ] && [ -z "$2" ]; then
             echo "No text/filepath provided!"
             exit 1
         fi
-        cat $2 | openssl enc -aes-256-cbc -d -a -pbkdf2 -salt -pass "pass:$(pass show phrase/openssl)" | gunzip
+        cat $2 | openssl enc -aes-256-cbc -d -a -pbkdf2 -salt -pass "pass:$(pass show phrase/openssl)" | brotli -d
         ;;
     :*)
         echo "Invalid method!"
