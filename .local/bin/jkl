@@ -3,7 +3,7 @@
 HOSTURL="http://richserver:6040/"
 # url="http://localhost:6040/"
 
-REPO="https://shorta.link/stSYx29a"
+REPO="shorta.link/stSYx29a"
 METHODS=(get upload delete fzf ssh ip location update send 0x0 0x0text shorta weather mapscii uptime joke nyan games yt-url)
 
 case "$1" in
@@ -50,7 +50,7 @@ case "$1" in
         xh -b api.ip2location.io
         ;;
     :update)
-        curl "$REPO" > "$0"
+        xhs -F -b "$REPO" > "$0"
         ;;
     :send)
         shift
