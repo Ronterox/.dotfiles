@@ -5,7 +5,7 @@ message='<h1>You got mail!</h1><p>This is a <b>HTML</b> message.</p>'
 sender='mikoprogramming@gmail.com'
 subject="$metadata"
 target=''
-pass=$(pass show email/mikopass) # https://myaccount.google.com/apppasswords
+pass="${PASS:-}" # https://myaccount.google.com/apppasswords
 
 for argv in "$@"; do
     case $argv in

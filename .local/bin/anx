@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-todo() { rg --max-depth 5 TODO: "$1"; }
+todo() { rg --hidden --max-depth 5 TODO: "$1"; }
 
 if [ $# -eq 0 ]; then
     clear && figlet "ANX" | lolcat
@@ -15,6 +15,31 @@ case "$1" in
     todo)
 		todo "${2:-.}"
         ;;
+	schedule)
+		start_time="$2"
+		shift 2
+
+		IFS=':' read -r h m <<< "$start_time"
+		current_minutes=$((10#$h * 60 + 10#$m))
+
+		IFS='>'
+		indent=""
+		output=""
+		for task in $@; do
+			printf -v out "%02d:%02d %s\n" $((current_minutes/60)) $((current_minutes%60)) "$task"
+			output+="$out"
+
+			printf -v out '%s\->' "$indent"
+			output+="$out"
+
+			indent+=" "
+			current_minutes=$((current_minutes + 50))
+		done
+		printf -v out '%02d:%02d Done\n' $((current_minutes/60)) $((current_minutes%60))
+		output+="$out"
+
+		echo "$output" | lolcat -F 0.08 -p 1 -S 120 -a
+		;;
     *)
         jrnl "$@"
         ;;

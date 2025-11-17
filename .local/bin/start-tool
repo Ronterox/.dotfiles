@@ -187,6 +187,35 @@ create() {
     echo "start file created!"
 }
 
+# @cmd Builds the start file. also preprocess and parses macros as %(macro)%
+# @arg file! The start file to build.
+# @arg output The output file.
+# @alias b
+# @meta require-tools rg
+build() {
+	if [ ! -f "$argc_file" ]; then
+		echo "File $argc_file does not exist."
+		return
+	fi
+
+	output=$(cat "$argc_file")
+	while read -r cmd; do
+		output=${output//%($cmd)%/$(eval "$cmd" | sed 's/\$/\\$/g')}
+	done < <(rg '%\((.*)\)%' -r '$1' "$argc_file")
+	output=${output//eval \"\$(start-tool extend)\"/$(extend)}
+
+	if [ -n "$argc_output" ]; then
+		echo "$output" > "$argc_output"
+		argc --argc-build "$argc_output" "$argc_output"
+		echo "File $argc_output created."
+	else
+		tmp=$(mktemp)
+		echo "$output" > "$tmp"
+		argc --argc-build "$tmp"
+		rm "$tmp"
+	fi
+}
+
 if ! hash argc 2>/dev/null; then
     echo "argc is not installed, proceeding to look for asdf installation method"
     asdf-install && asdf plugin add argc && asdf install argc latest && echo "argc $(asdf latest argc)" >> ~/.tool-versions
