@@ -1,0 +1,25 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/bookmarks
+
+- Developer:
+    - Github:
+        - abbr: GH
+          icon: github.png
+          href: https://github.com/
+
+- Social:
+    - Whatsapp:
+        - abbr: WS
+          icon: whatsapp.png
+          href: https://web.whatsapp.com
+    - Telegram:
+        - abbr: TG
+          icon: telegram.png
+          href: co://web.telegram.org/a/#6006007757
+
+- Entertainment:
+    - YouTube:
+        - abbr: YT
+          icon: youtube.png
+          href: https://www.youtube.com/feed/playlists

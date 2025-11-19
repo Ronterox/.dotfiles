@@ -1,0 +1,37 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/info-widgets/
+
+- datetime:
+    text_size: md
+    # 1/23/22, 1:37 PM
+    format:
+      dateStyle: short
+      timeStyle: short
+      hour12: true
+
+- resources:
+    cpu: true
+    memory: true
+    disk: /
+
+- search:
+    provider: custom
+    url: https://claude.ai/new?q=
+    target: _blank
+    suggestionUrl: https://ac.ecosia.org/autocomplete?type=list&q=
+    showSearchSuggestions: true
+
+- glances:
+  url: http://richserver:6125
+  # username: user # optional if auth enabled in Glances
+  # password: pass # optional if auth enabled in Glances
+  version: 4 # required only if running glances v4 or higher, defaults to 3
+  cpu: true
+  mem: true
+  cputemp: true
+  uptime: true
+  disk: /
+  diskUnits: bytes # optional, bytes (default) or bbytes. Only applies to disk
+  expanded: true # show the expanded view
+  label: richserver

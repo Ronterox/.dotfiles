@@ -1,0 +1,9 @@
+remote_host    richserver
+remote_user    rontero
+remote_port    22
+remote_path    /home/rontero/HomePage/config/
+ignore_path     ["logs/"]
+ignore_dotfiles 1
+auto_sync_up    1
+remote_or_local remote
+sleep_before_sync 0

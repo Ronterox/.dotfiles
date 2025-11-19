@@ -434,11 +434,12 @@ docker-clean-dangling() {
 }
 
 docker-clean() {
-    docker-clean-dangling
     # Remove all containers and volumes
     docker rm -vf $(docker ps -aq)
     # Delete all images
     docker rmi -f $(docker images -aq)
+
+    docker-clean-dangling
 
     echo "All cleaned up!"
 }

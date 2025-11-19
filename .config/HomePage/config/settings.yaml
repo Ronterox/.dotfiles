@@ -1,0 +1,10 @@
+title: Ricardo Dev
+description: My home server lab
+showStats: true
+
+background:
+  image: https://images4.alphacoders.com/113/thumb-1920-1138933.jpg
+  blur: sm
+  saturate: 50
+  brightness: 25
+  opacity: 10

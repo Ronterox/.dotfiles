@@ -1,0 +1,28 @@
+---
+- File Hosting:
+    - Nextcloud:
+        icon: nextcloud.png
+        href: http://richserver:80
+        description: Next cloud file hosting
+    - Jellyfin:
+        icon: jellyfin.png
+        href: http://richserver:8096
+        description: Self hosted media streaming
+    - Photoprism:
+        icon: photoprism.png
+        href: http://richserver:2342
+        description: High speed quality photos library
+
+- Tools:
+    - Jenkins:
+        icon: jenkins.png
+        href: http://richserver:8080
+        description: Task builder utility server
+    - LazyDocker:
+        icon: docker.png
+        href: http://richserver:7682
+        description: Docker container management tool
+    - Glances:
+        icon: glances.png
+        href: http://richserver:6125
+        description: Top level visualizer system resources
