@@ -26,3 +26,9 @@
         icon: glances.png
         href: http://richserver:6125
         description: Top level visualizer system resources
+
+- Development:
+    - Gitea:
+        icon: gitea.png
+        href: http://richserver:3000
+        description: Git repository manager

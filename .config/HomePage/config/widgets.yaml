@@ -10,10 +10,10 @@
       timeStyle: short
       hour12: true
 
-- resources:
-    cpu: true
-    memory: true
-    disk: /
+# - resources:
+#     cpu: true
+#     memory: true
+#     disk: /
 
 - search:
     provider: custom

@@ -197,6 +197,7 @@ eval "$(caddy completion bash)"
 eval "$(argc --argc-completions bash)"
 eval "$(start-tool)"
 eval "$(asdf completion bash)"
+eval "$(lxc completion bash)"
 
 # ------------------- File Handling -------------------
 
@@ -872,39 +873,56 @@ project() {
         if (NR % 3 == 0) print ""
     }')
 
-cat <<EOF >>"$md"
-# $proj_name
+	cat <<-EOF >>"$md"
+	# $proj_name
 
-*$formatted_explanation*
+	*$formatted_explanation*
 
-**Path to completion:**
-- $first_step
-- ...
-- ...
-- ...
-- ...
+	**Path to completion:**
+	- $first_step
+	- ...
+	- ...
+	- ...
+	- ...
 
----
+	---
 
-#### What makes it finished?
+	#### What makes it finished?
 
-$complete_project
+	$complete_project
 
----
+	---
 
-#### Deadline:
+	#### Deadline:
 
-Will be finished in $taken by $deadline, else it won't be finished
+	Will be finished in $taken by $deadline, else it won't be finished
 
----
+	---
 
-#### Notes:
+	#### Notes:
 
-> $feeling.
-> $project_feeling.
+	> $feeling.
+	> $project_feeling.
 
-EOF
+	EOF
     echo "$md generated"
+
+	prompt="
+	I have created a README.md with my utility to clarify the project.
+	Can you help see more clarity into the project and help improve this README
+	so that we can have a clear development plan of what to do?
+
+	Please feel free to look into the project file and REAMDE.md itself.
+	"
+
+	echo "$prompt"
+
+	read -r -p "Any notes you want to add? " notes
+	if [ -n "$notes" ]; then
+		prompt="$prompt\nNote: $notes"
+	fi
+
+	gemini -ip "$prompt"
 }
 
 # ------------------- Startup -------------------

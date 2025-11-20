@@ -9,7 +9,7 @@ if [ $# -eq 0 ]; then
 fi
 
 case "$1" in
-    today|now|next|done|later|did|select|recent|undo|begin)
+    today|now|next|done|later|did|select|recent|undo|begin|show)
         doing "$@"
         ;;
     todo)

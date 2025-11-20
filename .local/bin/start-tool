@@ -147,7 +147,7 @@ install() {
 
 # @cmd Extends your shell with special functions
 extend() {
-    depts=(tmux-send-cmd z send gitv)
+    depts=(tmux-send-cmd z send git gitv gitac)
     regex=""
     for dept in "${depts[@]}"; do
         patterns="^$dept\(\)\s*\{([^{}]|\{[^{}]*\})*\}|^alias $dept"
