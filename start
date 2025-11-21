@@ -1,1 +1,28 @@
-stow . && nvim .
+#!/usr/bin/env bash
+
+set -e
+
+main() {
+    stow . && ${BASH_SOURCE[0]} help
+}
+
+# @cmd Opens setup for homepage
+homepage() {
+	cd .config/HomePage/config/
+	nvim .
+}
+
+# @cmd Opens setup for bashrc
+config() {
+	nvim .bashrc
+}
+
+# @cmd Opens setup for neovim
+neovim() {
+	cd .config/nvim/
+	nvim .
+}
+
+# See more details at https://github.com/sigoden/argc
+eval "$(start-tool extend)"
+eval "$(argc --argc-eval "$0" "$@")"

@@ -6,7 +6,15 @@
     - Github:
         - abbr: GH
           icon: github.png
-          href: https://github.com/
+          href: https://github.com
+    - Gitlab:
+        - abbr: GL
+          icon: gitlab.png
+          href: https://gitlab.com
+    - FilePizza:
+        - abbr: FP
+          icon: filepizza.png
+          href: https://file.pizza
 
 - Social:
     - Whatsapp:
@@ -19,7 +27,7 @@
           href: https://web.telegram.org/a/#6006007757
 
 - Entertainment:
-    - YouTube:
+    - Playlists:
         - abbr: YT
           icon: youtube.png
           href: https://www.youtube.com/feed/playlists
