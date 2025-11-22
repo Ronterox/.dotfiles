@@ -27,6 +27,8 @@ case "$1" in
             echo "Expected Time: $(date -u -d @$total +%T)"
         fi
 
+		read -rn1 -p "Press any key to run backup... "
+
         borgdaily "$REPOSITORY" && \
         bw list items --session "$(pass show env/bitwarden)" | pass insert -m -f bitwarden/backup
 
