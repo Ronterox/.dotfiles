@@ -32,14 +32,18 @@ PATH=$HOME/.local/share/umake/bin:$PATH
 
 export WINEPREFIX=~/.wine64/ WINEARCH=win64 wine64 # 64 instead of 32
 
+# ASDF
+
+export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
+
 # GoLang
 
-export PATH=$PATH:/usr/local/go/bin:$HOME/Documents/Program-Files/go/bin
+# export PATH=$PATH:/usr/local/go/bin:$HOME/Documents/Program-Files/go/bin
 export GOPATH=$HOME/Documents/Program-Files/go
 
 # Flutter
 
-export PATH=$PATH:$HOME/Documents/Program-Files/flutter/bin
+# export PATH=$PATH:$HOME/Documents/Program-Files/flutter/bin
 export CMAKE_MAKE_PROGRAM=/usr/bin/ninja # Compile fix
 export CMAKE_CXX_COMPILER=/usr/bin/g++ # Compile fix
 export CMAKE_C_COMPILER=/usr/bin/gcc # Compile fix

@@ -192,12 +192,12 @@ alias zz='z -' # omg
 alias fd='fdfind'
 
 # export <- also omg
-eval "$(thefuck --alias)"
-eval "$(caddy completion bash)"
-eval "$(argc --argc-completions bash)"
-eval "$(start-tool)"
-eval "$(asdf completion bash)"
-eval "$(lxc completion bash)"
+. <(thefuck --alias)
+. <(caddy completion bash)
+. <(argc --argc-completions bash)
+. <(start-tool)
+. <(asdf completion bash)
+. <(lxc completion bash)
 
 # ------------------- File Handling -------------------
 
@@ -412,8 +412,6 @@ alias ??='bang'
 # ------------------- Rust -------------------
 
 cargo-clean-cache() { rip -i ~/.cargo/registry/index/* ~/.cargo/.package-cache; }
-
-. "/home/rontero/.asdf/installs/rust/1.91.1/env"
 
 # ------------------- Java -------------------
 
