@@ -32,36 +32,31 @@ install_missing git curl rg:ripgrep
 set -e
 
 main() {
-    cat <<EOF
+    cat <<- 'EOF'
     start() {
-        if [ \$# -eq 0 ]; then
+        if [ $# -eq 0 ]; then
             if [ -x start ]; then
                 ./start
             else
                 . start || nvim .
             fi
         else
-            out=\$(start-tool "\$@" 2>&1)
-            result=\$?
+			if [[ "$1" =~ ^(-h|--help|help)$ ]]; then
+				start-tool "$1"
+				[ -x start ] && ./start "$1"
+				return
+			fi
 
-            if [ -x start ]; then
-                out2=\$(./start "\$@" 2>&1)
-                result2=\$?
+			if (start-tool --help 2>&1 | rg "^\s*$1"); then
+				start-tool "$@"
+			fi
 
-                if [ \$result -eq 0 ]; then
-                    # echo "First succeeded..."
-                    echo "\$out" && [ \$result2 -eq 0 ] && echo "\$out2"
-                elif [ \$result2 -eq 0 ]; then
-                    # echo "Just Second succeeded..."
-                    echo "\$out2"
-                else
-                    # echo "Both failed..."
-                    echo "\$out" && echo "\$out2"
-                fi
+			if [ -x start ] && (./start --help 2>&1 | rg "^\s*$1"); then
+                ./start "$@"
             fi
         fi
     }
-EOF
+	EOF
 }
 
 GH_BASE_URL="https://api.github.com"
@@ -170,9 +165,7 @@ create() {
         lines="---------------------------------------------"
         echo -e "##### $PWD/start #####\n$lines"
         echo "$contents"
-        echo -ne "\n$lines\nThere is already a start file, do you want to upgrade it to a framework? [y/n]: "
-        read -r confirm
-        [[ "$confirm" =~ ^[nN][oO]? ]] && return
+		echo -ne "\n$lines\nThere is already a start file, will move to main()."
     fi
 
     cd /tmp && [ -f Argcfile.sh ] && rm Argcfile.sh

@@ -57,11 +57,6 @@ export EDITOR='nvim'
 export MANPAGER='nvim +Man!'
 export PATH=$PATH:$HOME/.local/share/nvim/mason/bin
 
-# My Enviroment
-
-. "$HOME/.dotfiles/.env"
-
-
 [ -f "$HOME/.ghcup/env" ] && . "$HOME/.ghcup/env" # ghcup-env
 
 # >>> juliaup initialize >>>
@@ -85,12 +80,8 @@ export PATH=$VCPKG_ROOT:$PATH
 export PERL5LIB=$HOME/Documents/Program-Files/perl/lib/perl5:$PERL5LIB
 export PATH=$HOME/Documents/Program-Files/perl/bin:$PATH
 
-# Rust
-
-. "$HOME/.cargo/env"
-
 # Android
 
-export ANDROID_HOME=$HOME/Documents/Program-Files/Android/
+export ANDROID_HOME=$HOME/Documents/Program-Files/Android
 export PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
 

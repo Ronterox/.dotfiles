@@ -413,6 +413,8 @@ alias ??='bang'
 
 cargo-clean-cache() { rip -i ~/.cargo/registry/index/* ~/.cargo/.package-cache; }
 
+. "/home/rontero/.asdf/installs/rust/1.91.1/env"
+
 # ------------------- Java -------------------
 
 javarun() { javac $1.java && java $1;  }
@@ -1067,11 +1069,10 @@ esac
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
 
-PROGRAM_FILES="$HOME/Documents/Program-Files/"
+PROGRAM_FILES="$HOME/Documents/Program-Files"
 PATH="$PROGRAM_FILES/perl/${PATH:+:${PATH}}"; export PATH;
 PERL5LIB="$PROGRAM_FILES/perl/lib/perl5/${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
 PERL_LOCAL_LIB_ROOT="$PROGRAM_FILES/perl/${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
 PERL_MB_OPT="--install_base \"$PROGRAM_FILES/perl/\""; export PERL_MB_OPT;
 PERL_MM_OPT="INSTALL_BASE=$PROGRAM_FILES/perl5"; export PERL_MM_OPT;
 
-. "$HOME/.cargo/env"
