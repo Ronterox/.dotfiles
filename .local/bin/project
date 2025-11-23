@@ -1,0 +1,269 @@
+#!/usr/bin/env bash
+
+mread() {
+    echo "$1 (Ctrl+D to finish)"
+    eval "$2=\$(cat)"
+}
+
+rules() {
+    echo "
+    - [Inspiration] then now. Do now! Right now! Don't do anything else forget it all, enjoy focus
+    - [Stress] close them eyes. Don't think about it, but instead about how easy it is and relax until well found solution chillax.
+    - [Relax] look at list of stuff to do, pick one. And iterate on these 3 rules
+    "
+}
+
+affirmation() {
+	AFFIRMATIONS=(Awesome! Good. Great! Cool. Nice! Perfect! Amazing! "Well Done.")
+	echo "${AFFIRMATIONS[$RANDOM % ${#AFFIRMATIONS[@]}]}"
+}
+
+retry() {
+	if [[ "$*" =~ ^[nN][oO]? ]]; then
+		echo "Okay, let's try again."
+		"${BASH_SOURCE[0]}"
+		exit 0
+	fi
+}
+
+read -r -p "Are you thinking of any other project right now? [y/n]: " confirm
+
+echo "
+Finish them off, know whether the project payed for the effort already AND if it can pay it (most important)
+else scratch, make version 2 like I did with mikop. And just save the handful of useful part, drop the rest
+"
+
+read -r -p "Are you sure is worth to work on this project? [y/n]: " confirm
+retry "$confirm"
+
+affirmation
+read -r -p "Name of the project: " proj_name
+
+echo "
+Name every project, and name the scope. Make sure the name of the project represents the scope of it.
+MAKE SURE YOU KNOW THE SCOPE OF IT. Always scale down.
+"
+
+read -r -p "Are you satisfied with the name? [y/n]: " confirm
+retry "$confirm"
+
+title() { figlet -f small "$proj_name" | lolcat "$@"; }
+title -a
+
+affirmation
+mread "Explain to me why is this worth to work on: " explanation
+
+echo "
+You may have the intelligence, but you don't have enough reasons to do it (Is what they say).
+But you don't need any more reasons, just one good one, make sure is one that will always occur with effort alone
+"
+
+read -r -p "Is this that good enough reason, that makes it worth it to work on this project? [y/n]: " confirm
+retry "$confirm"
+
+explan() { echo "$explanation" | lolcat "$@"; }
+title && explan -a
+
+affirmation
+mread "Describe what would the first step of the project be:" first_step
+
+echo "
+Never do the fun stuff first. It will suck all of it out of the project.
+Do what you must do to be more productive, and do it well. The 20% that does the 80%.
+"
+
+read -r -p "Knowing all of this, can you do this step today, right now? [y/n]: " confirm
+retry "$confirm"
+
+pathtoc() {
+	echo "
+	======================================================
+	Path to completion:
+	- $first_step
+	- ...
+	- ...
+	- ...
+	- ...
+	"  | lolcat "$@"
+}
+title && explan && pathtoc -a
+
+affirmation
+mread "Describe what the complete project would be like: " complete_project
+
+echo "
+Always have an exit plan, every moment has to be deliverable. It will never be ready.
+Perfectionism is the killer of productivity and progress. If it works, it's done. You can always make a part 2
+"
+
+read -r -p "So, is this project achievable, can it be completed in a fixed date? [y/n]: " confirm
+retry "$confirm"
+
+whatfin() {
+	echo "
+	======================================================
+	What makes it finished?
+	======================================================
+	$complete_project
+	" | lolcat "$@"
+}
+title && explan && pathtoc && whatfin -a
+
+declare -A deadlines
+deadlines=(
+	[two days]="2 days"
+	[three days]="3 days"
+	[four days]="4 days"
+	[five days]="5 days"
+	[one week]="next week"
+	[two weeks]="2 weeks"
+	[three weeks]="3 weeks"
+	[one month]="next month"
+	[two months]="2 months"
+	[four months]="4 months"
+	[six months]="6 months"
+	[one year]="next year"
+	[two years]="2 years"
+	[five years]="5 years"
+)
+
+deadline=""
+taken=""
+
+affirmation
+read -r -p "Let's talk about deadlines. Will it take one day? [y/n]: " confirm
+
+if [[ "$confirm" =~ ^[yY][eE]? ]]; then
+	deadline=$(date -d "tomorrow")
+	taken="one day"
+else
+	# Iterate over the associative array
+	for dl in "${!deadlines[@]}"; do
+		echo ""
+		read -n 1 -r -p "Will it take $dl? [y/n]: " confirm
+		if [[ "$confirm" =~ ^[yY][eE]? ]]; then
+			taken=$dl
+			deadline=$(date -d "${deadlines[$dl]}")
+			break
+		fi
+	done
+fi
+
+if [[ -z "$deadline" ]]; then
+	read -r -p "How long will it take then? " taken
+	read -r -p "Write the dateline as a full exact date: " deadline
+fi
+
+finished=""
+finish_taken=""
+
+affirmation
+read -r -p "When will it be finished in one day? [y/n]: " confirm
+
+if [[ "$confirm" =~ ^[yY][eE]? ]]; then
+	finished=$(date -d "tomorrow")
+	finish_taken="one day"
+else
+	# Iterate over the associative array
+	for dl in "${!deadlines[@]}"; do
+		echo ""
+		read -n 1 -r -p "Will it be finished in $dl? [y/n]: " confirm
+		if [[ "$confirm" =~ ^[yY][eE]? ]]; then
+			finish_taken=$dl
+			finished=$(date -d "${deadlines[$dl]}")
+			break
+		fi
+	done
+fi
+
+if [[ -z "$finished" ]]; then
+	read -r -p "How long will it take then? " finish_taken
+	read -r -p "Write the dateline as a full exact date: " finished
+fi
+
+deadl() {
+	echo "
+	======================================================
+	Deadline:
+	======================================================
+	Will be in finished in $finish_taken by $finished, else it won't be finished
+	" | lolcat "$@"
+}
+title && explan && pathtoc && whatfin && deadl -a
+
+affirmation
+read -r -p "How do you feel? " feeling
+
+rules
+
+read -r -p "And what about the project? " project_feeling
+
+notes() {
+	echo "
+	======================================================
+	Notes:
+	======================================================
+	> $feeling
+	> $project_feeling
+	" | lolcat "$@"
+}
+title && explan && pathtoc && whatfin && deadl && notes -a
+
+echo "$(affirmation) Success! Done."
+md="README.md"
+
+formatted_explanation=$(echo "$explanation" | fold -s -w 80 | awk '{
+	print
+	if (NR % 3 == 0) print ""
+}')
+
+cat << EOF >>"$md"
+# $proj_name
+
+*$formatted_explanation*
+
+**Path to completion:**
+- $first_step
+- ...
+- ...
+- ...
+- ...
+
+---
+
+#### What makes it finished?
+
+$complete_project
+
+---
+
+#### Deadline:
+
+Will be finished in $finish_taken by $finished, else it won't be finished
+
+---
+
+#### Notes:
+
+> $feeling.
+> $project_feeling.
+
+EOF
+echo "$md generated"
+
+prompt="
+I have created a README.md with my utility to clarify the project.
+Can you help see more clarity into the project and help improve this README
+so that we can have a clear development plan of what to do?
+
+Please feel free to look into the project file and REAMDE.md itself.
+"
+
+echo "$prompt"
+
+read -r -p "Any notes you want to add? " notes
+if [ -n "$notes" ]; then
+	prompt="$prompt\nNote: $notes"
+fi
+
+gemini -ip "$prompt"
