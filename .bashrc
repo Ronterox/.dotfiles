@@ -199,6 +199,8 @@ alias fd='fdfind'
 . <(asdf completion bash)
 . <(lxc completion bash)
 
+export DOINGO_PATH="$HOME/Documents/Projects/MarkdownProjects/ANX/doing"
+
 # ------------------- File Handling -------------------
 
 rename-correct() {

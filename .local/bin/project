@@ -152,15 +152,16 @@ else
 	done
 fi
 
+echo ""
 if [[ -z "$taken" ]]; then
 	echo "FUCK YOU!"
 	exit 1
 fi
 
-steps=""
+steps=()
 for i in $(seq 1 $taken); do
 	read -r -p "What has to be done on day $i?" havedone
-	steps+="- Day $i: $havedone\n"
+	steps+=("Day $i: $havedone")
 done
 
 plan() {
@@ -168,7 +169,7 @@ plan() {
 	======================================================
 	Plan:
 	======================================================
-	$steps
+	$(for step in "${steps[@]}"; do echo "- $step"; done)
 	" | lolcat "$@"
 }
 title && explan && pathtoc && whatfin && plan -a
@@ -247,7 +248,7 @@ formatted_explanation=$(echo "$explanation" | fold -s -w 80 | awk '{
 	if (NR % 3 == 0) print ""
 }')
 
-cat << EOF >>"$md"
+cat <<-EOF >>"$md"
 # $proj_name
 
 *$formatted_explanation*
@@ -269,7 +270,7 @@ $complete_project
 
 #### Plan:
 
-$steps
+$(for step in "${steps[@]}"; do echo "- $step"; done)
 
 ---
 
@@ -287,6 +288,11 @@ Will be finished in $finish_taken by $finished, else it won't be finished
 EOF
 echo "$md generated"
 
+read -r -p "Want to prompt for gemini? [y/n]: " confirm
+if [[ "$confirm" =~ ^[nN][oO]? ]]; then
+	exit 0
+fi
+
 prompt="
 I have created a README.md with my utility to clarify the project.
 Can you help see more clarity into the project and help improve this README
@@ -302,4 +308,4 @@ if [ -n "$notes" ]; then
 	prompt="$prompt\nNote: $notes"
 fi
 
-gemini -ip "$prompt"
+gemini -i -p "$prompt"
