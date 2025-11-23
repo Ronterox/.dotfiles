@@ -411,6 +411,8 @@ alias ??='bang'
 
 # ------------------- Rust -------------------
 
+export PATH="$HOME/.cargo/bin:$PATH"
+
 cargo-clean-cache() { rip -i ~/.cargo/registry/index/* ~/.cargo/.package-cache; }
 
 # ------------------- Java -------------------
@@ -610,7 +612,7 @@ devproj() {
         nvim $tmpfile && start_file=$(cat $tmpfile) || start_file=""
     fi
 
-    cd $(find "${PR_DIRS[@]}" -maxdepth 1 -type d -name "*$lang*" -print -quit)
+    command cd $(find "${PR_DIRS[@]}" -maxdepth 1 -type d -name "*$lang*" -print -quit)
 
     message="\n--- Don't forget to add a .gitignore file with gh-gitignore! ---\n"
     cmd="clear && giti && . start 2>/dev/null && tree -L 1 && echo -e \"\n$message\""
@@ -624,14 +626,14 @@ devproj() {
         proj_name=$(echo "$proj_name" | cut -d'/' -f 2)
 
         select_branch="branch=\$(gitb -a | awk '{print \$2 ? \$2 : \$1}'| fzf)"
-        echo_redirect="echo \"cd \$branch && . start || nvim .\" >> start"
-        start_branch="cd \$branch && . start 2> /dev/null"
+        echo_redirect="echo \"command cd \$branch && . start || nvim .\" >> start"
+        start_branch="command cd \$branch && . start 2> /dev/null"
 
         cmd="$select_branch; gitw add \$branch && $echo_redirect && $start_branch; tree -L 1"
         mv "$proj_name.git" "$proj_name"
     fi
 
-    mkdir -p "$proj_name" && cd "$proj_name"; ls
+    mkdir -p "$proj_name" && command cd "$proj_name"; ls
 
     [ "$start_file" ] && echo "$start_file" > start
     cdp -c "$cmd" "$proj_name"
@@ -940,6 +942,7 @@ shopt -s autocd
 
 if [ "$HOME" == "$PWD" ]; then
     nf
+	anx schedule 11:00 'better python>minecraft game copy>pyrefly>containers>simulation>doing cli>godot'
 else
     cows=($(ls /usr/share/cowsay/cows/))
     count=$(echo ${cows[*]} | wc -w)
