@@ -141,7 +141,7 @@ lsz() {
     [ $# -eq 0 ] && path="." || path="$*"
     dir=$($lscmd "$path" | fzf --height=50% --preview "batcat \"$path\"/{} 2> /dev/null || tree -L 1 \"$path\"/{}")
     if [ ! "$dir" ]; then
-        cd "$path"
+        command cd "$path"
         return
     fi
     path="$path/$dir" && lsz "$lscmd" "$path"

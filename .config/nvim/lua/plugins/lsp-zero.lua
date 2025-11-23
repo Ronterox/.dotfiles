@@ -107,38 +107,20 @@ return {
 				},
 			})
 
-			vim.lsp.config('pyright', {
-				on_attach = function(client, bufnr)
-					-- Disable Pyright's autocompletion
-					-- client.server_capabilities.completionProvider = true
-
-					-- Disable "go to" features
-					client.server_capabilities.definitionProvider = false
-					client.server_capabilities.referencesProvider = false
-					client.server_capabilities.implementationProvider = false
-					client.server_capabilities.typeDefinitionProvider = false
-					client.server_capabilities.declarationProvider = false
-				end,
-			})
-
 			vim.lsp.enable('perlpls')
-
-			local vue_language_server_path = vim.fn.stdpath 'data' ..
-				'/mason/packages/vue-language-server/node_modules/@vue/language-server'
-
-			local vue_plugin = {
-				name = '@vue/typescript-plugin',
-				location = vue_language_server_path,
-				languages = { 'vue' },
-				configNamespace = 'typescript',
-			}
 
 			vim.lsp.config('vtsls', {
 				settings = {
 					vtsls = {
 						tsserver = {
 							globalPlugins = {
-								vue_plugin,
+								{
+									name = '@vue/typescript-plugin',
+									location = vim.fn.stdpath 'data' ..
+										'/mason/packages/vue-language-server/node_modules/@vue/language-server',
+									languages = { 'vue' },
+									configNamespace = 'typescript',
+								}
 							},
 						},
 					},
@@ -181,6 +163,20 @@ return {
 						}
 					}
 				}
+			})
+
+			vim.lsp.config('pyright', {
+				on_attach = function(client, bufnr)
+					-- Disable Pyright's autocompletion
+					-- client.server_capabilities.completionProvider = true
+
+					-- Disable "go to" features
+					client.server_capabilities.definitionProvider = false
+					client.server_capabilities.referencesProvider = false
+					client.server_capabilities.implementationProvider = false
+					client.server_capabilities.typeDefinitionProvider = false
+					client.server_capabilities.declarationProvider = false
+				end,
 			})
 
 			vim.lsp.config('emmet_language_server', {
