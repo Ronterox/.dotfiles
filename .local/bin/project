@@ -120,42 +120,58 @@ deadlines=(
 	[three weeks]="3 weeks"
 	[one month]="next month"
 	[two months]="2 months"
-	[four months]="4 months"
-	[six months]="6 months"
-	[one year]="next year"
-	[two years]="2 years"
-	[five years]="5 years"
 )
 
-deadline=""
-taken=""
-
 affirmation
-read -r -p "Let's talk about deadlines. Will it take one day? [y/n]: " confirm
+read -r -p "Let's talk about plan development. Will you work one day? [y/n]: " confirm
 
 if [[ "$confirm" =~ ^[yY][eE]? ]]; then
-	deadline=$(date -d "tomorrow")
-	taken="one day"
+	taken="1"
 else
-	# Iterate over the associative array
+	declare -A deadlines
+	deadlines=(
+		[two days]=2
+		[three days]=3
+		[four days]=4
+		[five days]=5
+		[one week]=7
+		[two weeks]=14
+		[three weeks]=21
+		[one month]=30
+		[two months]=60
+	)
+
+	taken=""
 	for dl in "${!deadlines[@]}"; do
 		echo ""
-		read -n 1 -r -p "Will it take $dl? [y/n]: " confirm
+		read -n 1 -r -p "Will you work $dl? [y/n]: " confirm
 		if [[ "$confirm" =~ ^[yY][eE]? ]]; then
-			taken=$dl
-			deadline=$(date -d "${deadlines[$dl]}")
+			taken=${deadlines[$dl]}
 			break
 		fi
 	done
 fi
 
-if [[ -z "$deadline" ]]; then
-	read -r -p "How long will it take then? " taken
-	read -r -p "Write the dateline as a full exact date: " deadline
+if [[ -z "$taken" ]]; then
+	echo "FUCK YOU!"
+	exit 1
 fi
 
-finished=""
-finish_taken=""
+steps=""
+for i in $(seq 1 $taken); do
+	read -r -p "What has to be done on day $i?" havedone
+	steps+="- Day $i: $havedone\n"
+done
+
+plan() {
+	echo -e "
+	======================================================
+	Plan:
+	======================================================
+	$steps
+	" | lolcat "$@"
+}
+title && explan && pathtoc && whatfin && plan -a
 
 affirmation
 read -r -p "When will it be finished in one day? [y/n]: " confirm
@@ -164,7 +180,21 @@ if [[ "$confirm" =~ ^[yY][eE]? ]]; then
 	finished=$(date -d "tomorrow")
 	finish_taken="one day"
 else
-	# Iterate over the associative array
+	declare -A deadlines
+	deadlines=(
+		[two days]="2 days"
+		[three days]="3 days"
+		[four days]="4 days"
+		[five days]="5 days"
+		[one week]="next week"
+		[two weeks]="2 weeks"
+		[three weeks]="3 weeks"
+		[one month]="next month"
+		[two months]="2 months"
+	)
+
+	finished=""
+	finish_taken=""
 	for dl in "${!deadlines[@]}"; do
 		echo ""
 		read -n 1 -r -p "Will it be finished in $dl? [y/n]: " confirm
@@ -177,7 +207,7 @@ else
 fi
 
 if [[ -z "$finished" ]]; then
-	read -r -p "How long will it take then? " finish_taken
+	read -r -p "When will it be finished then? " finish_taken
 	read -r -p "Write the dateline as a full exact date: " finished
 fi
 
@@ -189,7 +219,7 @@ deadl() {
 	Will be in finished in $finish_taken by $finished, else it won't be finished
 	" | lolcat "$@"
 }
-title && explan && pathtoc && whatfin && deadl -a
+title && explan && pathtoc && whatfin && plan && deadl -a
 
 affirmation
 read -r -p "How do you feel? " feeling
@@ -234,6 +264,12 @@ cat << EOF >>"$md"
 #### What makes it finished?
 
 $complete_project
+
+---
+
+#### Plan:
+
+$steps
 
 ---
 
