@@ -26,8 +26,26 @@
           icon: telegram.png
           href: https://web.telegram.org/a/#6006007757
 
+- Research:
+    - AwesomeHub:
+        - abbr: 😎
+          icon: awesomehub.png
+          href: https://awesomehub.js.org
+    - Selfh:
+        - abbr: SH
+          icon: selfh-st.png
+          href: https://selfh.st
+    - AwesomeSelfhosted:
+        - abbr: ASH
+          icon: selfhosted.png
+          href: https://awesome-selfhosted.net
+
 - Entertainment:
     - Playlists:
         - abbr: YT
           icon: youtube.png
           href: https://www.youtube.com/feed/playlists
+    - Flashpoint:
+        - abbr: FP
+          icon: redis.png
+          href: https://flashpointproject.github.io/flashpoint-database/

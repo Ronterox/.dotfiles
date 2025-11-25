@@ -12,6 +12,14 @@
         icon: photoprism.png
         href: http://richserver:2342
         description: High speed quality photos library
+    - ActualBudget:
+        icon: actual-budget.png
+        href: http://richserver:5006
+        description: High speed budgeting tool
+    - ArchiveBox:
+        icon: archivebox.png
+        href: http://richserver:8000
+        description: Self hosted web archive
 
 - Tools:
     - Jenkins:
@@ -32,3 +40,17 @@
         icon: gitea.png
         href: http://richserver:3000
         description: Git repository manager
+    - ItTools:
+        icon: it-tools.png
+        href: http://richserver:9889
+        description: Collection of handy online tools for developers
+
+- Entertainment:
+    - Navidrome:
+        icon: navidrome.png
+        href: http://richserver:4533
+        description: Self hosted music server
+    - Stash:
+        icon: stash.png
+        href: http://richserver:9999
+        description: Owo repository of your stuff

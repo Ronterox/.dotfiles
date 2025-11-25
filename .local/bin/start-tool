@@ -47,11 +47,11 @@ main() {
 				return
 			fi
 
-			if (start-tool --help 2>&1 | rg "^\s*$1"); then
+			if (start-tool --help 2>&1 | rg "\s*$1"); then
 				start-tool "$@"
 			fi
 
-			if [ -x start ] && (./start --help 2>&1 | rg "^\s*$1"); then
+			if [ -x start ] && (./start --help 2>&1 | rg "\s*$1"); then
                 ./start "$@"
             fi
         fi
