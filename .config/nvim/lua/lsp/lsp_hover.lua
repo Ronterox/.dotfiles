@@ -163,7 +163,6 @@ lsp_hover.__init = function(config)
 		vim.api.nvim_win_set_config(lsp_hover.window, config);
 	end
 
-	vim.wo[lsp_hover.window].winblend = 10;
 	vim.api.nvim_set_hl(0, "LspHoverBackground", { bg = "black" });
 	vim.wo[lsp_hover.window].winhighlight = "Normal:LspHoverBackground,FloatBorder:FloatBorder";
 	---_
