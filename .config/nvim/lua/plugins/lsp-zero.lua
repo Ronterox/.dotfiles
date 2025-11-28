@@ -66,6 +66,10 @@ return {
 					['<CR>'] = cmp.mapping.confirm({ select = false })
 				}),
 				sources = cmp_config.sources,
+				window = {
+					completion = cmp.config.window.bordered(),
+					documentation = cmp.config.window.bordered(),
+				}
 			})
 		end,
 	},

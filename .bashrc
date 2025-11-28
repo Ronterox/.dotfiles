@@ -357,8 +357,8 @@ gh-gitignore() {
 
 # ------------------- Web Dev -------------------
 
-serve() {
-    port=${1:-2015}
+fileserve() {
+    port=${1:-8080}
     echo "Setting up server on http://localhost:$port..."
     caddy file-server -r . -l ":$port" --browse
 }

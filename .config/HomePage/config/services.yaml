@@ -44,6 +44,10 @@
         icon: it-tools.png
         href: http://richserver:9889
         description: Collection of handy online tools for developers
+    - SearXNG:
+        icon: searx.png
+        href: http://richserver:6006
+        description: Self hosted best search engine
 
 - Entertainment:
     - Navidrome:

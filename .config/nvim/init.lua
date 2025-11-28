@@ -1,18 +1,18 @@
 require("rontero.set")
-require("rontero.lsp")
 require("rontero.lazy")
 require("rontero.remap")
 require("rontero.autocmds")
+require("rontero.lsp")
 
 function SendKeys(keys)
-    local mode = vim.api.nvim_get_mode().mode
-    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, true, true), mode, true)
+	local mode = vim.api.nvim_get_mode().mode
+	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, true, true), mode, true)
 end
 
 function ColorMyPencils(colorscheme)
-    colorscheme = colorscheme or "desert"
-    vim.cmd.colorscheme(colorscheme)
-    vim.cmd [[ hi StatusLine guibg=NONE ]] -- lualine transparent
+	colorscheme = colorscheme or "desert"
+	vim.cmd.colorscheme(colorscheme)
+	vim.cmd [[ hi StatusLine guibg=NONE ]] -- lualine transparent
 end
 
 ColorMyPencils('vscode')
