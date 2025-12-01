@@ -44,6 +44,10 @@ case "$1" in
         echo "Connecting to server..."
         ssh rontero@richserver
         ;;
+	:mount)
+		sudo mount -t nfs4 richserver:/media/nfs /media/share/
+		sudo mount -t nfs4 richserver:/media/nextcloud/ /media/nextcloud/
+		;;
     :ip)
         xh -b ifconfig.me user-agent:curl/7.64.1
         ;;
@@ -268,6 +272,15 @@ case "$1" in
 		;;
 	:fact)
 		xhs uselessfacts.jsph.pl/api/v2/facts/random | yq .text
+		;;
+	:candles)
+		url="https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=demo"
+		xh "$url" | jq '.[(keys[1])] | to_entries | map(.value | {
+									open: .["1. open"] | tonumber,
+									high: .["2. high"] | tonumber,
+									low: .["3. low"] | tonumber,
+									close: .["4. close"] | tonumber
+								  })' | cli-candlestick-chart --mode=stdin --chart-name=IBM
 		;;
     :*)
         echo "Invalid method!"

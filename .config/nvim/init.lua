@@ -1,8 +1,8 @@
 require("rontero.set")
 require("rontero.lazy")
+require("rontero.lsp")
 require("rontero.remap")
 require("rontero.autocmds")
-require("rontero.lsp")
 
 function SendKeys(keys)
 	local mode = vim.api.nvim_get_mode().mode
