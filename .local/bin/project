@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+if [[ "pattern" =~ $1 ]]; then
+	shift 1
+	echo "$(date +'[%m/%d %H:%M:%S]') $*" >> patterns.txt
+	cat patterns.txt
+	exit 0
+fi
+
 mread() {
     echo "$1 (Ctrl+D to finish)"
     eval "$2=\$(cat)"

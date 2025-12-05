@@ -7,17 +7,20 @@ main() {
 }
 
 # @cmd Opens setup for homepage
+# @alias home,dashboard
 homepage() {
 	cd .config/HomePage/config/
 	nvim .
 }
 
 # @cmd Opens setup for bashrc
+# @alias bashrc,bash
 config() {
 	nvim .bashrc
 }
 
 # @cmd Opens setup for neovim
+# @alias nvim,vim,vi
 neovim() {
 	cd .config/nvim/
 	nvim .
