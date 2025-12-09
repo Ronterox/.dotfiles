@@ -58,3 +58,7 @@
         icon: stash.png
         href: http://richserver:9999
         description: Owo repository of your stuff
+    - Metube:
+        icon: metube.png
+        href: http://richserver:4004
+        description: Self hosted video/audio downloader

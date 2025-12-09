@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [[ "pattern" =~ $1 ]]; then
+if [ $# -gt 1 ] && [[ "pattern" =~ $1 ]]; then
 	shift 1
 	echo "$(date +'[%m/%d %H:%M:%S]') $*" >> patterns.txt
 	cat patterns.txt
@@ -167,7 +167,7 @@ fi
 
 steps=()
 for i in $(seq 1 $taken); do
-	read -r -p "What has to be done on day $i?" havedone
+	read -r -p "What has to be done on day $i? " havedone
 	steps+=("Day $i: $havedone")
 done
 
