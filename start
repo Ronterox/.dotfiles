@@ -14,7 +14,7 @@ homepage() {
 }
 
 # @cmd Opens setup for bashrc
-# @alias bashrc,bash
+# @alias bashrc,bash,conf
 config() {
 	nvim .bashrc
 }

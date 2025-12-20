@@ -9,12 +9,37 @@ if [ $# -eq 0 ]; then
 fi
 
 case "$1" in
-    today|yesterday|sat|mon|tue|thu|fri|sun|wed|now|next|done|later|did|select|recent|undo|begin|show|move|archive)
+	-h|--help)
+		info=(
+			"todo: Shows all the TODOs in the current directory"
+			"plan: Shows the plan for the current day"
+			"schedule: Generates a schedule for the current day"
+			"today: Shows all the doings for today"
+			"yesterday: Shows all the doings for yesterday"
+			"sat|mon|tue|thu|fri|sun|wed: Shows all the doings for the day"
+			"now: Adds a doing for now"
+			"later: Adds a doing for later"
+			"done: completes the last doing, or the pattern passed"
+			"recent: Shows all the recent doings"
+			"archive: Archives the doings"
+			"undo: Undoes the last doing"
+		)
+		echo -e "\nUsage: anx "
+		for i in "${info[@]}"; do
+			echo -en "\t"
+			echo "$i"
+		done
+		exit 0
+		;;
+    today|yesterday|sat|mon|tue|thu|fri|sun|wed|now|next|done|later|recent|undo|archive)
         doing "$@"
         ;;
     todo)
 		todo "${2:-.}"
         ;;
+	plan)
+		project schedule
+		;;
 	schedule)
 		start_time="$2"
 		shift 2

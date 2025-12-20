@@ -7,6 +7,24 @@ if [ $# -gt 1 ] && [[ "pattern" =~ $1 ]]; then
 	exit 0
 fi
 
+if [ $# -gt 0 ] && [[ "schedule" =~ $1 ]]; then
+	shift 1
+	schedule=$(jrnl @schedule -not @done)
+	echo "$schedule" | rg "$(date +'%Y-%m-%d')" -B 10
+	echo -e "\nComing up next:\n"
+	echo "$schedule" | rg "$(date -d "tomorrow" +'%Y-%m-%d')"
+	exit 0
+fi
+
+if [ $# -gt 0 ] && [[ "generate" =~ $1 ]]; then
+	shift 1
+	echo "Monthly @schedule"
+	for i in $(seq 1 31); do
+		date -d "$i days" +'%Y-%m-%d'
+	done
+	exit 0
+fi
+
 mread() {
     echo "$1 (Ctrl+D to finish)"
     eval "$2=\$(cat)"
