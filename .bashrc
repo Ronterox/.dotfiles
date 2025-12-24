@@ -129,7 +129,7 @@ fi
 
 # ------------------- Defaults -------------------
 
-alias nf='echo && neofetch && backup --show && ls && echo'
+alias nf='echo && fastfetch && backup --show && ls && echo'
 alias cls='clear && ls'
 
 alias stats="typefilesize && scc --cocomo-project-type 'optimal,0.4,0.85,1.2,0.35'"
@@ -192,7 +192,6 @@ alias zz='z -' # omg
 alias fd='fdfind'
 
 # export <- also omg
-. <(thefuck --alias)
 . <(caddy completion bash)
 . <(argc --argc-completions bash)
 . <(start-tool)
@@ -466,6 +465,8 @@ alias tmuxa='tmux attach -t'
 alias tmuxnew='tmux new -s'
 alias tmuxvs='tmux \; split-window -v'
 alias tmuxhs='tmux \; split-window -h'
+alias tmuxhs='tmux \; split-window -h'
+alias tmuxpopup='tmux display-popup'
 
 tmuxkill() { tmux kill-session -t "$(tmux display-message -p '#S')"; }
 alias tmuxkillall='tmux kill-server'

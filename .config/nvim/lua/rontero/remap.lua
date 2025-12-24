@@ -30,51 +30,52 @@ vim.keymap.set('n', '<C-q>', ':e#<CR>')
 vim.keymap.set('t', '<Esc>', '<C-\\><C-n>')
 
 local function search_selection(register, motion)
-    return function()
-        vim.cmd('normal! ' .. motion)
-        local selection = string.gsub(vim.fn.getreg(register), "^%s*(.-)%s*$", "%1")
-        require("harpoon.term").sendCommand(1, "? '" .. selection .. "'\n")
-    end
+	return function()
+		vim.cmd('normal! ' .. motion)
+		local selection = string.gsub(vim.fn.getreg(register), "^%s*(.-)%s*$", "%1")
+		require("harpoon.term").sendCommand(1, "? '" .. selection .. "'\n")
+	end
 end
 
 vim.keymap.set('n', '<leader>s', search_selection("0", "yiw"), { desc = "Search selection" })
 vim.keymap.set('v', '<leader>s', search_selection("0", "y"), { desc = "Search selection" })
 
 local function run_last_command()
-    local term = require("harpoon.term")
-    vim.cmd("wa")
-    term.sendCommand(1, "!!\n")
-    return term
+	local term = require("harpoon.term")
+	vim.cmd("wa")
+	term.sendCommand(1, "!!\n")
+	return term
 end
 
 local function run_last_command_terminal()
-    local term = run_last_command()
-    term.gotoTerminal(1)
-    vim.api.nvim_feedkeys('G$', 'n', true)
+	local term = run_last_command()
+	term.gotoTerminal(1)
+	vim.api.nvim_feedkeys('G$', 'n', true)
 end
 
 vim.keymap.set('n', '<leader>O', function()
-    local file = vim.fn.expand("%:p")
-    run_last_command_terminal()
-    vim.cmd.split(file)
-    vim.cmd.resize("+8")
+	local file = vim.fn.expand("%:p")
+	run_last_command_terminal()
+	vim.cmd.split(file)
+	vim.cmd.resize("+8")
 end, { desc = "Run last command in a new split terminal" })
 
 vim.keymap.set('n', '<leader>o', function()
-    local function window_count()
-        local total = 0
-        for _, win in ipairs(vim.api.nvim_list_wins()) do
-            if vim.api.nvim_win_get_config(win).relative == "" then
-                total = total + 1
-            end
-        end
-        return total
-    end
-    if window_count() == 1 then
-        run_last_command_terminal()
-    else
-        run_last_command()
-    end
+	local function window_count()
+		local total = 0
+		for _, win in ipairs(vim.api.nvim_list_wins()) do
+			if vim.api.nvim_win_get_config(win).relative == "" then
+				total = total + 1
+			end
+		end
+		return total
+	end
+	if window_count() == 1 then
+		run_last_command_terminal()
+	else
+		run_last_command()
+	end
 end, { desc = "Run last command in the terminal" })
 
 -- vim.keymap.set('n', '<leader>td', ':vimgrep /TODO/ **/*<CR>:cw<CR>')
+vim.keymap.set('v', '<leader>sh', 'y:!<C-r>"<CR>')

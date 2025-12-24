@@ -4,7 +4,7 @@ todo() { rg --hidden --max-depth 5 TODO: "$1"; }
 
 if [ $# -eq 0 ]; then
     clear && figlet "ANX" | lolcat
-    jrnl @should @annoying @will @need -not @done && todo ~/Documents/Projects/ && doing recent
+    jrnl @should @annoying @will @need -not @done && todo ~/Documents/Projects/ && project schedule && doing recent
     exit 0
 fi
 
@@ -22,9 +22,9 @@ case "$1" in
 			"done: completes the last doing, or the pattern passed"
 			"recent: Shows all the recent doings"
 			"archive: Archives the doings"
-			"undo: Undoes the last doing"
+			""
 		)
-		echo -e "\nUsage: anx "
+		echo -e "\nUsage: anx <todo|plan|schedule|day|now|done|recent|archive> [args]"
 		for i in "${info[@]}"; do
 			echo -en "\t"
 			echo "$i"
@@ -65,7 +65,11 @@ case "$1" in
 
 		echo "$output" | lolcat -F 0.08 -p 1 -S 120 -a
 		;;
-    *)
+    note)
+		shift
         jrnl "$@"
         ;;
+	*)
+		rg "$*" ~/Documents/Projects/MarkdownProjects/ANX/
+		;;
 esac
