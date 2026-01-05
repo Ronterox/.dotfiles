@@ -26,6 +26,11 @@ neovim() {
 	nvim .
 }
 
+# @cmd Builds and runs a dev envinronment for my dotfiles configuration
+dev() {
+	docker compose run --build --rm arch bash
+}
+
 # See more details at https://github.com/sigoden/argc
 eval "$(start-tool extend)"
 eval "$(argc --argc-eval "$0" "$@")"

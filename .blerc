@@ -329,7 +329,7 @@ bleopt history_lazyload=1
 ## history is shared with the other Bash ble.sh sessions with the history
 ## sharing turned on.
 
-#bleopt history_share=
+bleopt history_share=1
 
 
 ## This option controls the target range in the command history for
@@ -369,14 +369,14 @@ bleopt history_lazyload=1
 ## `editor` means that the widget `edit-and-execute` will be invoked to open an
 ## editor to edit the command line contents.
 
-#bleopt line_limit_type=none
+bleopt line_limit_type=editor
 
 
 ## The following option specifies the capacity of the command line in the
 ## number of characters.  The number 0 or negative numbers means the unlimited
 ## capacity.
 
-#bleopt line_limit_length=10000
+bleopt line_limit_length=10000
 
 
 ## The following option specifies the maximal number of characters which can be
@@ -385,7 +385,7 @@ bleopt history_lazyload=1
 ## this option has a non-positive value, commands are always appended to the
 ## history regardless of their length.
 
-#bleopt history_limit_length=10000
+bleopt history_limit_length=10000
 
 
 ##-----------------------------------------------------------------------------
@@ -923,9 +923,9 @@ bleopt complete_auto_history=
 ## "syntax_eval_polling_interval" specifies the maximal interval between the
 ## user-input checking.
 
-#bleopt highlight_timeout_sync=500
-#bleopt highlight_timeout_async=5000
-#bleopt syntax_eval_polling_interval=50
+bleopt highlight_timeout_sync=5000
+bleopt highlight_timeout_async=50
+bleopt syntax_eval_polling_interval=200
 
 
 ## The following settings specify graphic styles of corresponding faces.  Faces

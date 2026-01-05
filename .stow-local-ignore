@@ -5,3 +5,5 @@ env
 start
 README\.md
 Dockerfile
+docker-compose\.yml
+bootstrap\.sh

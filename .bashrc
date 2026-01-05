@@ -299,10 +299,13 @@ alias gitw='git worktree'
 alias gitwa='git worktree add'
 alias gitwr='git worktree remove'
 alias gitwl='git worktree list'
-git-clone() {
+git-fix() {
     # If you bare clone a local repo, the following is a origin fix:
-    # git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
-    git clone --bare "$1" && z "$1.git" && git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*" && zz
+	git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+}
+
+git-clone() {
+    git clone --bare "$1" && z "$1.git" && git-fix && zz
 }
 
 git-worktree() {
@@ -642,14 +645,6 @@ devproj() {
     cdp -c "$cmd" "$proj_name"
 }
 
-rules() {
-    echo "
-    - [Inspiration] then now. Do now! Right now! Don't do anything else forget it all, enjoy focus
-    - [Stress] close them eyes. Don't think about it, but instead about how easy it is and relax until well found solution chillax.
-    - [Relax] look at list of stuff to do, pick one. And iterate on these 3 rules
-    "
-}
-
 # ------------------- Startup -------------------
 
 bind '"\e\e[C": forward-word' # Jump words with ctrl
@@ -671,7 +666,6 @@ else
     cow=$(($RANDOM % $count))
 
     fortune ~/.local/share/fortune/quotes | cowsay -f ${cows[$cow]} | lolcat && echo && la && echo
-    rules | shuf -n 1 | lolcat && echo
     source ~/.local/share/blesh/ble.sh
 fi
 

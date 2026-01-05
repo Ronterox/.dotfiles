@@ -20,6 +20,7 @@ case "$1" in
 			"now: Adds a doing for now"
 			"later: Adds a doing for later"
 			"done: completes the last doing, or the pattern passed"
+			"edit: Opens to edit the doing file"
 			"recent: Shows all the recent doings"
 			"archive: Archives the doings"
 			""
@@ -31,7 +32,7 @@ case "$1" in
 		done
 		exit 0
 		;;
-    today|yesterday|sat|mon|tue|thu|fri|sun|wed|now|next|done|later|recent|undo|archive)
+    today|yesterday|sat|mon|tue|thu|fri|sun|wed|now|next|done|later|recent|undo|archive|edit)
         doing "$@"
         ;;
     todo)
