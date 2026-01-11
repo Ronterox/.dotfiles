@@ -632,8 +632,8 @@ devproj() {
         proj_name=$(echo "$proj_name" | cut -d'/' -f 2)
 
         select_branch="branch=\$(gitb -a | awk '{print \$2 ? \$2 : \$1}'| fzf)"
-        echo_redirect="echo \"command cd \$branch && . start || nvim .\" >> start"
-        start_branch="command cd \$branch && . start 2> /dev/null"
+        echo_redirect="echo \"command cd \$branch && start || nvim .\" >> start"
+        start_branch="command cd \$branch && start 2> /dev/null"
 
         cmd="$select_branch; gitw add \$branch && $echo_redirect && $start_branch; tree -L 1"
         mv "$proj_name.git" "$proj_name"
