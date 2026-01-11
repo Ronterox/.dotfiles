@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 cat <<'EOF' > ./bootstrap.sh
 #!/usr/bin/env bash
@@ -21,6 +21,7 @@ MKFS=false
 MOUNT=false
 
 PACSTRAP=false
+FSTAB=false
 REFIND=false
 
 set -e
@@ -57,14 +58,18 @@ if [ "$HRDW_SETUP" = true ]; then
 	fi
 
 	if [ "$MOUNT" = true ]; then
-		mount --mkdir "$DISK"1 /mnt/boot
 		mount "$DISK"2 /mnt
+		mount --mkdir "$DISK"1 /mnt/boot
 	fi
 
 	if [ "$PACSTRAP" = true ]; then
 		# Speed for downloading packages
 		reflector --latest 5 --sort rate --save /etc/pacman.d/mirrorlist
-		pacstrap -K /mnt/ "$BASE_PKGS"
+		pacstrap -K /mnt/ $BASE_PKGS
+	fi
+
+	if [ "$FSTAB" = true ]; then
+		genfstab -U /mnt >> /mnt/etc/fstab
 	fi
 
 	if [ "$REFIND" = true ]; then
