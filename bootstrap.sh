@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-cat <<EOF > ~/bootstrap.sh
+cat <<'EOF' > ./bootstrap.sh
 #!/usr/bin/env bash
 
 COWSPACE_SIZE=2G
@@ -102,4 +102,6 @@ fi
 
 EOF
 
-chmod +x ~/bootstrap.sh
+chmod +x ./bootstrap.sh
+
+echo "$PWD/bootstrap.sh script created."
