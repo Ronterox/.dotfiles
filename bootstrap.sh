@@ -8,22 +8,32 @@ HRDW_PKGS="linux-firmware intel-ucode nvidia"
 BOOT_PKGS="refind efibootmgr"
 BASE_PKGS="$CORE_PKGS $HRDW_PKGS $BOOT_PKGS"
 
-HRDW_SETUP=true
-SFWR_SETUP=true
+HRDW_SETUP=false
+SFWR_SETUP=false
+
+cat <<EOF > ~/.vimrc
+set guicursor=
+set rnu
+set tabstop=4
+set softtabstop=4
+set shiftwidth=4
+set noexpandtab
+
+set smartindent
+set nowrap
+
+set incsearch
+set ignorecase
+set smartcase
+EOF
 
 # Check if neovim and git are installed
 if ! command -v nvim &> /dev/null || ! command -v git &> /dev/null; then
 	mount -o remount,size=$COWSPACE_SIZE /run/archiso/cowspace
 	pacman -Syu --noconfirm neovim git
+	git clone https://github.com/NvChad/starter ~/.config/nvim
 	exit 0
 fi
-
-# set rnu
-# set tabwidth=4
-# set shiftwidth=4
-# set softtabstop=4
-# set expandtab
-# set smarttab
 
 # Hardware Setup
 if [ "$HRDW_SETUP" = true ]; then
