@@ -1,3 +1,6 @@
+#!/usr/bin/env sh
+
+cat <<EOF > ~/bootstrap.sh
 #!/usr/bin/env bash
 
 COWSPACE_SIZE=2G
@@ -21,6 +24,11 @@ PACSTRAP=false
 REFIND=false
 
 set -e
+
+if [ ! -f /etc/arch-release ]; then
+	echo "This script must be run on Arch Linux"
+	exit 1
+fi
 
 # Check if neovim and git are installed
 if [ "$EDIT_SETUP" = true ]; then
@@ -91,3 +99,7 @@ if [ "$SFWR_SETUP" = true ]; then
 
 	su - rontero
 fi
+
+EOF
+
+chmod +x ~/bootstrap.sh
