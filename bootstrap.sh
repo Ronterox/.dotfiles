@@ -11,22 +11,6 @@ BASE_PKGS="$CORE_PKGS $HRDW_PKGS $BOOT_PKGS"
 HRDW_SETUP=false
 SFWR_SETUP=false
 
-cat <<EOF > ~/.vimrc
-set guicursor=
-set rnu
-set tabstop=4
-set softtabstop=4
-set shiftwidth=4
-set noexpandtab
-
-set smartindent
-set nowrap
-
-set incsearch
-set ignorecase
-set smartcase
-EOF
-
 # Check if neovim and git are installed
 if ! command -v nvim &> /dev/null || ! command -v git &> /dev/null; then
 	mount -o remount,size=$COWSPACE_SIZE /run/archiso/cowspace
@@ -34,6 +18,8 @@ if ! command -v nvim &> /dev/null || ! command -v git &> /dev/null; then
 	git clone https://github.com/NvChad/starter ~/.config/nvim
 	exit 0
 fi
+
+set -e
 
 # Hardware Setup
 if [ "$HRDW_SETUP" = true ]; then
@@ -62,8 +48,6 @@ fi
 # Software Setup
 
 if [ "$SFWR_SETUP" = true ]; then
-	set -e
-
 	pacman -Syu --noconfirm neovim sudo nix git
 
 	nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs
