@@ -22,7 +22,15 @@ MOUNT=false
 
 PACSTRAP=false
 FSTAB=false
-REFIND=false
+SWAPFILE=false
+BOOT=false
+NETWORK=false
+
+# Software Configuration
+PACKAGES=false
+NIX=false
+SUDO_USER=false
+DOTFILES=false
 
 set -e
 
@@ -72,39 +80,56 @@ if [ "$HRDW_SETUP" = true ]; then
 		genfstab -U /mnt >> /mnt/etc/fstab
 	fi
 
-	if [ "$REFIND" = true ]; then
+	if [ "$SWAPFILE" = true ]; then
 		arch-chroot /mnt/ <<-'MSG'
+			mkswap -U clear --size 4G --file /swapfile
+			swapon /swapfile
+			echo "/swapfile none swap defaults 0 0" >> /etc/fstab
+		MSG
+	fi
+
+	if [ "$BOOT" = true ]; then
+		arch-chroot /mnt/ <<-MSG
 			refind-install
-			echo "\"Boot with standard options\" \"root=UUID=$(blkid -s UUID -o value /dev/sdX2) rw initrd=\intel-ucode.img initrd=\initramfs-linux.img\"" > /boot/refind_linux.conf
+			echo "\\"Boot with standard options\\" \\"root=UUID=\$(blkid -s UUID -o value ${DISK}2) rw initrd=\intel-ucode.img initrd=\initramfs-linux.img\\"" > /boot/refind_linux.conf
+		MSG
+	fi
+
+	if [ "$NETWORK" = true ]; then
+		arch-chroot /mnt/ <<-MSG
+			systemctl enable NetworkManager
+			systemctl start NetworkManager
 		MSG
 	fi
 fi
 
 # Software Setup
-
 if [ "$SFWR_SETUP" = true ]; then
-	pacman -Syu --noconfirm neovim sudo nix git
+	if [ "$PACKAGES" = true ]; then
+		pacman -Syu --noconfirm neovim sudo git nix
+	fi
 
-	nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs
-	nix-channel --update
+	if [ "$NIX" = true ]; then
+		nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs
+		nix-channel --update
+	fi
 
-	# Create a new file that enables the wheel group
-	echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
-
-	useradd -m -G wheel rontero
-	passwd rontero
+	if [ "$SUDO_USER" = true ]; then
+		# Create a new file that enables the wheel group
+		echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
+		useradd -m -G wheel rontero
+		passwd rontero
+	fi
 
 	# TODO: Setup i3wm
 
-	# - tells to login
-	su - rontero <<-EOF
-		git clone -b linux https://github.com/Ronterox/.dotfiles.git
-		cd .dotfiles
-		nix-env -i stow
-		stow .
-	EOF
-
-	su - rontero
+	if [ "$DOTFILES" = true ]; then
+		# - tells to login
+		su - rontero <<-MSG
+			git clone -b linux https://github.com/Ronterox/.dotfiles.git
+			cd .dotfiles
+		MSG
+	fi
 fi
 
 EOF
