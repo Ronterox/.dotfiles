@@ -73,8 +73,10 @@ if [ "$HRDW_SETUP" = true ]; then
 	fi
 
 	if [ "$REFIND" = true ]; then
-		arch-chroot /mnt/
-		refind-install
+		arch-chroot /mnt/ <<-'MSG'
+			refind-install
+			echo "\"Boot with standard options\" \"root=UUID=$(blkid -s UUID -o value /dev/sdX2) rw initrd=\intel-ucode.img initrd=\initramfs-linux.img\"" > /boot/refind_linux.conf
+		MSG
 	fi
 fi
 
