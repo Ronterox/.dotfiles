@@ -40,3 +40,4 @@ vim.opt.wildignore:append({ '*/node_modules/**', '*/dist/**', '*.log', '*/.git/*
 vim.opt.sessionoptions = 'blank,buffers,curdir,folds,help,tabpages,winsize'
 
 vim.filetype.add({ extension = { pine = "pinescript" } })
+vim.filetype.add({ extension = { ansible = "yaml.ansible" } })

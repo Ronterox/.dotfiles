@@ -279,6 +279,15 @@ alias gits='git status'
 alias gitd='git diff' # remember diff-so-fancy
 gitv(){ git count | grep -o '[0-9]' | paste -sd. | awk -F. '{print (NF<3?"0.":"")$0}'; }
 
+g() {
+	if [ $# -eq 0 ]; then
+		git status
+		return
+	fi
+	selection=$(git log -G "$*" -p | rg "$*" | fzf | sed 's/^[+-]//; s/^ *//')
+	nvim <(git log -S "$selection" -p)
+}
+
 gitac() {
     if [ $# -eq 0 ]; then
         gita -p && gitc

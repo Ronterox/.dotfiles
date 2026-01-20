@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cat <<'EOF' > ./bootstrap.sh
+# cat <<'EOF' > ./bootstrap.sh
 #!/usr/bin/env bash
 
 COWSPACE_SIZE=2G
@@ -107,11 +107,7 @@ fi
 if [ "$SFWR_SETUP" = true ]; then
 	if [ "$PACKAGES" = true ]; then
 		pacman -Syu --noconfirm neovim sudo git nix
-	fi
-
-	if [ "$NIX" = true ]; then
-		nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs
-		nix-channel --update
+		# TODO: Setup i3wm
 	fi
 
 	if [ "$SUDO_USER" = true ]; then
@@ -121,10 +117,17 @@ if [ "$SFWR_SETUP" = true ]; then
 		passwd rontero
 	fi
 
-	# TODO: Setup i3wm
+	if [ "$NIX" = true ]; then
+		# TODO: Also add user to nix-users group and create the group
+		nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs
+		nix-channel --update
+		# TODO: Do not use unstable, but the stable nix channel, and reinstall nix on the user
+	fi
 
 	if [ "$DOTFILES" = true ]; then
 		# - tells to login
+		# TODO: Replace with home manager
+		# TODO: But first let's work with stow as we work, multiple programs on nix file
 		su - rontero <<-MSG
 			git clone -b linux https://github.com/Ronterox/.dotfiles.git
 			cd .dotfiles
@@ -132,7 +135,7 @@ if [ "$SFWR_SETUP" = true ]; then
 	fi
 fi
 
-EOF
+# EOF
 
 chmod +x ./bootstrap.sh
 
