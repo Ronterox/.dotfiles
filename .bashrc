@@ -285,7 +285,7 @@ g() {
 		return
 	fi
 	selection=$(git log -G "$*" -p | rg "$*" | fzf | sed 's/^[+-]//; s/^ *//')
-	nvim <(git log -S "$selection" -p)
+	[ "$selection" ] && nvim <(git log -S "$selection" -p)
 }
 
 gitac() {
@@ -396,6 +396,10 @@ alias icat='timg'
 alias asciicat='img2txt'
 # Markdown Command
 # Mermaid Command
+
+# ------------------- ffmpeg  -------------------
+
+alias record='ffmpeg -f x11grab -video_size 1920x1080 -framerate 30 -i :1 output.mp4'
 
 # ------------------- Search -------------------
 
