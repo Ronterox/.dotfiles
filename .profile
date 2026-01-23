@@ -8,14 +8,6 @@
 # for ssh logins, install and configure the libpam-umask package.
 #umask 022
 
-# if running bash
-if [ -n "$BASH_VERSION" ]; then
-    # include .bashrc if it exists
-    if [ -f "$HOME/.bashrc" ]; then
-	. "$HOME/.bashrc"
-    fi
-fi
-
 # set PATH so it includes user's private bin if it exists
 if [ -d "$HOME/bin" ] ; then
     PATH="$HOME/bin:$PATH"
@@ -25,8 +17,13 @@ fi
 if [ -d "$HOME/.local/bin" ] ; then
     PATH="$HOME/.local/bin:$PATH"
 fi
+
 # Ubuntu make installation of Ubuntu Make binary symlink
 PATH=$HOME/.local/share/umake/bin:$PATH
+
+# Custom
+
+export DOINGO_PATH="$HOME/Documents/Projects/MarkdownProjects/ANX/doing"
 
 # Wine
 
@@ -81,11 +78,38 @@ esac
 export VCPKG_ROOT=$HOME/Documents/Program-Files/vcpkg
 export PATH=$VCPKG_ROOT:$PATH
 
-export PERL5LIB=$HOME/Documents/Program-Files/perl/lib/perl5:$PERL5LIB
-export PATH=$HOME/Documents/Program-Files/perl/bin:$PATH
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH=$BUN_INSTALL/bin:$PATH
+
+# nvm
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # Android
 
 export ANDROID_HOME=$HOME/Documents/Program-Files/Android
 export PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
 export PATH=$PATH:/opt/android-studio/bin/
+
+# Perl
+
+export PERL5LIB=$HOME/Documents/Program-Files/perl/lib/perl5:$PERL5LIB
+export PATH=$HOME/Documents/Program-Files/perl/bin:$PATH
+
+PROGRAM_FILES="$HOME/Documents/Program-Files"
+PATH="$PROGRAM_FILES/perl/${PATH:+:${PATH}}"; export PATH;
+PERL5LIB="$PROGRAM_FILES/perl/lib/perl5/${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
+PERL_LOCAL_LIB_ROOT="$PROGRAM_FILES/perl/${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
+PERL_MB_OPT="--install_base \"$PROGRAM_FILES/perl/\""; export PERL_MB_OPT;
+PERL_MM_OPT="INSTALL_BASE=$PROGRAM_FILES/perl5"; export PERL_MM_OPT;
+
+# if running bash
+if [ -n "$BASH_VERSION" ]; then
+    # include .bashrc if it exists
+    if [ -f "$HOME/.bashrc" ]; then
+	. "$HOME/.bashrc"
+    fi
+fi
+

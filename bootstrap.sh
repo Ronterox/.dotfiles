@@ -56,6 +56,7 @@ if [ "$HRDW_SETUP" = true ]; then
 		# n,1,default,+512M (if not exists),t,1(EFI)
 		# n,2,default,default,t,23(root x86_64)
 		# p (shows partitions, if not gpt do g)
+		# TODO: I saw tehre is a cooler way to do this, also simpler
 		fdisk $DISK
 	fi
 
@@ -105,8 +106,23 @@ fi
 
 # Software Setup
 if [ "$SFWR_SETUP" = true ]; then
+	# may need
+	# caddy
+	# cowsay
+
+	# Defaults required
+	# bat
+	# eza
+	# fastfetch
+	# fortune-mod
+	# fzf
+	# man-db
+	# man-pages
+	# ripgrep
+	# tmux
+
 	if [ "$PACKAGES" = true ]; then
-		pacman -Syu --noconfirm neovim sudo git nix
+		pacman -Syu --noconfirm sudo neovim git nix
 		# TODO: Setup i3wm
 	fi
 

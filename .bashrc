@@ -127,6 +127,16 @@ fi
 
 # -------------------- Ricardo Settings Here ---------------------
 
+# export <- also omg
+[ -x "$(command -v caddy)" ] && . <(caddy completion bash)
+[ -x "$(command -v asdf)" ] && . <(asdf completion bash)
+[ -x "$(command -v lxc)" ] && . <(lxc completion bash)
+
+# These must exists for sure
+. <(argc --argc-completions bash)
+. <(start-tool)
+. <(zoxide init bash)
+
 # ------------------- Defaults -------------------
 
 alias nf='echo && fastfetch && backup --show && ls && echo'
@@ -135,6 +145,36 @@ alias cls='clear && ls'
 alias stats="typefilesize && scc --cocomo-project-type 'optimal,0.4,0.85,1.2,0.35'"
 alias battery='upower -i $(upower -e | grep battery) | egrep "percentage|time to empty"'
 alias ny='TZ=America/New_York date'
+
+# Zoxide
+alias zz='z -' # omg
+
+_z_cd() {
+    builtin cd "$@" || return "$?"
+
+    if [ "$_ZO_ECHO" = "1" ]; then
+        echo "$PWD"
+    fi
+}
+
+z() {
+    if [ "$#" -eq 0 ]; then
+        _z_cd ~
+    elif [ "$#" -eq 1 ] && [ "$1" = '-' ]; then
+        if [ -n "$OLDPWD" ]; then
+            _z_cd "$OLDPWD"
+        else
+            echo 'zoxide: $OLDPWD is not set'
+            return 1
+        fi
+    else
+        _zoxide_result="$(zoxide query -- "$@" 2>/dev/null)"
+        if [ -z "$_zoxide_result" ]; then
+            _zoxide_result=$(zoxide query --list --score | fzf --delimiter / --with-nth -1 --filter "$*" | sort -hr | head -1 | awk '{print $NF}')
+        fi
+        [ -n "$_zoxide_result" ] && _z_cd "$_zoxide_result"
+    fi
+}
 
 lsz() {
     lscmd="${1:-ls}" && shift
@@ -176,7 +216,6 @@ man() {
 }
 wtf() { whatis $1 2> /dev/null; tldr $1 | batcat; }
 
-alias zz='z -' # omg
 # fd -p to match full path
 # fd -e to match extension
 # fd -g to match glob
@@ -190,15 +229,6 @@ alias zz='z -' # omg
 # {//} parent directory
 # {/.} name without extension
 alias fd='fdfind'
-
-# export <- also omg
-. <(caddy completion bash)
-. <(argc --argc-completions bash)
-. <(start-tool)
-. <(asdf completion bash)
-. <(lxc completion bash)
-
-export DOINGO_PATH="$HOME/Documents/Projects/MarkdownProjects/ANX/doing"
 
 # ------------------- File Handling -------------------
 
@@ -390,6 +420,8 @@ api() {
 }
 
 # ------------------- Viewer -------------------
+
+[ ! -x "$(command -v batcat)" ] && alias batcat='bat'
 
 alias cat='batcat'
 alias icat='timg'
@@ -674,11 +706,8 @@ shopt -s autocd
 if [ "$HOME" == "$PWD" ]; then
     nf
 else
-    cows=($(ls /usr/share/cowsay/cows/))
-    count=$(echo ${cows[*]} | wc -w)
-    cow=$(($RANDOM % $count))
-
-    fortune ~/.local/share/fortune/quotes | cowsay -f ${cows[$cow]} | lolcat && echo && la && echo
+	echo && la && echo
+    fortune ~/.local/share/fortune/quotes && echo
     source ~/.local/share/blesh/ble.sh
 fi
 
@@ -712,97 +741,9 @@ fi
 
 # ------------------ Finish My Handling ------------------
 
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH=$BUN_INSTALL/bin:$PATH
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-# Zoxide
-_z_cd() {
-    builtin cd "$@" || return "$?"
-
-    if [ "$_ZO_ECHO" = "1" ]; then
-        echo "$PWD"
-    fi
-}
-
-z() {
-    if [ "$#" -eq 0 ]; then
-        _z_cd ~
-    elif [ "$#" -eq 1 ] && [ "$1" = '-' ]; then
-        if [ -n "$OLDPWD" ]; then
-            _z_cd "$OLDPWD"
-        else
-            echo 'zoxide: $OLDPWD is not set'
-            return 1
-        fi
-    else
-        _zoxide_result="$(zoxide query -- "$@" 2>/dev/null)"
-        if [ -z "$_zoxide_result" ]; then
-            _zoxide_result=$(zoxide query --list --score | fzf --delimiter / --with-nth -1 --filter "$*" | sort -hr | head -1 | awk '{print $NF}')
-        fi
-        [ -n "$_zoxide_result" ] && _z_cd "$_zoxide_result"
-    fi
-}
-
-zi() {
-    _zoxide_result="$(zoxide query -i -- "$@")" && _z_cd "$_zoxide_result"
-}
-
-alias za='zoxide add'
-
-alias zq='zoxide query'
-alias zqi='zoxide query -i'
-
-alias zr='zoxide remove'
-alias z..='z ..'
-
-zri() {
-    _zoxide_result="$(zoxide query -i -- "$@")" && zoxide remove "$_zoxide_result"
-}
-
-_zoxide_hook() {
-    if [ -z "${_ZO_PWD}" ]; then
-        _ZO_PWD="${PWD}"
-    elif [ "${_ZO_PWD}" != "${PWD}" ]; then
-        _ZO_PWD="${PWD}"
-        zoxide add "$(pwd -L)"
-    fi
-}
-
-case "$PROMPT_COMMAND" in
-    *_zoxide_hook*) ;;
-    *) PROMPT_COMMAND="_zoxide_hook${PROMPT_COMMAND:+;${PROMPT_COMMAND}}" ;;
-esac
-
-[ -f "$HOME/.ghcup/env" ] && . "$HOME/.ghcup/env" # ghcup-env
-
-# >>> juliaup initialize >>>
-
-# !! Contents within this block are managed by juliaup !!
-
-case ":$PATH:" in
-    *:$HOME/.juliaup/bin:*)
-        ;;
-
-    *)
-        export PATH=$HOME/.juliaup/bin${PATH:+:${PATH}}
-        ;;
-esac
-
-# <<< juliaup initialize <<<
-
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
 
-PROGRAM_FILES="$HOME/Documents/Program-Files"
-PATH="$PROGRAM_FILES/perl/${PATH:+:${PATH}}"; export PATH;
-PERL5LIB="$PROGRAM_FILES/perl/lib/perl5/${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
-PERL_LOCAL_LIB_ROOT="$PROGRAM_FILES/perl/${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
-PERL_MB_OPT="--install_base \"$PROGRAM_FILES/perl/\""; export PERL_MB_OPT;
-PERL_MM_OPT="INSTALL_BASE=$PROGRAM_FILES/perl5"; export PERL_MM_OPT;
-
+# opencode
+export PATH=$HOME/.opencode/bin:$PATH
