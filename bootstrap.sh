@@ -106,10 +106,6 @@ fi
 
 # Software Setup
 if [ "$SFWR_SETUP" = true ]; then
-	# may need
-	# caddy
-	# cowsay
-
 	# Defaults required
 	# bat
 	# eza

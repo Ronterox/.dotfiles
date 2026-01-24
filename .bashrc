@@ -100,14 +100,45 @@ fi
 # -------------------- Ricardo Settings Here ---------------------
 
 # export <- also omg
-[ -x "$(command -v caddy)" ] && . <(caddy completion bash)
-[ -x "$(command -v asdf)" ] && . <(asdf completion bash)
-[ -x "$(command -v lxc)" ] && . <(lxc completion bash)
+
+caddy() {
+	unset -f caddy
+	. <(caddy completion bash)
+	caddy "$@"
+}
+
+asdf() {
+	unset -f asdf
+	. <(asdf completion bash)
+	asdf "$@"
+}
+
+# lxc() {
+# 	unset -f lxc
+# 	. <(lxc completion bash)
+# 	lxc "$@"
+# }
 
 # These must exists for sure
-. <(argc --argc-completions bash)
-. <(start-tool)
-. <(zoxide init bash)
+_argc_completer() {
+	unset -f _argc_completer
+	. <(argc --argc-completions bash)
+	_argc_completer "$@"
+}
+
+complete -F _argc_completer -o nospace -o nosort argc
+
+start() {
+	unset -f start
+	. <(start-tool)
+	start "$@"
+}
+
+zoxide() {
+	unset -f zoxide
+	. <(zoxide init bash)
+	zoxide "$@"
+}
 
 # ------------------- Defaults -------------------
 
@@ -127,9 +158,10 @@ alias battery='upower -i $(upower -e | grep battery) | egrep "percentage|time to
 alias ny='TZ=America/New_York date'
 
 # Zoxide
-alias zz='z -' # omg
+alias zz='__z -' # omg
+alias z='__z' # lazy loading non override
 
-_z_cd() {
+__z_cd() {
     builtin cd "$@" || return "$?"
 
     if [ "$_ZO_ECHO" = "1" ]; then
@@ -137,12 +169,12 @@ _z_cd() {
     fi
 }
 
-z() {
+__z() {
     if [ "$#" -eq 0 ]; then
-        _z_cd ~
+        __z_cd ~
     elif [ "$#" -eq 1 ] && [ "$1" = '-' ]; then
         if [ -n "$OLDPWD" ]; then
-            _z_cd "$OLDPWD"
+            __z_cd "$OLDPWD"
         else
             echo 'zoxide: $OLDPWD is not set'
             return 1
@@ -152,7 +184,7 @@ z() {
         if [ -z "$_zoxide_result" ]; then
             _zoxide_result=$(zoxide query --list --score | fzf --delimiter / --with-nth -1 --filter "$*" | sort -hr | head -1 | awk '{print $NF}')
         fi
-        [ -n "$_zoxide_result" ] && _z_cd "$_zoxide_result"
+        [ -n "$_zoxide_result" ] && __z_cd "$_zoxide_result"
     fi
 }
 
@@ -343,6 +375,8 @@ git-worktree() {
     cd "$current_branch" && echo "Success!"
 }
 
+# ------------------- Github -------------------
+
 alias gh-auth='gh auth login'
 gh-open(){
     repo=$(gh repo list -L 100 | fzf --prompt="Open Repo:" --border | awk '{print $1}')
@@ -415,13 +449,14 @@ alias record='ffmpeg -f x11grab -video_size 1920x1080 -framerate 30 -i :1 output
 
 # ------------------- Search -------------------
 
-alias lucky='firefox --new-window https://wheelofnames.com/'
-alias graph='firefox --new-window https://mermaid.js.org/'
-alias draw='firefox --new-window https://excalidraw.com/'
-alias imagetotext='firefox --new-window https://www.imagetotext.io/'
-alias mermaidlive='firefox --new-window https://mermaid.live/'
-alias wordcounter='firefox --new-window https://wordcounter.net/'
-alias imagebackground='firefox --new-window https://www.cutout.pro/'
+alias fnew='firefox --new-window'
+alias lucky='fnew https://wheelofnames.com/'
+alias graph='fnew https://mermaid.js.org/'
+alias draw='fnew https://excalidraw.com/'
+alias imagetotext='fnew https://www.imagetotext.io/'
+alias mermaidlive='fnew https://mermaid.live/'
+alias wordcounter='fnew https://wordcounter.net/'
+alias imagebackground='fnew https://www.cutout.pro/'
 
 bang() {
     if [ -z "$1" ]; then
@@ -618,8 +653,7 @@ cdp() {
 }
 
 # develop new project
-declare -A inits
-inits=(
+declare -A inits=(
     ["Rust"]="cargo init"
     ["Javascript"]="bun init"
     ["Java"]="gradle init"
@@ -683,12 +717,32 @@ bind '"\eq":"\C-aqalc \n"' # alt + q
 
 shopt -s autocd
 
+blesh() {
+	local saved_line=$READLINE_LINE
+    local saved_point=$READLINE_POINT
+
+	bind -r '"\t"'
+
+	[ -f ~/.local/share/blesh/ble.sh ] && source ~/.local/share/blesh/ble.sh --noattach
+
+    if [[ ${BLE_VERSION-} ]]; then
+		BLE_ATTACH_OPTS="no-clear,no-check-update" ble-attach && ble-bind -f 'C-i' 'complete'
+
+		if [[ $saved_line ]]; then
+            ble/widget/insert-string "$saved_line"
+            READLINE_POINT=$saved_point
+        fi
+
+        ble/widget/complete
+    fi
+}
+
 if [ "$HOME" == "$PWD" ]; then
     nf
 else
 	echo && la && echo
-    fortune ~/.local/share/fortune/quotes && echo
-    source ~/.local/share/blesh/ble.sh
+	fortune ~/.local/share/fortune/quotes && echo
+	bind -x '"\t": blesh'
 fi
 
 # ------------------ Forced to use this ------------------
