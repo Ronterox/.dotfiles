@@ -6,7 +6,8 @@
 COWSPACE_SIZE=2G
 
 DISK=/dev/sda
-CORE_PKGS="base base-devel networkmanager linux"
+SFWR_PKGS="sudo i3wm base-devel git" # nix
+CORE_PKGS="base networkmanager linux"
 HRDW_PKGS="linux-firmware intel-ucode nvidia"
 BOOT_PKGS="refind efibootmgr"
 BASE_PKGS="$CORE_PKGS $HRDW_PKGS $BOOT_PKGS"
@@ -116,9 +117,13 @@ if [ "$SFWR_SETUP" = true ]; then
 	# man-pages
 	# ripgrep
 	# tmux
+	# neovim
+	# stow
 
 	if [ "$PACKAGES" = true ]; then
-		pacman -Syu --noconfirm sudo neovim git nix
+		pacman -Syu --noconfirm $SFWR_PKGS
+		git clone https://aur.archlinux.org/yay-bin.git
+		cd yay-bin && makepkg -si
 		# TODO: Setup i3wm
 	fi
 

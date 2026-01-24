@@ -160,6 +160,7 @@ alias ny='TZ=America/New_York date'
 # Zoxide
 alias zz='__z -' # omg
 alias z='__z' # lazy loading non override
+alias z..='__z ..'
 
 __z_cd() {
     builtin cd "$@" || return "$?"
