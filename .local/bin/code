@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+if [ $# -eq 0 ]; then
+	echo "Usage: code <git?> <pattern>"
+	exit 0
+fi
+
+g() {
+	if [ $# -eq 0 ]; then
+		git status
+		return
+	fi
+	selection=$(git log -G "$*" -p | rg "$*" | fzf | sed 's/^[+-]//; s/^ *//')
+	[ "$selection" ] && nvim <(git log -S "$selection" -p)
+}
+
+if [ "$1" = 'git' ]; then
+	shift && g "$@"
+	exit 0
+fi
+
+opts="-S -F"
+if [ "$1" = 'vim' ]; then
+	shift
+	opts="-S -F --vimgrep"
+fi
+
+langs=(c cpp sh py rb java js ts tsx jsx)
+# declare -A langs=([c]='//' [sh]='#' [py]='#' [rb]='=begin' [java]='//' [js]='//')
+for lang in "${langs[@]}"; do
+	rg "$*" $opts -t "$lang" "$HOME" 2>/dev/null
+done
+

@@ -99,7 +99,7 @@ fi
 
 # -------------------- Ricardo Settings Here ---------------------
 
-# export <- also omg
+# Lazy loading incoming...
 
 caddy() {
 	unset -f caddy
@@ -112,12 +112,6 @@ asdf() {
 	. <(asdf completion bash)
 	asdf "$@"
 }
-
-# lxc() {
-# 	unset -f lxc
-# 	. <(lxc completion bash)
-# 	lxc "$@"
-# }
 
 # These must exists for sure
 _argc_completer() {
@@ -321,15 +315,6 @@ alias gitc='git commit'
 alias gits='git status'
 alias gitd='git diff' # remember diff-so-fancy
 gitv(){ git count | grep -o '[0-9]' | paste -sd. | awk -F. '{print (NF<3?"0.":"")$0}'; }
-
-g() {
-	if [ $# -eq 0 ]; then
-		git status
-		return
-	fi
-	selection=$(git log -G "$*" -p | rg "$*" | fzf | sed 's/^[+-]//; s/^ *//')
-	[ "$selection" ] && nvim <(git log -S "$selection" -p)
-}
 
 gitac() {
     if [ $# -eq 0 ]; then
@@ -782,3 +767,6 @@ export SDKMAN_DIR="$HOME/.sdkman"
 
 # opencode
 export PATH=$HOME/.opencode/bin:$PATH
+
+# Custom
+export DOINGO_PATH="$HOME/Documents/Projects/MarkdownProjects/ANX/doing"

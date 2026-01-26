@@ -6,7 +6,7 @@
 COWSPACE_SIZE=2G
 
 DISK=/dev/sda
-SFWR_PKGS="sudo i3wm base-devel git" # nix
+SFWR_PKGS="sudo i3-wm base-devel git" # nix
 CORE_PKGS="base networkmanager linux"
 HRDW_PKGS="linux-firmware intel-ucode nvidia"
 BOOT_PKGS="refind efibootmgr"

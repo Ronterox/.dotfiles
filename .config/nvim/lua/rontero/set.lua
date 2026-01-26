@@ -22,6 +22,9 @@ vim.opt.smartcase = true
 vim.opt.rdt = 2500
 
 vim.opt.termguicolors = true
+vim.opt.grepprg = "rg --vimgrep"
+vim.opt.grepformat = "%f:%l:%c:%m,%f"
+vim.o.quickfixtextfunc = "v:lua.qf_item_shortener"
 
 vim.opt.scrolloff = 8
 vim.opt.signcolumn = "yes"

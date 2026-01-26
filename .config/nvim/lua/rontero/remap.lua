@@ -77,5 +77,53 @@ vim.keymap.set('n', '<leader>o', function()
 	end
 end, { desc = "Run last command in the terminal" })
 
--- vim.keymap.set('n', '<leader>td', ':vimgrep /TODO/ **/*<CR>:cw<CR>')
+local function searchCode()
+	-- vim.ui.input({ prompt = "Look for pattern:" }, function(input)
+	-- 	if input == nil then return end
+	-- 	vim.cmd("cgetexpr system('code vim " .. input .. "')")
+	-- 	vim.cmd("cw")
+	-- 	vim.cmd("only")
+	-- end)
+	vim.ui.input({ prompt = "Look for pattern:" }, function(input)
+		if not input or input == "" then return end
+
+		vim.fn.setqflist({}, 'r')
+
+		local cmd = { "code", "vim", input }
+
+		vim.system(cmd, {
+			stdout = function(err, data)
+				if data then
+					vim.schedule(function()
+						vim.fn.setqflist({}, 'a', { lines = vim.split(data, "\n", { trimempty = true }) })
+						vim.cmd("cw | only")
+					end)
+				end
+			end,
+			stderr = function(err, data)
+				if data then print("Error: " .. data) end
+			end
+		}, function(obj)
+			vim.schedule(function()
+				print("Search completed with exit code: " .. obj.code)
+			end)
+		end)
+	end)
+end
+
+_G.qf_item_shortener = function(info)
+	local items = vim.fn.getqflist({ id = info.id, items = 1 }).items
+	local l = {}
+	for i = info.start_idx, info.end_idx do
+		local item = items[i]
+		local fname = vim.api.nvim_buf_get_name(item.bufnr)
+		local short_name = vim.fn.fnamemodify(fname, ':t')
+		local str = string.format('%s |%d:%d| %s', short_name, item.lnum, item.col, item.text)
+		table.insert(l, str)
+	end
+	return l
+end
+
+-- vim.keymap.set('n', '<leader>td', ':vimgrep /TODO/j **/*<CR>:cw<CR>')
+vim.keymap.set('n', '<leader>fc', searchCode)
 vim.keymap.set('v', '<leader>sh', 'y:!<C-r>"<CR>')

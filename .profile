@@ -21,10 +21,6 @@ fi
 # Ubuntu make installation of Ubuntu Make binary symlink
 PATH=$HOME/.local/share/umake/bin:$PATH
 
-# Custom
-
-export DOINGO_PATH="$HOME/Documents/Projects/MarkdownProjects/ANX/doing"
-
 # Wine
 
 export WINEPREFIX=~/.wine64/ WINEARCH=win64 wine64 # 64 instead of 32
