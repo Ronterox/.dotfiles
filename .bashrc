@@ -431,7 +431,13 @@ alias asciicat='img2txt'
 
 # ------------------- ffmpeg  -------------------
 
-alias record='ffmpeg -f x11grab -video_size 1920x1080 -framerate 30 -i :1 output.mp4'
+record() {
+	ffmpeg -f x11grab -video_size 1920x1080 -framerate 30 -i :1 \
+	-f pulse -i default \
+	-c:v libx264 -preset veryfast -c:a aac output.mp4
+}
+alias record-low='ffmpeg -video_size 1920x1080 -framerate 30 -f x11grab -i :1 -f alsa -ac 2 -i hw:0 output.mp4'
+alias record-silent='ffmpeg -f x11grab -video_size 1920x1080 -framerate 30 -i :1 output.mp4'
 
 # ------------------- Search -------------------
 

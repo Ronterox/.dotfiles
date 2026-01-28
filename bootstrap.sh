@@ -6,7 +6,7 @@
 COWSPACE_SIZE=2G
 
 DISK=/dev/sda
-SFWR_PKGS="sudo i3-wm base-devel git" # nix
+SFWR_PKGS="sudo i3-wm base-devel git"
 CORE_PKGS="base networkmanager linux"
 HRDW_PKGS="linux-firmware intel-ucode nvidia"
 BOOT_PKGS="refind efibootmgr"
@@ -107,18 +107,6 @@ fi
 
 # Software Setup
 if [ "$SFWR_SETUP" = true ]; then
-	# Defaults required
-	# bat
-	# eza
-	# fastfetch
-	# fortune-mod
-	# fzf
-	# man-db
-	# man-pages
-	# ripgrep
-	# tmux
-	# neovim
-	# stow
 
 	if [ "$PACKAGES" = true ]; then
 		pacman -Syu --noconfirm $SFWR_PKGS
@@ -135,21 +123,41 @@ if [ "$SFWR_SETUP" = true ]; then
 	fi
 
 	if [ "$NIX" = true ]; then
-		# TODO: Also add user to nix-users group and create the group
-		nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs
-		nix-channel --update
-		# TODO: Do not use unstable, but the stable nix channel, and reinstall nix on the user
+		curl -L https://nixos.org/nix/install | sh -s -- --daemon
+		su - rontero <<-MSG
+			nix-channel --add https://nixos.org/channels/nixos-25.05 nixpkgs
+			nix-channel --update
+		MSG
 	fi
 
 	if [ "$DOTFILES" = true ]; then
+		# Defaults required
+		# bat
+		# eza
+		# fastfetch
+		# fortune-mod
+		# fzf
+		# man-db
+		# man-pages
+		# ripgrep
+		# tmux
+		# neovim
+		# stow
+		# firefox
+
 		# - tells to login
 		# TODO: Replace with home manager
-		# TODO: But first let's work with stow as we work, multiple programs on nix file
 		su - rontero <<-MSG
+			nix-env -iA \
+				nixpkgs.bat nixpkgs.eza nixpkgs.fastfetch \
+				nixpkgs.fortune-mod nixpkgs.fzf nixpkgs.man-db \
+				nixpkgs.man-pages nixpkgs.ripgrep nixpkgs.tmux \
+				nixpkgs.neovim nixpkgs.stow nixpkgs.firefox
 			git clone -b linux https://github.com/Ronterox/.dotfiles.git
 			cd .dotfiles
 		MSG
 	fi
+
 fi
 
 # EOF
