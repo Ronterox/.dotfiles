@@ -83,18 +83,18 @@ return {
 			-- Create your own short cuts for the different types of actions
 			vim.keymap.set("n", "<leader>cf", function() _99.fill_in_function() end, { desc = "Fill in function" })
 			vim.keymap.set("n", "<leader>cc", function() _99.fill_in_function_prompt() end, { desc = "Fill in function" })
-			vim.keymap.set("n", "<leader>cp",
-				function()
-					local latest = findNewestFile("./tmp")
-					if latest and latest ~= file then
-						vim.cmd("r " .. latest)
-						file = latest
-						return
-					end
-					print("No new file")
-				end,
-				{ desc = "Pastes the latest prompt output" }
-			)
+
+			local function readLatestOutput()
+				local latest = findNewestFile("./tmp")
+				if latest and latest ~= file then
+					vim.cmd("r " .. latest)
+					file = latest
+					return
+				end
+				print("No new file")
+			end
+			vim.keymap.set("n", "<leader>cp", readLatestOutput, { desc = "Pastes the latest prompt output" })
+			vim.keymap.set("v", "<leader>cp", readLatestOutput, { desc = "Pastes the latest prompt output" })
 
 			-- take extra note that i have visual selection only in v mode
 			-- technically whatever your last visual selection is, will be used
