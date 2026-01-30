@@ -125,5 +125,5 @@ _G.qf_item_shortener = function(info)
 end
 
 -- vim.keymap.set('n', '<leader>td', ':vimgrep /TODO/j **/*<CR>:cw<CR>')
-vim.keymap.set('n', '<leader>fc', searchCode)
-vim.keymap.set('v', '<leader>sh', 'y:!<C-r>"<CR>')
+vim.keymap.set('n', '<leader>fc', searchCode, { desc = "Search code on computer" })
+vim.keymap.set('v', '<leader>sh', 'y:!<C-r>"<CR>', { desc = "Run selection as shell command" })

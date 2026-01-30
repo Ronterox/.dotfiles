@@ -1,1 +1,0 @@
-print('chat.nvim loaded')

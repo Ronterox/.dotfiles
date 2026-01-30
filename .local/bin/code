@@ -19,10 +19,10 @@ if [ "$1" = 'git' ]; then
 	exit 0
 fi
 
-opts="-S -F"
+opts="-S"
 if [ "$1" = 'vim' ]; then
 	shift
-	opts="-S -F --vimgrep"
+	opts="$opts --vimgrep"
 fi
 
 langs=(c cpp sh py rb java js ts tsx jsx)
