@@ -451,14 +451,19 @@ alias wordcounter='fnew https://wordcounter.net/'
 alias imagebackground='fnew https://www.cutout.pro/'
 
 bang() {
+	opts="--gb --np --unsafe"
     if [ -z "$1" ]; then
         selected="$(xh -b https://duckduckgo.com/bang.js | jq -c '.[] | {s,t}' | fzf --prompt="Bang!")"
         if [ -n "$selected" ]; then
             read -r -p "Searching $(echo "$selected" | jq -r '.s'): " search
-            ddgr --gb --np "!$(echo "$selected" | jq -r '.t') $search"
+            ddgr $opts "!$(echo "$selected" | jq -r '.t') $search"
         fi
     else
-        ddgr --gb --np "!$*"
+		if [ $# -gt 1 ]; then
+			ddgr $opts "!ddg $*" && ddgr $opts "!$*"
+		else
+			ddgr $opts "!$*"
+		fi
     fi
 }
 
