@@ -82,6 +82,7 @@ return {
 
 			-- Create your own short cuts for the different types of actions
 			vim.keymap.set("n", "<leader>cf", function() _99.fill_in_function() end, { desc = "Fill in function" })
+			vim.keymap.set("n", "<leader>cc", function() _99.fill_in_function_prompt() end, { desc = "Fill in function" })
 			vim.keymap.set("n", "<leader>cp",
 				function()
 					local latest = findNewestFile("./tmp")
@@ -95,8 +96,6 @@ return {
 				{ desc = "Pastes the latest prompt output" }
 			)
 
-			vim.keymap.set("n", "<leader>cp", function() end, { desc = "Fill in function" })
-
 			-- take extra note that i have visual selection only in v mode
 			-- technically whatever your last visual selection is, will be used
 			-- so i have this set to visual mode so i dont screw up and use an
@@ -108,8 +107,8 @@ return {
 			vim.keymap.set("v", "<leader>cc", function() _99.visual_prompt({}) end, { desc = "Visual prompt" })
 
 			--- if you have a request you dont want to make any changes, just cancel it
-			vim.keymap.set("n", "<leader>cs", function() _99.stop_all_requests() end, { desc = "Cancel request" })
-			vim.keymap.set("v", "<leader>cs", function() _99.stop_all_requests() end, { desc = "Cancel request" })
+			vim.keymap.set("n", "<leader>cz", function() _99.stop_all_requests() end, { desc = "Cancel request" })
+			vim.keymap.set("v", "<leader>cz", function() _99.stop_all_requests() end, { desc = "Cancel request" })
 
 			--- Example: Using rules + actions for custom behaviors
 			--- Create a rule file like ~/.rules/debug.md that defines custom behavior.
