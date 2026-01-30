@@ -87,7 +87,9 @@ return {
 			local function readLatestOutput()
 				local latest = findNewestFile("./tmp")
 				if latest and latest ~= file then
-					vim.cmd("r " .. latest)
+					local mode = vim.fn.mode()
+					if mode == "v" or mode == "V" then vim.cmd("normal! d") end
+					vim.cmd.read(latest)
 					file = latest
 					return
 				end
