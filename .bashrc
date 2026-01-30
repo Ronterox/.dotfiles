@@ -462,8 +462,15 @@ bang() {
     fi
 }
 
-alias ?='ddgr'
-alias ??='bang'
+search() {
+	if [ $# -eq 1 ]; then
+		bang "$@"
+		return
+	fi
+	bang "$@" && opencode run "$@"
+}
+
+alias ?='search'
 
 # ------------------- Rust -------------------
 

@@ -1,3 +1,25 @@
+---@param dir string
+---@return string?
+local function findNewestFile(dir)
+	local newest_file = nil
+	local newest_time = 0
+
+	for file in vim.fs.dir(dir) do
+		local full_path = dir .. "/" .. file
+		local stat = vim.uv.fs_stat(full_path)
+
+		if stat and stat.type == "file" and stat.mtime.sec > newest_time then
+			newest_time = stat.mtime.sec
+			newest_file = full_path
+		end
+	end
+
+	return newest_file
+end
+
+---@type string?
+local file = ""
+
 return {
 	{
 		"ThePrimeagen/99",
@@ -10,6 +32,8 @@ return {
 			local cwd = vim.uv.cwd()
 			local basename = vim.fs.basename(cwd)
 			_99.setup({
+				model = "opencode/big-pickle",
+
 				logger = {
 					level = _99.DEBUG,
 					path = "/tmp/" .. basename .. ".99.debug",
@@ -37,12 +61,12 @@ return {
 					--- {path = "scratch/custom_rules/vim/SKILL.md", name = "vim"},
 					--- ... the other rules in that dir ...
 					---
-					-- custom_rules = { "scratch/custom_rules/" },
+					custom_rules = { "scratch/custom_rules/" },
 
 					--- What autocomplete do you use.  We currently only
 					--- support cmp right now
 					source = "cmp",
-				},
+				}
 
 				--- WARNING: if you change cwd then this is likely broken
 				--- ill likely fix this in a later change
@@ -57,7 +81,21 @@ return {
 			})
 
 			-- Create your own short cuts for the different types of actions
-			vim.keymap.set("n", "<leader>cc", function() _99.fill_in_function() end, { desc = "Fill in function" })
+			vim.keymap.set("n", "<leader>cf", function() _99.fill_in_function() end, { desc = "Fill in function" })
+			vim.keymap.set("n", "<leader>cp",
+				function()
+					local latest = findNewestFile("./tmp")
+					if latest and latest ~= file then
+						vim.cmd("r " .. latest)
+						file = latest
+						return
+					end
+					print("No new file")
+				end,
+				{ desc = "Pastes the latest prompt output" }
+			)
+
+			vim.keymap.set("n", "<leader>cp", function() end, { desc = "Fill in function" })
 
 			-- take extra note that i have visual selection only in v mode
 			-- technically whatever your last visual selection is, will be used
@@ -66,9 +104,11 @@ return {
 			--
 			-- likely ill add a mode check and assert on required visual mode
 			-- so just prepare for it now
-			vim.keymap.set("v", "<leader>cc", function() _99.visual() end, { desc = "Visual prompt" })
+			vim.keymap.set("v", "<leader>cf", function() _99.visual() end, { desc = "Visual fill" })
+			vim.keymap.set("v", "<leader>cc", function() _99.visual_prompt({}) end, { desc = "Visual prompt" })
 
 			--- if you have a request you dont want to make any changes, just cancel it
+			vim.keymap.set("n", "<leader>cs", function() _99.stop_all_requests() end, { desc = "Cancel request" })
 			vim.keymap.set("v", "<leader>cs", function() _99.stop_all_requests() end, { desc = "Cancel request" })
 
 			--- Example: Using rules + actions for custom behaviors
