@@ -144,6 +144,7 @@ return {
 
 			vim.lsp.enable('vtsls')
 			vim.lsp.enable('vue_ls')
+			vim.lsp.enable('kotlin_lsp')
 
 			vim.lsp.config('pylsp', {
 				on_attach = function(client, bufnr)

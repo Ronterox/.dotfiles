@@ -7,7 +7,7 @@ RUN pacman -Syu --noconfirm && \
 	pacman -S --noconfirm xorg-server xorg-apps xterm sudo
 
 # Install your DE or WM
-RUN pacman -S --noconfirm i3-wm i3status dmenu
+RUN pacman -S --noconfirm i3-wm i3status i3lock i3blocks dmenu terminator
 RUN useradd -m -G wheel user
 
 USER user

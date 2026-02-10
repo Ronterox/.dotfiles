@@ -80,9 +80,16 @@ return {
 				-- md_files = { "AGENT.md" },
 			})
 
+			local call99 = function(fn)
+				return function()
+					vim.fn.mkdir("./tmp", "p")
+					fn()
+				end
+			end
+
 			-- Create your own short cuts for the different types of actions
-			vim.keymap.set("n", "<leader>cf", function() _99.fill_in_function() end, { desc = "Fill in function" })
-			vim.keymap.set("n", "<leader>cc", function() _99.fill_in_function_prompt() end, { desc = "Fill in function" })
+			vim.keymap.set("n", "<leader>cf", call99(_99.fill_in_function), { desc = "Fill in function" })
+			vim.keymap.set("n", "<leader>cc", call99(_99.fill_in_function_prompt), { desc = "Fill in with prompt" })
 
 			local function readLatestOutput()
 				local latest = findNewestFile("./tmp")
@@ -97,6 +104,10 @@ return {
 			end
 			vim.keymap.set("n", "<leader>cp", readLatestOutput, { desc = "Pastes the latest prompt output" })
 			vim.keymap.set("v", "<leader>cp", readLatestOutput, { desc = "Pastes the latest prompt output" })
+			vim.keymap.set("n", "<leader>cap", function()
+				vim.cmd("normal! vap")
+				readLatestOutput()
+			end, { desc = "Pastes the latest prompt output around the paragraph" })
 
 			-- take extra note that i have visual selection only in v mode
 			-- technically whatever your last visual selection is, will be used
@@ -105,21 +116,18 @@ return {
 			--
 			-- likely ill add a mode check and assert on required visual mode
 			-- so just prepare for it now
-			vim.keymap.set("v", "<leader>cf", function() _99.visual() end, { desc = "Visual fill" })
-			vim.keymap.set("v", "<leader>cc", function() _99.visual_prompt({}) end, { desc = "Visual prompt" })
+			vim.keymap.set("v", "<leader>cf", call99(_99.visual), { desc = "Visual fill" })
+			vim.keymap.set("v", "<leader>cc", call99(_99.visual_prompt), { desc = "Visual prompt" })
 
 			--- if you have a request you dont want to make any changes, just cancel it
-			vim.keymap.set("n", "<leader>cz", function() _99.stop_all_requests() end, { desc = "Cancel request" })
-			vim.keymap.set("v", "<leader>cz", function() _99.stop_all_requests() end, { desc = "Cancel request" })
+			vim.keymap.set("n", "<leader>cz", _99.stop_all_requests, { desc = "Cancel request" })
+			vim.keymap.set("v", "<leader>cz", _99.stop_all_requests, { desc = "Cancel request" })
 
 			--- Example: Using rules + actions for custom behaviors
 			--- Create a rule file like ~/.rules/debug.md that defines custom behavior.
 			--- For instance, a "debug" rule could automatically add printf statements
 			--- throughout a function to help debug its execution flow.
-			vim.keymap.set("n", "<leader>cd",
-				function() _99.fill_in_function({}) end,
-				{ desc = "Fill in function debug" }
-			)
+			vim.keymap.set("n", "<leader>cd", call99(_99.fill_in_function), { desc = "Fill in function debug" })
 		end,
 	},
 	{
