@@ -101,12 +101,6 @@ fi
 
 # Lazy loading incoming...
 
-caddy() {
-	unset -f caddy
-	. <(caddy completion bash)
-	caddy "$@"
-}
-
 asdf() {
 	unset -f asdf
 	. <(asdf completion bash)
