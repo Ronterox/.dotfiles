@@ -129,9 +129,13 @@ vim.keymap.set('n', '<leader>fc', searchCode, { desc = "Search code on computer"
 vim.keymap.set('v', '<leader>sh', 'y:!<C-r>"<CR>', { desc = "Run selection as shell command" })
 
 vim.keymap.set('n', '<leader>pp', function()
-	local filepath = vim.fn.expand("%:p")
+	local buffer_content = vim.api.nvim_buf_get_lines(0, 0, -1, false)
 	local temp_file = vim.fn.tempname()
+	local out_file = vim.fn.tempname()
 
-	vim.fn.system("rpreprocessor " .. filepath .. " > " .. temp_file)
-	vim.cmd("e " .. temp_file .. " | set filetype=" .. vim.bo.filetype)
+	vim.fn.writefile(buffer_content, temp_file)
+	vim.fn.system("rpreprocessor " .. temp_file .. " > " .. out_file)
+	vim.fn.delete(temp_file)
+
+	vim.cmd("e " .. out_file .. " | set filetype=" .. vim.bo.filetype)
 end, { desc = "Preprocess current file with rpreprocessor" })
