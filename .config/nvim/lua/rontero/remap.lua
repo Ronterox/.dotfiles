@@ -127,3 +127,11 @@ end
 -- vim.keymap.set('n', '<leader>td', ':vimgrep /TODO/j **/*<CR>:cw<CR>')
 vim.keymap.set('n', '<leader>fc', searchCode, { desc = "Search code on computer" })
 vim.keymap.set('v', '<leader>sh', 'y:!<C-r>"<CR>', { desc = "Run selection as shell command" })
+
+vim.keymap.set('n', '<leader>pp', function()
+	local filepath = vim.fn.expand("%:p")
+	local temp_file = vim.fn.tempname()
+
+	vim.fn.system("rpreprocessor " .. filepath .. " > " .. temp_file)
+	vim.cmd("e " .. temp_file .. " | set filetype=" .. vim.bo.filetype)
+end, { desc = "Preprocess current file with rpreprocessor" })
