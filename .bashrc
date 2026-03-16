@@ -209,6 +209,7 @@ alias notrunbyshell='grep -l pam_env /etc/pam.d/*' # /etc/environment else /etc/
 alias fontcache='sudo fc-cache -fv'
 alias fixaudio='systemctl --user restart wireplumber pipewire pipewire-pulse'
 alias textextract='flameshot gui --raw | tesseract stdin stdout'
+alias camera='ffplay -f v4l2 -video_size 1280x720 -i /dev/video1'
 
 hc() { h -d 1-$(calc $(hlen)-$HISTFILESIZE); } # Clear history
 man() {

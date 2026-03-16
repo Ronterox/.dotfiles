@@ -95,7 +95,7 @@ return {
 				local latest = findNewestFile("./tmp")
 				if latest and latest ~= file then
 					local mode = vim.fn.mode()
-					if mode == "v" or mode == "V" then vim.cmd("normal! d") end
+					if mode == "v" or mode == "V" then vim.cmd("normal! _d") end
 					vim.cmd.read(latest)
 					file = latest
 					return
@@ -146,4 +146,134 @@ return {
 			})
 		end,
 	},
+	{
+		"ai-lsp",
+		virtual = true, -- not real repo
+		config = function()
+			vim.diagnostic.config({
+				virtual_text = {
+					prefix = '●', -- Or '■', '▎', 'x'
+					spacing = 4,
+				},
+				underline = true, -- This ensures the code itself is underlined
+				severity_sort = true,
+				signs = true,
+			})
+
+			-- For the text at the end of the line
+			vim.api.nvim_set_hl(0, "DiagnosticVirtualTextError", { fg = "#ff0000", italic = true })
+			vim.api.nvim_set_hl(0, "DiagnosticVirtualTextWarn", { fg = "#ffa500", italic = true })
+
+			-- For the underline under the actual code
+			vim.api.nvim_set_hl(0, "DiagnosticUnderlineError", { undercurl = true, sp = "#ff0000" })
+
+			-- To make the whole line have a faint red background (Optional)
+			vim.api.nvim_set_hl(0, "DiagnosticLineError", { bg = "#330000" })
+
+			---@param bufnr number
+			---@param line number
+			---@param severity string
+			---@param message string
+			local function lint_data(bufnr, line, severity, message)
+				return {
+					bufnr = bufnr,                 -- 0 refers to the current buffer
+					lnum = line,                   -- Line number (0-indexed, so 10 is actually line 11)
+					col = 0,                       -- Column number (0-indexed)
+					end_col = 80,                  -- Highlight first 80
+					severity = vim.diagnostic.severity[severity], -- ERROR, WARN, INFO, or HINT
+					message = message,
+					source = "ai_linter",
+				}
+			end
+
+			vim.keymap.set('n', '<leader>cl', function()
+				local buffer = vim.api.nvim_get_current_buf()
+				local filename = vim.api.nvim_buf_get_name(buffer)
+				local namespace = vim.api.nvim_create_namespace("ai_linter")
+
+				local prompt = "What is wrong with this file? " .. filename
+				-- local prompt = "This is a test send an example output"
+				local command = {
+					"stdbuf", "-oL",
+					"opencode", "run",
+					"--agent", "linter",
+					"--thinking", prompt
+				}
+
+				vim.notify("Saving file! AI lsp linter is cooking...")
+				vim.cmd.write()
+
+				local bufnr = vim.api.nvim_create_buf(true, true)
+				vim.api.nvim_set_option_value("buftype", "nofile", { buf = bufnr })
+				vim.api.nvim_set_option_value("bufhidden", "hide", { buf = bufnr })
+				vim.api.nvim_set_option_value("swapfile", false, { buf = bufnr })
+
+				vim.api.nvim_buf_set_name(bufnr, "AI Linter " .. bufnr)
+				vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, command)
+
+				vim.diagnostic.reset(namespace, buffer)
+
+				vim.system(command, {
+					text = true,
+					on_stdout = function(err, data)
+						if data then
+							vim.schedule(function()
+								local lines = vim.split(data, "[\r\n]+")
+								if #lines > 0 and lines[1] == "" then table.remove(lines, 1) end
+
+								vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, lines)
+
+								local win = vim.fn.bufwinid(bufnr)
+								if win ~= -1 then
+									vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(bufnr), 0 })
+								end
+							end)
+						end
+					end,
+				}, function(out)
+					if out.code == 0 then
+						vim.schedule(function()
+							vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, vim.split(out.stdout, "\n"))
+
+							local reversed = out.stdout:reverse()
+							local start, finish = reversed:find("%]%s*}.-{%s*%[")
+
+							if not start then
+								vim.notify("Error: No JSON output\n" .. out.stdout)
+								return
+							end
+
+							---@alias JsonDiagnostic {message: string, severity: string, line: number}
+							local input = reversed:sub(start, finish):reverse()
+
+							---@type boolean,JsonDiagnostic[]
+							local ok, diagnostics = pcall(vim.json.decode, input)
+							if not ok then
+								vim.notify("Error Parsing JSON: " .. diagnostics .. "\nInput:\n" .. input)
+								return
+							end
+
+							local diagnostic_data = {}
+
+							for _, diagnostic in ipairs(diagnostics) do
+								table.insert(diagnostic_data,
+									lint_data(buffer, diagnostic.line - 1, diagnostic.severity, diagnostic.message)
+								)
+							end
+
+							vim.diagnostic.set(namespace, buffer, diagnostic_data)
+						end)
+					else
+						vim.schedule(function()
+							vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, vim.split(out.stderr, "\n"))
+							vim.notify("Error ai linter: " .. out.stderr)
+						end)
+					end
+				end)
+			end, { desc = "Run Code AI Linter" })
+
+			vim.keymap.set('n', '<leader>cg', function()
+			end, { desc = "Run Code Generator" })
+		end
+	}
 }
