@@ -273,7 +273,66 @@ return {
 			end, { desc = "Run Code AI Linter" })
 
 			vim.keymap.set('n', '<leader>cg', function()
-			end, { desc = "Run Code Generator" })
+				local buffer = vim.api.nvim_get_current_buf()
+				local filename = vim.api.nvim_buf_get_name(buffer)
+
+				local prompt = "I'm working on this file: " .. filename ..
+					"\n\nI'm purposely using non existent function/method calls. " ..
+					"Your job is to create the missing files with the missing implementations " ..
+					"of the functions/methods which then I can import, do not modify my file, since I'm working on it." ..
+					"\n\nWork smart, and in parallel, also create tests for the missing functions/methods. " ..
+					"So that I can run the tests and verify that everything is working as expected. " ..
+					"If you require any libraries, add comments to the code to explain why you need them. " ..
+					"\n\nREMEMBER: DO NOT MODIFY ANY EXISTING FILES, ONLY CREATE NEW FILES AND COMMENT HOW TO IMPORT THEM."
+
+
+				local command = {
+					"stdbuf", "-oL",
+					"opencode", "run",
+					"--agent", "build",
+					"--thinking", prompt
+				}
+
+				vim.notify("Saving file! AI lsp generator is cooking...")
+				vim.cmd.write()
+
+				local bufnr = vim.api.nvim_create_buf(true, true)
+				vim.api.nvim_set_option_value("buftype", "nofile", { buf = bufnr })
+				vim.api.nvim_set_option_value("bufhidden", "hide", { buf = bufnr })
+				vim.api.nvim_set_option_value("swapfile", false, { buf = bufnr })
+
+				vim.api.nvim_buf_set_name(bufnr, "AI API Generator " .. bufnr)
+				vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, vim.split(table.concat(command, "\n"), "\n"))
+
+				vim.system(command, {
+					text = true,
+					on_stdout = function(err, data)
+						if data then
+							vim.schedule(function()
+								local lines = vim.split(data, "[\r\n]+")
+								if #lines > 0 and lines[1] == "" then table.remove(lines, 1) end
+
+								vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, lines)
+
+								local win = vim.fn.bufwinid(bufnr)
+								if win ~= -1 then
+									vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(bufnr), 0 })
+								end
+							end)
+						end
+					end,
+				}, function(out)
+					if out.code == 0 then
+						vim.schedule(function()
+							vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, vim.split(out.stdout, "\n"))
+						end)
+					else
+						vim.schedule(function()
+							vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, vim.split(out.stderr, "\n"))
+						end)
+					end
+				end)
+			end, { desc = "Run Code Missing API Generator" })
 		end
 	}
 }

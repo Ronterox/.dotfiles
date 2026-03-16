@@ -116,6 +116,15 @@ _argc_completer() {
 
 complete -F _argc_completer -o nospace -o nosort argc
 
+# These must exists for sure
+_opencode_yargs_completions() {
+	unset -f _opencode_yargs_completions
+	. <(opencode completion)
+	_opencode_yargs_completions "$@"
+}
+
+complete -F _opencode_yargs_completions -o nospace -o nosort opencode
+
 start() {
 	unset -f start
 	. <(start-tool)
