@@ -23,6 +23,7 @@ case "$1" in
 			"edit: Opens to edit the doing file"
 			"recent: Shows all the recent doings"
 			"archive: Archives the doings"
+			"note: Calls jrnl tooling"
 			""
 		)
 		echo -e "\nUsage: anx <todo|plan|schedule|day|now|done|recent|archive> [args]"
@@ -71,6 +72,6 @@ case "$1" in
         jrnl "$@"
         ;;
 	*)
-		rg "$*" ~/Documents/Projects/MarkdownProjects/ANX/
+		rg -S "$*" ~/Documents/Projects/MarkdownProjects/ANX/
 		;;
 esac
