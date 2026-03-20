@@ -4,7 +4,6 @@
 version='1.2'
 rick='https://keroserene.net/lol'
 video="$rick/astley80.full.bz2"
-# TODO: I'll let someone with mac or windows machine send a pull request
 # to get gsm going again :)
 audio_gsm="$rick/roll.gsm"
 audio_raw="$rick/roll.s16"
@@ -17,7 +16,7 @@ green='\x1b[38;5;10m'
 purp='\x1b[38;5;171m'
 echo -en '\x1b[s'  # Save cursor.
 
-has?() { hash $1 2>/dev/null; }
+hasTool() { hash "$1" 2>/dev/null; }
 cleanup() { (( audpid > 1 )) && kill $audpid 2>/dev/null; }
 quit() { echo -e "\x1b[2J \x1b[0H ${purp}<3 \x1b[?25h \x1b[u \x1b[m"; }
 
@@ -34,7 +33,7 @@ for arg in "$@"; do
     usage && exit
   elif [[ "$arg" == "inject" ]]; then
     echo -en "${red}[Inject] "
-    echo $NEVER_GONNA >> $MAKE_YOU_CRY
+    echo "$NEVER_GONNA" >> "$MAKE_YOU_CRY"
     echo -e "${green}Appended to $MAKE_YOU_CRY. <3"
     echo -en "${yell}If you've astley overdosed, "
     echo -e "delete the line ${purp}\"$NEVER_GONNA\"${yell}."
@@ -49,22 +48,22 @@ trap "quit" EXIT
 
 # Bean streamin' - agnostic to curl or wget availability.
 obtainium() {
-  if has? curl; then curl -s $1
-  elif has? wget; then wget -q -O - $1
+  if hasTool curl; then curl -s "$1"
+  elif hasTool wget; then wget -q -O - "$1"
   else echo "Cannot has internets. :(" && exit
   fi
 }
 echo -en "\x1b[?25l \x1b[2J \x1b[H"  # Hide cursor, clear screen.
 
 #echo -e "${yell}Fetching audio..."
-if has? afplay; then
+if hasTool afplay; then
   # On Mac OS, if |afplay| available, pre-fetch compressed audio.
   [ -f /tmp/roll.s16 ] || obtainium $audio_raw >/tmp/roll.s16
   afplay /tmp/roll.s16 &
-elif has? aplay; then
+elif hasTool aplay; then
   # On Linux, if |aplay| available, stream raw sound.
   obtainium $audio_raw | aplay -Dplug:default -q -f S16_LE -r 8000 &
-elif has? play; then
+elif hasTool play; then
   # On Cygwin, if |play| is available (via sox), pre-fetch compressed audio.
   obtainium $audio_gsm >/tmp/roll.gsm.wav
   play -q /tmp/roll.gsm.wav &

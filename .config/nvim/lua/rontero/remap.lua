@@ -134,8 +134,13 @@ vim.keymap.set('n', '<leader>pp', function()
 	local out_file = vim.fn.tempname()
 
 	vim.fn.writefile(buffer_content, temp_file)
-	vim.fn.system("rpreprocessor " .. temp_file .. " > " .. out_file)
+	-- Send everything even stderr to stdout
+	vim.fn.system("rpreprocessor " .. temp_file .. " > " .. out_file .. " 2>&1")
 	vim.fn.delete(temp_file)
 
 	vim.cmd("e " .. out_file .. " | set filetype=" .. vim.bo.filetype)
+
+	vim.bo.bufhidden = "wipe"
+	vim.bo.buftype = "nofile"
+	vim.bo.swapfile = false
 end, { desc = "Preprocess current file with rpreprocessor" })
