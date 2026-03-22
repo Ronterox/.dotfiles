@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+if [[ -z "$MIXER" ]] ; then
+    MIXER="default"
+    if command -v pulseaudio >/dev/null 2>&1 && pulseaudio --check ; then
+        if amixer -D pulse info >/dev/null 2>&1 ; then
+            MIXER="pulse"
+        fi
+    fi
+    MIXER="${2:-$MIXER}"
+fi
+if [[ -z "$SCONTROL" ]] ; then
+    SCONTROL="${BLOCK_INSTANCE:-$(amixer -D $MIXER scontrols |
+                      sed -n "s/Simple mixer control '\([^']*\)',0/\1/p" |
+                      head -n1
+                    )}"
+fi
+
+if [[ -z "$STEP" ]] ; then
+    STEP="${1:-5%}"
+fi
+
+AMIXER_PARAMS="-M"
+NATURAL_MAPPING=${NATURAL_MAPPING:-0}
+
+capability() {
+  amixer $AMIXER_PARAMS -D $MIXER get $SCONTROL |
+    sed -n "s/  Capabilities:.*cvolume.*/Capture/p"
+}
+
+volume() {
+  amixer $AMIXER_PARAMS -D $MIXER get $SCONTROL $(capability)
+}
+
+get_volume() {
+  volume | awk -F'[]{}%' '/dB/ { gsub(/[[:space:]]+/, ""); if ($4 == "off") { print "MUTE"; exit }; gsub(/.*\[/, ""); gsub(/\%\]/, ""); print $1; exit }'
+}
+
+get_state() {
+  volume | grep -o '\[off\]' || echo ""
+}
+
+case $BLOCK_BUTTON in
+    1) amixer -q -D $MIXER sset $SCONTROL toggle ;;
+    3) exec $TERMINAL -e "alsamixer" ;;
+    4) amixer -q -D $MIXER sset $SCONTROL $STEP+ ;;
+    5) amixer -q -D $MIXER sset $SCONTROL $STEP- ;;
+esac
+
+vol=$(get_volume)
+state=$(get_state)
+
+if [[ "$state" == "MUTE" ]]; then
+    echo "♪ MUTE"
+    echo "♪ MUTE"
+    echo "#FF0000"
+elif [[ $vol -eq 0 ]]; then
+    echo "♪ 0%"
+    echo "♪ 0%"
+elif [[ $vol -lt 30 ]]; then
+    echo "♪ $vol%"
+    echo "♪ $vol%"
+    echo "#00FF00"
+elif [[ $vol -lt 70 ]]; then
+    echo "♪ $vol%"
+    echo "♪ $vol%"
+    echo "#FFFF00"
+else
+    echo "♪ $vol%"
+    echo "♪ $vol%"
+    echo "#FF0000"
+fi
