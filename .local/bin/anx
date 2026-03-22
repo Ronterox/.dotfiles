@@ -23,7 +23,8 @@ case "$1" in
 			"edit: Opens to edit the doing file"
 			"recent: Shows all the recent doings"
 			"archive: Archives the doings"
-			"note: Calls jrnl tooling"
+			"note: pass the topic and call jrnl tooling for annotations"
+			"notes: Calls jrnl tooling with a limit of 10 notes"
 			""
 		)
 		echo -e "\nUsage: anx <todo|plan|schedule|day|now|done|recent|archive> [args]"
@@ -68,9 +69,14 @@ case "$1" in
 		echo "$output" | lolcat -F 0.08 -p 1 -S 120 -a
 		;;
     note)
-		shift
-        jrnl "$@"
+		topic="${2^^}"
+		shift 2
+        jrnl "Annotation related to $topic." "$@"
         ;;
+    notes)
+		shift
+        jrnl -n 10 "$@"
+		;;
 	*)
 		rg -S "$*" ~/Documents/Projects/MarkdownProjects/ANX/
 		;;

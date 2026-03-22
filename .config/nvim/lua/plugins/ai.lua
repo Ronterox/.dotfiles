@@ -122,12 +122,6 @@ return {
 			--- if you have a request you dont want to make any changes, just cancel it
 			vim.keymap.set("n", "<leader>cz", _99.stop_all_requests, { desc = "Cancel request" })
 			vim.keymap.set("v", "<leader>cz", _99.stop_all_requests, { desc = "Cancel request" })
-
-			--- Example: Using rules + actions for custom behaviors
-			--- Create a rule file like ~/.rules/debug.md that defines custom behavior.
-			--- For instance, a "debug" rule could automatically add printf statements
-			--- throughout a function to help debug its execution flow.
-			vim.keymap.set("n", "<leader>cd", call99(_99.fill_in_function), { desc = "Fill in function debug" })
 		end,
 	},
 	{
