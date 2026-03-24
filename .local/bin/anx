@@ -75,7 +75,11 @@ case "$1" in
         ;;
     notes)
 		shift
-        jrnl -n 10 "$@"
+		if [ -z "$*" ]; then
+			jrnl -n 10
+		else
+			jrnl -contains "$*"
+		fi
 		;;
 	*)
 		rg -S "$*" ~/Documents/Projects/MarkdownProjects/ANX/

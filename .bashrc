@@ -487,6 +487,10 @@ export PATH="$HOME/.cargo/bin:$PATH"
 
 cargo-clean-cache() { rip -i ~/.cargo/registry/index/* ~/.cargo/.package-cache; }
 
+# ------------------- LLMs/AI -------------------
+
+alias skills='bunx skills'
+
 # ------------------- Java -------------------
 
 javarun() { javac $1.java && java $1;  }
