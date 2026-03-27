@@ -262,7 +262,7 @@ kitty-reload() { kill -SIGUSR1 $(pidof kitty); } # Problem: There is no kitty pr
 # ------------------- Apt -------------------
 
 apti() {
-    results=$(apt search "$*" | grep "$*" | awk '{print $1}')
+    results=$(apt-cache search "$1" | grep "$2" | awk '{print $1}')
     if [ ! "$results" ]; then
         echo "No results found!"
         return
