@@ -8,3 +8,6 @@ Dockerfile
 docker-compose\.yml
 bootstrap\.sh
 i3_config
+node_modules
+.*\.lock
+package\.json
