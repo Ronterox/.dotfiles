@@ -5,11 +5,19 @@ import os from "os"
 const running = new Set<string>();
 
 function splitSentences(text: string): string[] {
-	// Split on sentence-ending punctuation, colons, numbered lists, or hyphens followed by whitespace
-	return text
-		.split(/(?<=[.!?:])\s+|(?<=\d\.)\s+|(?<=-)\s+/)
-		.map(s => s.trim())
-		.filter(s => s.length > 0);
+	const sections = text.split(/(?=^#{1,6}\s)|(?<=^[*]{2}[^*]+[*]{2}:$)|(?<=\d\.)\s+(?=- )|(?=^- )|(?=^\* )|\n\n+/m);
+	const sentences: string[] = [];
+	for (const section of sections) {
+		const lines = section.split(/(?<=[.!?:](?![^"]*"))\s+/);
+		for (const line of lines) {
+			const trimmed = line.trim();
+			const isOnlyHeader = /^(#{1,6}\s|[*]{2}[^*]+[*]{2}:)$/.test(trimmed);
+			if (trimmed.length > 3 && !/^[-| ]+$/.test(trimmed) && !isOnlyHeader) {
+				sentences.push(trimmed);
+			}
+		}
+	}
+	return sentences;
 }
 
 export const NotificationPlugin: Plugin = async ({ client, $ }) => {
@@ -45,7 +53,7 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 					.replace(/```[\s\S]*?```/g, ''); // No code blocks
 
 				const voice = path.join(home, ".opencode/plugins/en_US-amy-medium.onnx");
-				const sentences = splitSentences(text).map((s) => s.replace(/`|\*|_|-|:|"|'|'|'|"|"|…|–|—/g, ''));
+				const sentences = splitSentences(text).map((s) => s.replace(/`|\*|_|-|:|"|'|'|'|"|"|…|–|—|\||#/g, ''));
 
 				if (sentences.length === 0) {
 					running.delete(sessionID);
