@@ -1,7 +1,6 @@
 import { Plugin } from "@opencode-ai/plugin"
 import path from "path"
 import os from "os"
-import fs from "fs"
 
 const running = new Set<string>();
 
@@ -53,34 +52,27 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 					return;
 				}
 
-				const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "piper-"));
-
-				// Generate a sentence to a temp wav file, returns path when done
-				const generate = async (sentence: string, index: number): Promise<string> => {
-					const outFile = path.join(tmpDir, `sentence-${index}.wav`)
-					await $`echo ${sentence} | piper -m ${voice} -f ${outFile}`.quiet();
-					return outFile;
-				}
-
 				try {
-					// Generate current sentence
-					let nextReady = generate(sentences[0], 0);
+					const generateAudio = async (sentence: string): Promise<Uint8Array> => {
+						const { stdout } = await $`echo ${sentence} | piper -m ${voice} --output-raw`.quiet();
+						return stdout;
+					};
+
+					let nextAudio = generateAudio(sentences[0]);
 
 					for (let i = 0; i < sentences.length; i++) {
 						const sentence = sentences[i];
-						const wavFile = await nextReady;
+						const audio = await nextAudio;
 
 						if (i + 1 < sentences.length) {
-							// Kick off next sentence generation in the background while current plays
-							nextReady = generate(sentences[i + 1], i + 1);
+							nextAudio = generateAudio(sentences[i + 1]);
 						}
 
 						$`echo ${sentence} | aosd_cat --font="Sans Bold 60" --fore-color=white --back-color=black --position=7 --x-offset=0 --y-offset=-30 --fade-in=100 --fade-full=60000 --fade-out=3000`.quiet().nothrow().then();
-						await $`ffplay -v error -nodisp -autoexit ${wavFile}`.quiet();
+						await $`ffplay -af atempo=1.25 -v error -nodisp -autoexit -f s16le -ar 24000 -i pipe:0 < ${audio}`.quiet();
 						await $`killall aosd_cat`.catch(() => { });
 					}
 				} finally {
-					fs.rmSync(tmpDir, { recursive: true, force: true })
 					running.delete(sessionID);
 				}
 			}
