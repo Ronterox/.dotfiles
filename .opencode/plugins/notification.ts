@@ -6,9 +6,9 @@ import fs from "fs"
 const running = new Set<string>();
 
 function splitSentences(text: string): string[] {
-	// Split on sentence-ending punctuation followed by whitespace or end of string
+	// Split on sentence-ending punctuation, colons, numbered lists, or hyphens followed by whitespace
 	return text
-		.split(/(?<=[.!?])\s+/)
+		.split(/(?<=[.!?:])\s+|(?<=\d\.)\s+|(?<=-)\s+/)
 		.map(s => s.trim())
 		.filter(s => s.length > 0);
 }
@@ -43,12 +43,10 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 				}
 
 				const text = lastMessage.parts.filter(p => p.type === "text").map(p => p.text).join("")
-					.replace(/```[\s\S]*?```/g, '')
-					.replace('(', 'in parentheses.')
-					.replace(/`|\*|_|-|:|"|'|'|'|"|"|…|–|—/g, '');
+					.replace(/```[\s\S]*?```/g, ''); // No code blocks
 
 				const voice = path.join(home, ".opencode/plugins/en_US-amy-medium.onnx");
-				const sentences = splitSentences(text);
+				const sentences = splitSentences(text).map((s) => s.replace(/`|\*|_|-|:|"|'|'|'|"|"|…|–|—/g, ''));
 
 				if (sentences.length === 0) {
 					running.delete(sessionID);
