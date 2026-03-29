@@ -5,7 +5,7 @@ import os from "os"
 const running = new Set<string>();
 
 function splitSentences(text: string): string[] {
-	const sections = text.split(/(?=^#{1,6}\s)|(?<=^[*]{2}[^*]+[*]{2}:$)|(?<=\d\.)\s+(?=- )|(?=^- )|(?=^\* )|\n\n+/m);
+	const sections = text.split(/(?=^#{1,6}\s)|(?<=^[*]{2}[^*]+[*]{2}:$)|(?<=\d\.)\s+(?=- )|(?=^- )|(?=^\* )|(?=^\|)|\n\n+/m);
 	const sentences: string[] = [];
 	for (const section of sections) {
 		const lines = section.split(/(?<=[.!?:](?![^"]*"))\s+/);
