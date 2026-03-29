@@ -23,9 +23,9 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 					return;
 				}
 
-				const home = os.homedir()
-				const teto = path.join(home, ".opencode/plugins/teto.mp3")
-				await $`ffplay -v error -nodisp -autoexit ${teto}`
+				const home = os.homedir();
+				const teto = path.join(home, ".opencode/plugins/teto.mp3");
+				await $`ffplay -v error -nodisp -autoexit ${teto}`;
 
 				const messages = await client.session.messages({ path: { id: event.properties.sessionID } });
 
@@ -41,7 +41,7 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 
 					if (sentences.length === 0) return;
 
-					const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "piper-"))
+					const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "piper-"));
 
 					// Generate a sentence to a temp wav file, returns path when done
 					const generate = async (sentence: string, index: number): Promise<string> => {
@@ -51,22 +51,21 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 					}
 
 					try {
-						// Start generating first sentence immediately
-						let nextReady = generate(sentences[0], 0)
+						// Generate current sentence
+						let nextReady = generate(sentences[0], 0);
 
 						for (let i = 0; i < sentences.length; i++) {
-							const sentence = sentences[i]
+							const sentence = sentences[i];
 							const wavFile = await nextReady;
 
-							// Kick off next sentence generation in the background while current plays
 							if (i + 1 < sentences.length) {
-								const nextGenPromise = generate(sentences[i + 1], i + 1)
-								nextReady = nextGenPromise
+								// Kick off next sentence generation in the background while current plays
+								nextReady = generate(sentences[i + 1], i + 1);
 							}
 
 							$`echo ${sentence} | aosd_cat --font="Sans Bold 60" --fore-color=white --back-color=black --position=7 --x-offset=0 --y-offset=-30 --fade-in=100 --fade-full=60000 --fade-out=300`.quiet().nothrow().then();
-							await $`ffplay -v error -nodisp -autoexit ${wavFile}`.quiet()
-							await $`killall aosd_cat`
+							await $`ffplay -v error -nodisp -autoexit ${wavFile}`.quiet();
+							await $`killall aosd_cat`.catch(() => { });
 						}
 					} finally {
 						fs.rmSync(tmpDir, { recursive: true, force: true })
