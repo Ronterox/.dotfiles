@@ -454,6 +454,8 @@ alias mermaidlive='fnew https://mermaid.live/'
 alias wordcounter='fnew https://wordcounter.net/'
 alias imagebackground='fnew https://www.cutout.pro/'
 
+alias browser='uvx --with pyqt6,pyqt6-webengine qutebrowser'
+
 bang() {
 	opts="--gb --np --unsafe"
     if [ -z "$1" ]; then
