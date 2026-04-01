@@ -16,10 +16,12 @@ POPUP_COUNT=$(xdotool search --any "yad" 2>/dev/null | wc -l)
 
 Y=$((BASE_Y + (POPUP_COUNT * (HEIGHT + GAP))))
 
-yad --width=$WIDTH --height=$HEIGHT \
+(echo "1"; while true; do sleep 0.3; done) | yad --width=$WIDTH --height=$HEIGHT \
     --geometry=${WIDTH}x${HEIGHT}+${X}+${Y} \
-    --title="Popup" \
+    --title="Loading" \
     --class "yad-popup" \
+    --progress \
+    --pulsate \
     --text="$*" \
     --text-align=center \
     --fontname="Sans 11" \
