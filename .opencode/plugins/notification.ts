@@ -61,17 +61,25 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 				}
 
 				try {
-					let stop = false;
-
-					const popup_script = path.join(home, ".opencode/plugins/popup.sh");
-					$`bash ${popup_script} bruv is talking`.quiet().then(() => stop = true);
-
 					const generateAudio = async (sentence: string): Promise<Uint8Array> => {
 						const { stdout } = await $`echo ${sentence} | piper -m ${voice} --output-raw`.quiet();
 						return stdout;
 					};
 
+					const playAudio = async (sentence: string, audio: Uint8Array) => {
+						$`echo ${sentence} | aosd_cat --font="Sans Bold 60" --fore-color=white --back-color=black --position=7 --x-offset=0 --y-offset=-30 --fade-in=100 --fade-full=60000 --fade-out=3000`.quiet().nothrow().then();
+						await $`ffplay -af atempo=1.25 -v error -nodisp -autoexit -f s16le -ar 24000 -i pipe:0 < ${audio}`.quiet();
+						await $`killall aosd_cat`.catch(() => { });
+					};
+
 					let nextAudio = generateAudio(sentences[0]);
+					let stop = false;
+
+					const popup_script = path.join(home, ".opencode/plugins/popup.sh");
+					$`bash ${popup_script} bruv is talking`.quiet().then(async () => {
+						stop = true;
+						playAudio('oh.', await generateAudio('oh.'));
+					});
 
 					for (let i = 0; i < sentences.length && !stop; i++) {
 						const sentence = sentences[i];
@@ -81,9 +89,7 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 							nextAudio = generateAudio(sentences[i + 1]);
 						}
 
-						$`echo ${sentence} | aosd_cat --font="Sans Bold 60" --fore-color=white --back-color=black --position=7 --x-offset=0 --y-offset=-30 --fade-in=100 --fade-full=60000 --fade-out=3000`.quiet().nothrow().then();
-						await $`ffplay -af atempo=1.25 -v error -nodisp -autoexit -f s16le -ar 24000 -i pipe:0 < ${audio}`.quiet();
-						await $`killall aosd_cat`.catch(() => { });
+						playAudio(sentence, audio);
 					}
 				} finally {
 					running.delete(sessionID);
