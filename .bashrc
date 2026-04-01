@@ -798,3 +798,5 @@ export PATH=$HOME/.opencode/bin:$PATH
 
 # Custom
 export DOINGO_PATH="$HOME/Documents/Projects/MarkdownProjects/ANX/doing"
+
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
