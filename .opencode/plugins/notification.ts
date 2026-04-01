@@ -31,7 +31,7 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 
 				const session = await client.session.get({ path: { id: sessionID } });
 
-				if (session.data?.parentID) {
+				if (!session.data || session.data.parentID) {
 					// Ignore subagents
 					running.delete(sessionID);
 					return;
@@ -76,7 +76,7 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 					let stop = false;
 
 					const popup_script = path.join(home, ".opencode/plugins/popup.sh");
-					$`bash ${popup_script} bruv is talking`.quiet().then(async () => {
+					$`bash ${popup_script} ${session.data.title}`.quiet().then(async () => {
 						stop = true;
 						playAudio('oh.', await generateAudio('oh.'));
 					});
@@ -89,7 +89,7 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 							nextAudio = generateAudio(sentences[i + 1]);
 						}
 
-						playAudio(sentence, audio);
+						await playAudio(sentence, audio);
 					}
 				} finally {
 					running.delete(sessionID);
