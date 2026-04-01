@@ -61,6 +61,11 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 				}
 
 				try {
+					let stop = false;
+
+					const popup_script = path.join(home, ".opencode/plugins/popup.sh");
+					$`bash ${popup_script} bruv is talking`.quiet().then(() => stop = true);
+
 					const generateAudio = async (sentence: string): Promise<Uint8Array> => {
 						const { stdout } = await $`echo ${sentence} | piper -m ${voice} --output-raw`.quiet();
 						return stdout;
@@ -68,7 +73,7 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 
 					let nextAudio = generateAudio(sentences[0]);
 
-					for (let i = 0; i < sentences.length; i++) {
+					for (let i = 0; i < sentences.length && !stop; i++) {
 						const sentence = sentences[i];
 						const audio = await nextAudio;
 
