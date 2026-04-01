@@ -8,7 +8,7 @@ function splitSentences(text: string): string[] {
 	const sections = text.split(/(?=^#{1,6}\s)|(?<=^[*]{2}[^*]+[*]{2}:$)|(?<=\d\.)\s+(?=- )|(?=^- )|(?=^\* )|(?=^\|)|\n\n+/m);
 	const sentences: string[] = [];
 	for (const section of sections) {
-		const lines = section.split(/(?<=[.!?:](?![^"]*"))\s+/);
+		const lines = section.split(/(?<=[.!?:](?![^"]*"))\s+|(?=^(?:[-*]|\d+\.)\s)/);
 		for (const line of lines) {
 			const trimmed = line.trim();
 			const isOnlyHeader = /^(#{1,6}\s|[*]{2}[^*]+[*]{2}:)$/.test(trimmed);
@@ -76,7 +76,7 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 					let stop = false;
 
 					const popup_script = path.join(home, ".opencode/plugins/popup.sh");
-					$`bash ${popup_script} ${session.data.title}`.quiet().then(async () => {
+					$`bash ${popup_script} ${session.data.title}`.nothrow().quiet().then(async () => {
 						stop = true;
 						playAudio('oh.', await generateAudio('oh.'));
 					});
