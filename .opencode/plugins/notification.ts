@@ -91,6 +91,10 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 
 						await playAudio(sentence, audio);
 					}
+
+					if (!stop) {
+						await $`pkill -f "yad.*--text=${session.data.title}"`.nothrow();
+					}
 				} finally {
 					running.delete(sessionID);
 				}
