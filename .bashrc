@@ -223,9 +223,9 @@ alias camera='ffplay -f v4l2 -video_size 1280x720 -i /dev/video1'
 hc() { h -d 1-$(calc $(hlen)-$HISTFILESIZE); } # Clear history
 man() {
     lookup="${2:-$1}"
-    command man $1 $2 || command $lookup --help | batcat || command $lookup -h | batcat;
+    command man $1 $2 || command $lookup --help | cat || command $lookup -h | cat;
 }
-wtf() { whatis $1 2> /dev/null; tldr $1 | batcat; }
+wtf() { whatis $1 2> /dev/null; tldr $1 | cat; }
 
 # fd -p to match full path
 # fd -e to match extension
@@ -427,7 +427,16 @@ api() {
 
 [ ! -x "$(command -v batcat)" ] && alias batcat='bat'
 
-alias cat='batcat'
+cat() {
+    for f in "$@"; do
+	if [[ "$f" =~ \.md$ ]]; then
+	    glow -p "$f"
+	else
+	    batcat "$f"
+	fi
+    done
+}
+
 alias icat='timg'
 alias asciicat='img2txt'
 # Markdown Command
