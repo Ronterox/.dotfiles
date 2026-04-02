@@ -53,7 +53,7 @@ export const NotificationPlugin: Plugin = async ({ client, $ }) => {
 					.replace(/```[\s\S]*?```/g, ''); // No code blocks
 
 				const voice = path.join(home, ".opencode/plugins/en_US-amy-medium.onnx");
-				const sentences = splitSentences(text).map((s) => s.replace(/`|\*|_|-|"|'|…|–|—|\||#/g, ''));
+				const sentences = splitSentences(text).map((s) => s.replace(/`|\*|_|-|"|'|…|\||#/g, ' '));
 
 				if (sentences.length === 0) {
 					running.delete(sessionID);
