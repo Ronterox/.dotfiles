@@ -428,13 +428,13 @@ api() {
 [ ! -x "$(command -v batcat)" ] && alias batcat='bat'
 
 cat() {
-    for f in "$@"; do
-	if [[ "$f" =~ \.md$ ]]; then
-	    glow -p "$f"
-	else
-	    batcat "$f"
-	fi
-    done
+	for f in "$@"; do
+		if [[ "$f" == *.md ]]; then
+			glow -w $COLUMNS -p "$f"
+		else
+			batcat "$f"
+		fi
+	done
 }
 
 alias icat='timg'
