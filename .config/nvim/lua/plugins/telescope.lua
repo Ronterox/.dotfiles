@@ -44,6 +44,12 @@ return {
 			mode = { 'n' },
 			desc = "Find Project"
 		},
+		{
+			'<leader>fb',
+			'<Cmd>Telescope buffers<CR>',
+			mode = { 'n' },
+			desc = "Find Buffers"
+		},
 	},
 	cmd = { 'Telescope' },
 	opts = {
