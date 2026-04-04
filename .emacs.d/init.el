@@ -9,12 +9,13 @@
 (unless (assoc 'melpa package-archives)
   (package-refresh-contents))
 
-;; Magit
 (use-package magit
   :ensure t
   :bind ("C-x g" . magit-status))
 
-;; Download Evil and evil-collection
+(use-package vterm
+    :ensure t)
+
 (unless (package-installed-p 'evil)
   (package-install 'evil))
 (unless (package-installed-p 'evil-collection)
@@ -36,7 +37,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages '(cmake-mode evil evil-collection magit)))
+ '(package-selected-packages '(cmake-mode evil evil-collection magit vterm)))
 
 ;; Evil Mode
 (define-key evil-insert-state-map (kbd "C-c C-c") 'evil-normal-state)
@@ -45,6 +46,7 @@
 
 ;; Init
 (setq inhibit-startup-message t)
+(fset 'yes-or-no-p 'y-or-n-p)
 (xterm-mouse-mode 1)
 
 ;; Visuals
@@ -64,3 +66,19 @@
 (add-to-list 'completion-styles 'initials t)
 
 (define-key evil-normal-state-map (kbd "g c c") 'comment-line)
+
+
+;; Org Mode
+(with-eval-after-load 'org
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((shell . t)))
+  (define-key evil-normal-state-map (kbd ">") 'org-shiftright)
+  (define-key evil-normal-state-map (kbd "<") 'org-shiftleft))
+
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
