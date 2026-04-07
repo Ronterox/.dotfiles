@@ -34,7 +34,7 @@
 
 * DONE use gum to make claude like shell
 
-* TODO setup new emacs stuff
+* DONE setup new emacs stuff
 
 * TODO set up orchestration method
 

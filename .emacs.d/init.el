@@ -12,9 +12,13 @@
 (fset 'yes-or-no-p 'y-or-n-p)
 (xterm-mouse-mode 1)
 
-(put 'narrow-to-region 'disabled nil)
 (savehist-mode 1)
 (save-place-mode 1)
+
+(global-auto-revert-mode 1)
+(setq global-auto-revert-non-file-buffers t)
+
+(put 'narrow-to-region 'disabled nil)
 
 ;; Visuals
 (menu-bar-mode -1)
