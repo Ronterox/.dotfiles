@@ -1,5 +1,5 @@
 #+TITLE: Todos
-#+SEQ_TODO: todo | done
+#+SEQ_TODO: TODO | DONE
 
 #+BEGIN_SRC sh
   anx recent
@@ -38,6 +38,8 @@
 
 * TODO set up orchestration method
 
+* TODO openclawd stuff
+
 * TODO framework 1
 
 * TODO framework 2
@@ -45,15 +47,14 @@
 * TODO framework 3
 
 * TODO framework 4
+
 * TODO Allow my cli to speak from a buffer
- 
-* TODO openclawd stuff
+
+* TODO send what I see right now with lots of details line like and stuff
 
 * TODO learn to travel the generated content by ai
 
 * TODO make ai make its own prompt best on anotations
-
-* TODO send what I see right now with lots of details line like and stuff
 
 * DONE setup dark reader on qute browser
 

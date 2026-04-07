@@ -11,4 +11,5 @@ i3_config
 node_modules
 .*\.lock
 package\.json
+package-lock\.json
 todo.*
