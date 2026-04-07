@@ -73,8 +73,8 @@
   (org-babel-do-load-languages
    'org-babel-load-languages
    '((shell . t)))
-  (define-key evil-normal-state-map (kbd ">") 'org-shiftright)
-  (define-key evil-normal-state-map (kbd "<") 'org-shiftleft))
+  (define-key evil-normal-state-map (kbd "C-x >") 'org-shiftright)
+  (define-key evil-normal-state-map (kbd "C-x <") 'org-shiftleft))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -82,3 +82,4 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+(put 'narrow-to-region 'disabled nil)

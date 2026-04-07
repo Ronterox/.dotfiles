@@ -189,7 +189,7 @@ __z() {
 lsz() {
     lscmd="${1:-ls}" && shift
     [ $# -eq 0 ] && path="." || path="$*"
-    dir=$($lscmd "$path" | fzf --height=50% --preview "batcat \"$path\"/{} 2> /dev/null || tree -L 1 \"$path\"/{}")
+    dir=$($lscmd "$path" | fzf --height=50% --preview "cat \"$path\"/{} 2> /dev/null || tree -L 1 \"$path\"/{}")
     if [ ! "$dir" ]; then
         command cd "$path"
         return
@@ -250,6 +250,8 @@ rename-correct() {
     fi
     rename 's/ /_/g; s/([A-Z])/$1/g; $_ = lc($_)' "$@"
 }
+
+alias passes="pass bitwarden/backup | jq '.[] | {name, login}' | nvim"
 
 # ------------------- Kitty -------------------
 
@@ -356,13 +358,13 @@ git-worktree() {
     read -r -p "Are you sure you want to create a worktree of $folder? [y/n]: " confirm
     [ "$confirm" != "y" ] && return
 
-    cd .. && git-clone "$folder"
+    z .. && git-clone "$folder"
     rip "$folder" && mv "$folder.git" "$folder"
 
-    cd "$folder" && gitwa "$current_branch"
+    z "$folder" && gitwa "$current_branch"
     echo "cd $current_branch && nvim ." > start
 
-    cd "$current_branch" && echo "Success!"
+    z "$current_branch" && echo "Success!"
 }
 
 # ------------------- Github -------------------
@@ -427,14 +429,14 @@ api() {
 
 [ ! -x "$(command -v batcat)" ] && alias batcat='bat'
 
-cat() {
-	for f in "$@"; do
-		if [[ "$f" == *.md ]]; then
-			glow -w $COLUMNS -p "$f"
-		else
-			batcat "$f"
-		fi
-	done
+mad() {
+    for f in "$@"; do
+	if [[ "$f" == *.md ]]; then
+	    glow -w $COLUMNS -p "$f"
+	else
+	    batcat "$f"
+	fi
+    done
 }
 
 alias icat='timg'
