@@ -23,10 +23,17 @@
 ;; Visuals
 (menu-bar-mode -1)
 (tab-bar-mode -1)
+
+(setq modus-themes-common-palette-overrides
+    '((fg-line-number-inactive "gray50")
+    (fg-line-number-active red-cooler)
+    (bg-line-number-inactive unspecified)
+    (bg-line-number-active unspecified)))
+
 (load-theme 'modus-vivendi-tritanopia t)
 
 (setq display-line-numbers-type 'relative)
-(display-line-numbers-mode 1)
+(global-display-line-numbers-mode 1)
 
 ;; Coding
 (show-paren-mode 1)
