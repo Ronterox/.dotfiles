@@ -109,3 +109,8 @@ if [ -n "$BASH_VERSION" ]; then
     fi
 fi
 
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:/home/rontero/.lmstudio/bin"
+# End of LM Studio CLI section
+

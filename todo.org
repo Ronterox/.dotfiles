@@ -10,7 +10,6 @@
 | [36m | 21/03        | 12:44am[0m | ║    | >      | on         | cline       | create                            | an                                | mcp                               | tool                              | with                              | it                                | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
 | [36m | 21/03        | 1:36am[0m  | ║    | >      | I          | really      | want                              | to                                | make                              | llm                               | output                            | instant                           | no                                | delay                             | [35m[[0mCurrently[35m][0m | [33m[0m |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
 | [36m | 21/03        | 2:24am[0m  | ║    | >      | try        | all         | my                                | fixed                             | message                           | of                                | local                             | ais                               | to                                | try                               | on                                | discord     | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
-| [36m | 23/03        | 12:44pm[0m | ║    | >      | parallalel | branches    | to                                | compare                           | results                           | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |                                   |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
 | [36m | 23/03        | 11:23pm[0m | ║    | >      | I          | can         | finally                           | work                              | with                              | rewaken                           | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
 | [36m | 24/03        | 4:29pm[0m  | ║    | >      | the        | ai          | should                            | have                              | its                               | own                               | editor                            | which                             | I                                 | can                               | follow                            | alone       | i                                 | another                           | screen                            | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |             |                                   |             |
 | [36m | 24/03        | 4:42pm[0m  | ║    | >      | what       | if          | I                                 | turn                              | it                                | into                              | a                                 | real                              | AI,                               | that                              | helps                             | proactively | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
@@ -24,41 +23,71 @@
 | [36m | Yesterday    | 9:16pm[0m  | ║    | >      | create     | a           | website                           | generator                         | like                              | mkdocs                            | but                               | with                              | everything                        | [35m[[0mCurrently[35m][0m | [33m[0m                       |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
 | [36m | 12:30am[0m | ║            | >    | try    | ema        | 3,          | ema                               | 9                                 | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |                                   |                                   |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
 
-* TODO Install lmstudio and search for models
+* AI Workflow Improve
 
-* TODO Try out local models with ollama
+** TODO try connecting to same conversation from my phone on a opencode server 
+** TODO openclawd stuff https://github.com/openclaw/openclaw simple telegram/discord notification system
+** TODO use n8n for the same discord/telegram stuff
+** TODO Download all of the clis to try them see if can export files to one of them (maybe endup markdown to json)
 
-* TODO Setup hugging face to see how lm studio does it
+Despues de esto deberia hacer lo the nvim
+
 
 * TODO compile llama.cpp and improve a slow model
 
-* DONE use gum to make claude like shell
+* TODO create the ultimate benchmark with the AI
 
-* DONE setup new emacs stuff
+* TODO Before final reset, make sure they help you create a realistic simulation
 
-* TODO set up orchestration method
+* TODO Work on the browser to test nvim ai work
 
-* TODO openclawd stuff
 
-* TODO framework 1
+* Workflow Optimization
 
-* TODO framework 2
+** TODO learn to travel the generated content by ai
+** TODO I want a cli conversation through nvim buffer
+    - AI can probably see what's on your buffer right now
+    - You can send selected input to the AI
+    - You can edit the whole conversation in a buffer
+    - You can select an area for the ai to modify
+    - You insert and send text through chording commands
+    - You can develop a pseudo file, and the AI will do the actual translation 1 to 1 to the pseudo file hlink
+      This helps visualize later what it expands to on AI version
+** TODO Do the high level view of these code architectures in a narrow view
+** TODO do ai summary on the patterns they follow for orchestration
 
-* TODO framework 3
+Finalmente despues de esto hacer lo de el tfg de la tool game engine
 
-* TODO framework 4
+* AI Optimization
 
-* TODO Allow my cli to speak from a buffer
+** TODO Complete at least 2 claude courses
+** TODO /powerup claude 
+** TODO Verification is really damn useful see how morse works
+** TODO Try what already exists for nvim as well
 
-* TODO send what I see right now with lots of details line like and stuff
+* TODO Test out that the mcps can chat with opencode
 
-* TODO learn to travel the generated content by ai
+* DONE anotate which ideas will we run on this night
+    The way is to do what I love, making cli tools, but for AI,
+    so that they can create whatever with simple great powerful tools
+    For a great dynamic conversation which AI generates non stuff
+    - game-engine cli
+    - ai-thoughts and usage overview cli
+    - docasaurus manage documentation on system project, auto check for what, and what isn't documented generate a website
+    - code-overview cli
+    - trading candles as text cli?
 
-* TODO make ai make its own prompt best on anotations
+Despues de esto deberia hacer lo de openclawd de una vez
 
-* DONE setup dark reader on qute browser
+* Game Compression  
 
-https://github.com/code-yeongyu/oh-my-openagent
-https://github.com/Yeachan-Heo/oh-my-codex
+** TODO play kkrieger
+** TODO play low space javascript games download the best ones
+
+* TFG 
+
+** DONE Descansar y una ducha
+** TODO Plan on the CLI that visualizes and parses text into a game experience
+** TODO Do the same hardcore planning on the claude code side
+
 https://github.com/triggerdotdev/trigger.dev
-https://github.com/openclaw/openclaw

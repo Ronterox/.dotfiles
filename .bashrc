@@ -358,13 +358,13 @@ git-worktree() {
     read -r -p "Are you sure you want to create a worktree of $folder? [y/n]: " confirm
     [ "$confirm" != "y" ] && return
 
-    z .. && git-clone "$folder"
+    command cd .. && git-clone "$folder"
     rip "$folder" && mv "$folder.git" "$folder"
 
-    z "$folder" && gitwa "$current_branch"
+    command cd "$folder" && gitwa "$current_branch"
     echo "cd $current_branch && nvim ." > start
 
-    z "$current_branch" && echo "Success!"
+    command cd "$current_branch" && echo "Success!"
 }
 
 # ------------------- Github -------------------
@@ -517,6 +517,26 @@ alias javaclean='rip *.class'
 alias javainstall='apti openjdk-*'
 
 # ------------------- Interpreters & Editors  -------------------
+
+opencode() {
+    cfg="$HOME/.config/opencode/opencode.json"
+    plg="$HOME/.config/opencode/plugins.json"
+    tmp="/tmp/oc.json"
+
+    if [[ ! -f "$plg" ]]; then
+	jq -c .plugin "$cfg" > "$plg"
+    fi
+
+    plugins=$(cat "$plg")
+
+    if [[ "$*" == *"--omo"* ]]; then
+	jq ".plugin = $plugins" "$cfg" > $tmp && cp $tmp "$cfg"
+	command opencode "${@/--omo/}"
+    else
+	jq ".plugin = ${plugins/oh-my-openagent@latest/}" "$cfg" > $tmp && cp $tmp "$cfg"
+	command opencode "$@"
+    fi
+}
 
 docker-clean-dangling() {
     docker system prune -a
@@ -811,3 +831,8 @@ export PATH=$HOME/.opencode/bin:$PATH
 export DOINGO_PATH="$HOME/Documents/Projects/MarkdownProjects/ANX/doing"
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:/home/rontero/.lmstudio/bin"
+# End of LM Studio CLI section
+
