@@ -25,10 +25,13 @@
 
 * AI Workflow Improve
 
-** TODO try connecting to same conversation from my phone on a opencode server 
-** TODO openclawd stuff https://github.com/openclaw/openclaw simple telegram/discord notification system
-** TODO use n8n for the same discord/telegram stuff
+** DONE try connecting to same conversation from my phone on a opencode server 
+** DONE openclawd stuff https://github.com/openclaw/openclaw simple telegram/discord notification system
+** DONE use n8n for the same discord/telegram stuff
 ** TODO Download all of the clis to try them see if can export files to one of them (maybe endup markdown to json)
+    - Check out their functionalities
+    - Couple all of them on a single cli caller with gum input like lm studio did, ven put ollama and lm studio there
+    - See how they show output format and if they can import conversations
 
 Despues de esto deberia hacer lo the nvim
 

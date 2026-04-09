@@ -429,15 +429,20 @@ api() {
 
 [ ! -x "$(command -v batcat)" ] && alias batcat='bat'
 
-mad() {
-    for f in "$@"; do
-	if [[ "$f" == *.md ]]; then
-	    glow -w $COLUMNS -p "$f"
-	else
-	    batcat "$f"
-	fi
-    done
+cat() {
+    if [[ $# -eq 0 ]] && [[ ! -t 0 ]]; then
+        batcat
+    else
+        for f in "$@"; do
+            if [[ "$f" == *.md ]]; then
+                glow -w "$COLUMNS" -p "$f"
+            else
+                batcat "$f"
+            fi
+        done
+    fi
 }
+
 
 alias icat='timg'
 alias asciicat='img2txt'
@@ -836,3 +841,10 @@ export DOINGO_PATH="$HOME/Documents/Projects/MarkdownProjects/ANX/doing"
 export PATH="$PATH:/home/rontero/.lmstudio/bin"
 # End of LM Studio CLI section
 
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# OpenClaw Completion
+source "/home/rontero/.openclaw/completions/openclaw.bash"
