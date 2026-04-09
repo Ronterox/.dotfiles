@@ -28,21 +28,27 @@
 ** DONE try connecting to same conversation from my phone on a opencode server 
 ** DONE openclawd stuff https://github.com/openclaw/openclaw simple telegram/discord notification system
 ** DONE use n8n for the same discord/telegram stuff
-** TODO Download all of the clis to try them see if can export files to one of them (maybe endup markdown to json)
+** DONE Download all of the clis to try them see if can export files to one of them (maybe endup markdown to json)
     - Check out their functionalities
     - Couple all of them on a single cli caller with gum input like lm studio did, ven put ollama and lm studio there
     - See how they show output format and if they can import conversations
 
-Despues de esto deberia hacer lo the nvim
+=Despues de esto deberia hacer lo the nvim=
 
 
 * TODO compile llama.cpp and improve a slow model
 
 * TODO create the ultimate benchmark with the AI
+=do this first step after done with glm and minimax=
 
 * TODO Before final reset, make sure they help you create a realistic simulation
 
 * TODO Work on the browser to test nvim ai work
+
+* Awesome ideas
+
+** DONE Discord telegram interactive bot creator
+** TODO Fix orchestor using anthropic and call it for this
 
 
 * Workflow Optimization
@@ -59,28 +65,39 @@ Despues de esto deberia hacer lo the nvim
 ** TODO Do the high level view of these code architectures in a narrow view
 ** TODO do ai summary on the patterns they follow for orchestration
 
-Finalmente despues de esto hacer lo de el tfg de la tool game engine
+=Finalmente despues de esto hacer lo de el tfg de la tool game engine=
 
 * AI Optimization
 
 ** TODO Complete at least 2 claude courses
 ** TODO /powerup claude 
-** TODO Verification is really damn useful see how morse works
+** DONE Verification is really damn useful see how morse works
 ** TODO Try what already exists for nvim as well
 
-* TODO Test out that the mcps can chat with opencode
+* DONE FIX the report analysis output
+
+* DONE shower an relax
+
+* DONE Finish the discord thingy and verify
+
+* DONE with emacs fix the slacker reverse, and make it pretty, also show names
+
+* DONE Test out that the mcps can chat with opencode
 
 * DONE anotate which ideas will we run on this night
     The way is to do what I love, making cli tools, but for AI,
     so that they can create whatever with simple great powerful tools
     For a great dynamic conversation which AI generates non stuff
-    - game-engine cli
-    - ai-thoughts and usage overview cli
-    - docasaurus manage documentation on system project, auto check for what, and what isn't documented generate a website
-    - code-overview cli
-    - trading candles as text cli?
 
-Despues de esto deberia hacer lo de openclawd de una vez
+* Background Cool projects
+
+** TODO game-engine cli
+** TODO ai-thoughts and usage overview cli
+** TODO docasaurus manage documentation on system project, auto check for what, and what isn't documented generate a website
+** TODO code-overview cli
+** TODO trading candles as text cli?
+
+=This I should be doign on the background, then the cool stuff is below=
 
 * Game Compression  
 

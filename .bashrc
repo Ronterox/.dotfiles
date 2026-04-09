@@ -443,7 +443,6 @@ cat() {
     fi
 }
 
-
 alias icat='timg'
 alias asciicat='img2txt'
 # Markdown Command
@@ -521,7 +520,15 @@ javajdk() {
 alias javaclean='rip *.class'
 alias javainstall='apti openjdk-*'
 
-# ------------------- Interpreters & Editors  -------------------
+# ------------------- Agent CLI  -------------------
+
+cc() { # Claude code
+    allofthem=("kimi" "gemini" "opencode" "opencode --omo" "aider" "clother-zai --yolo" "clother-minimax --yolo" "ollama" "lms" "lm-studio" "cline" "kilo" "droid" "pi")
+    cli=$(gum filter "${allofthem[@]}")
+    [[ -z $cli ]] && return
+    echo "Launching: $cli..."
+    $cli
+}
 
 opencode() {
     cfg="$HOME/.config/opencode/opencode.json"
@@ -542,6 +549,8 @@ opencode() {
 	command opencode "$@"
     fi
 }
+
+# ------------------- Interpreters & Editors  -------------------
 
 docker-clean-dangling() {
     docker system prune -a
