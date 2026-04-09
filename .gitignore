@@ -3,3 +3,4 @@ cache.db*
 songs
 *.onnx
 package-lock.json
+.omc/
