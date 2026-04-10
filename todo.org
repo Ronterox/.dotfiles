@@ -72,7 +72,7 @@
 ** TODO Complete at least 2 claude courses
 ** TODO /powerup claude 
 ** DONE Verification is really damn useful see how morse works
-** TODO Try what already exists for nvim as well
+** DONE Try what already exists for nvim as well
 
 * DONE FIX the report analysis output
 
