@@ -22,7 +22,13 @@ return {
         dependencies = { 'nvim-tree/nvim-web-devicons', 'linrongbin16/lsp-progress.nvim', 'arkav/lualine-lsp-progress' },
         opts = {
             sections = {
-                lualine_a = { 'mode' },
+                lualine_a = {
+                  function()
+                    local ok, mm = pcall(require, "opencode-mm.statusline")
+                    if ok and mm.is_active() then return "MASTERMIND" end
+                    return require("lualine.utils.mode").get_mode()
+                  end
+                },
                 lualine_b = { 'branch', 'diff', 'diagnostics' },
                 lualine_c = { 'buffers', require('lsp-progress').progress },
                 lualine_x = { 'encoding', 'fileformat', 'filetype' },
