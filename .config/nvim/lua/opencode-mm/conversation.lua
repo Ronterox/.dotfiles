@@ -34,6 +34,8 @@ function M.load(bufnr, session_id, callback)
 				})
 				buffer.render_messages(bufnr, (m_res and m_res.body) or {})
 				buffer.set_session_id(bufnr, session_id)
+				local lc = vim.api.nvim_buf_line_count(bufnr)
+				vim.api.nvim_buf_set_lines(bufnr, lc, lc, false, { "", "### User", "" })
 
 				local stream = get_stream()
 				if not stream.is_connected() then

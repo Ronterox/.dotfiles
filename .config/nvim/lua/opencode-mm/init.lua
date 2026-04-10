@@ -30,15 +30,25 @@ end
 
 function M.toggle()
 	local buffer = require("opencode-mm.buffer")
+	local config = require("opencode-mm.config")
+
 	for bufnr, info in pairs(buffer.bufs) do
 		if info.win_id and vim.api.nvim_win_is_valid(info.win_id) then
 			local win_tab = vim.api.nvim_win_get_tabpage(info.win_id)
 			if win_tab == vim.api.nvim_get_current_tabpage() then
-				buffer.close(bufnr)
+				vim.api.nvim_win_close(info.win_id, true)
+				buffer.bufs[bufnr].win_id = nil
 				return
 			end
 		end
 	end
+
+	local cfg = config.get()
+	for bufnr, info in pairs(buffer.bufs) do
+		buffer.open(bufnr, cfg)
+		return
+	end
+
 	M.open()
 end
 
