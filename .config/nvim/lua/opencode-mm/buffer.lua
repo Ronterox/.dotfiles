@@ -88,8 +88,8 @@ function M.render_messages(bufnr, messages)
 	local lines = {}
 	for _, msg in ipairs(messages) do
 		local role = msg.role or (msg.info and msg.info.role) or "user"
-		local content = msg.content or ""
-		if type(content) ~= "string" then
+		local content = msg.content
+		if not content then
 			local parts = msg.parts or {}
 			local texts = {}
 			for _, part in ipairs(parts) do

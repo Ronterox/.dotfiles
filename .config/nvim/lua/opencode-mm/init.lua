@@ -77,17 +77,21 @@ function M.open(session_id)
 				vim.notify("Unexpected session response: " .. vim.inspect(res), vim.log.levels.ERROR)
 				return
 			end
-			vim.schedule(function()
-				local sid = res.body.id
-				local bufnr = buffer.create(sid)
-				buffer.open(bufnr, cfg)
-				buffer.render_frontmatter(bufnr, { model = cfg.defaults and cfg.defaults.model or "", system = cfg.defaults and cfg.defaults.system or "", session = sid })
-				vim.api.nvim_buf_set_lines(bufnr, 6, -1, false, { "### User", "" })
-				setup_buf(bufnr)
-				if not stream.is_connected() then
-					stream.connect(api, function() end)
-				end
-			end)
+vim.schedule(function()
+			local sid = res.body.id
+			local bufnr = buffer.create(sid)
+			buffer.open(bufnr, cfg)
+			buffer.render_frontmatter(bufnr, { model = cfg.defaults and cfg.defaults.model or "", system = cfg.defaults and cfg.defaults.system or "", session = sid })
+			vim.api.nvim_buf_set_lines(bufnr, 6, -1, false, { "### User", "" })
+			setup_buf(bufnr)
+			if not stream.is_connected() then
+				stream.connect(api, function()
+					conversation._subscribe_events(bufnr)
+				end)
+			else
+				conversation._subscribe_events(bufnr)
+			end
+		end)
 		end)
 	end
 end
