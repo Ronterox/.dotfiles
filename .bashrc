@@ -523,11 +523,14 @@ alias javainstall='apti openjdk-*'
 # ------------------- Agent CLI  -------------------
 
 cc() { # Claude code
-    allofthem=("kimi" "gemini" "opencode" "opencode --omo" "aider" "clother-zai --yolo" "clother-minimax --yolo" "ollama" "lms" "lm-studio" "cline" "kilo" "droid" "pi")
+    kilocli=("kilo" "kilo serve --port 11634 --print-logs")
+    occli=("opencode" "opencode --omo" "opencode web --mdns")
+    clothercli=("clother-minimax --yolo" "clother-zai --yolo")
+    allofthem=("kimi" "gemini" "${occli[@]}" "aider" "${clothercli[@]}" "ollama" "lms" "lm-studio" "cline" "${kilocli[@]}" "droid" "pi")
     cli=$(gum filter "${allofthem[@]}")
     [[ -z $cli ]] && return
-    echo "Launching: $cli..."
-    $cli
+    echo "Launching: $cli $*..."
+    $cli $@
 }
 
 opencode() {

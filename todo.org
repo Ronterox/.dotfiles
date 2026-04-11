@@ -23,19 +23,6 @@
 | [36m | Yesterday    | 9:16pm[0m  | ║    | >      | create     | a           | website                           | generator                         | like                              | mkdocs                            | but                               | with                              | everything                        | [35m[[0mCurrently[35m][0m | [33m[0m                       |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
 | [36m | 12:30am[0m | ║            | >    | try    | ema        | 3,          | ema                               | 9                                 | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |                                   |                                   |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
 
-* AI Workflow Improve
-
-** DONE try connecting to same conversation from my phone on a opencode server 
-** DONE openclawd stuff https://github.com/openclaw/openclaw simple telegram/discord notification system
-** DONE use n8n for the same discord/telegram stuff
-** DONE Download all of the clis to try them see if can export files to one of them (maybe endup markdown to json)
-    - Check out their functionalities
-    - Couple all of them on a single cli caller with gum input like lm studio did, ven put ollama and lm studio there
-    - See how they show output format and if they can import conversations
-
-=Despues de esto deberia hacer lo the nvim=
-
-
 * TODO compile llama.cpp and improve a slow model
 
 * TODO create the ultimate benchmark with the AI
@@ -45,56 +32,31 @@
 
 * TODO Work on the browser to test nvim ai work
 
-* Awesome ideas
-
-** DONE Discord telegram interactive bot creator
-** TODO Fix orchestor using anthropic and call it for this
-
-
 * Workflow Optimization
 
 ** TODO learn to travel the generated content by ai
-** TODO I want a cli conversation through nvim buffer
-    - AI can probably see what's on your buffer right now
-    - You can send selected input to the AI
-    - You can edit the whole conversation in a buffer
-    - You can select an area for the ai to modify
-    - You insert and send text through chording commands
-    - You can develop a pseudo file, and the AI will do the actual translation 1 to 1 to the pseudo file hlink
-      This helps visualize later what it expands to on AI version
-** TODO Do the high level view of these code architectures in a narrow view
-** TODO do ai summary on the patterns they follow for orchestration
+    - pseudo-cli navigation
+    - mastermind working
 
-=Finalmente despues de esto hacer lo de el tfg de la tool game engine=
-
-* AI Optimization
+** TODO Anotate Tool ideas for saving context:
+    - Self evolving IDE, run tmux on nvim panel
+    - Get tmux information mcp and send keys
+    - Slackers ability to wait for response automatically
+    - Send relevant information to other AI on event, hook on edits and stuff
+    - Setting up whole new agents to the same project that commmunicate through slack
+    - Teto voice* AI Optimization
 
 ** TODO Complete at least 2 claude courses
 ** TODO /powerup claude 
-** DONE Verification is really damn useful see how morse works
-** DONE Try what already exists for nvim as well
 
-* DONE FIX the report analysis output
-
-* DONE shower an relax
-
-* DONE Finish the discord thingy and verify
-
-* DONE with emacs fix the slacker reverse, and make it pretty, also show names
-
-* DONE Test out that the mcps can chat with opencode
-
-* DONE anotate which ideas will we run on this night
-    The way is to do what I love, making cli tools, but for AI,
-    so that they can create whatever with simple great powerful tools
-    For a great dynamic conversation which AI generates non stuff
-
-* Background Cool projects
+* TODO use ai to figure out what i broke
+* TODO add tests, then try to simplify while breaking tests
+* TODO do the ai thinking on file part* Background Cool projects
 
 ** TODO game-engine cli
 ** TODO ai-thoughts and usage overview cli
 ** TODO docasaurus manage documentation on system project, auto check for what, and what isn't documented generate a website
-** TODO code-overview cli
+** DONE code-overview cli
 ** TODO trading candles as text cli?
 
 =This I should be doign on the background, then the cool stuff is below=
@@ -106,7 +68,6 @@
 
 * TFG 
 
-** DONE Descansar y una ducha
 ** TODO Plan on the CLI that visualizes and parses text into a game experience
 ** TODO Do the same hardcore planning on the claude code side
 

@@ -173,3 +173,162 @@ Archived entries from file /home/rontero/.dotfiles/todo.org
 :ARCHIVE_TODO: DONE
 :END:
 
+
+* AI Workflow Improve
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:03
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:END:
+
+** DONE try connecting to same conversation from my phone on a opencode server 
+** DONE openclawd stuff https://github.com/openclaw/openclaw simple telegram/discord notification system
+** DONE use n8n for the same discord/telegram stuff
+** DONE Download all of the clis to try them see if can export files to one of them (maybe endup markdown to json)
+    - Check out their functionalities
+    - Couple all of them on a single cli caller with gum input like lm studio did, ven put ollama and lm studio there
+    - See how they show output format and if they can import conversations
+
+=Despues de esto deberia hacer lo the nvim=
+
+
+
+* DONE I want a cli conversation through nvim buffer
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:03
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: Workflow Optimization
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+    - AI can probably see what's on your buffer right now
+    - You can send selected input to the AI
+    - You can edit the whole conversation in a buffer
+    - You can select an area for the ai to modify
+    - YOU INSERT AND SEND TEXT THROUGH CHORDING COMMANDS
+
+* DONE Pseudo cli
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:03
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: Workflow Optimization
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+    - YOU CAN DEVELOP A PSEUDO FILE, AND THE AI WILL DO THE ACTUAL TRANSLATION 1 TO 1 TO THE PSEUDO FILE HLINK
+      THIS HELPS VISUALIZE LATER WHAT IT EXPANDS TO ON AI VERSION
+
+* DONE DO THE HIGH LEVEL VIEW OF THESE CODE ARCHITECTURES IN A NARROW VIEW
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:03
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: Workflow Optimization
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+    - Fix go types on every comment
+    - I want to also see the spec of call visualize dependencies (plan it well)
+
+
+* DONE DO AI SUMMARY ON THE PATTERNS THEY FOLLOW FOR ORCHESTRATION
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:03
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: Workflow Optimization
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+    - Fix understanding openclaw history
+    - Do the AI summary of prompts found
+    - Find the claude oh my prompts
+
+=FINALMENTE DESPUES DE ESTO HACER LO DE EL TFG DE LA TOOL GAME ENGINE=
+
+
+* DONE Verification is really damn useful see how morse works
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:04
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: Anotate Tool ideas for saving context:
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+* DONE Try what already exists for nvim as well
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:04
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: Anotate Tool ideas for saving context:
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE FIX the report analysis output
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:04
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE shower an relax
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:04
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Finish the discord thingy and verify
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:04
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE with emacs fix the slacker reverse, and make it pretty, also show names
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:04
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Test out that the mcps can chat with opencode
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:04
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE anotate which ideas will we run on this night
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:04
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+    The way is to do what I love, making cli tools, but for AI,
+    so that they can create whatever with simple great powerful tools
+    For a great dynamic conversation which AI generates non stuff
+
+
+* Awesome ideas
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 00:04
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:END:
+
+** DONE Discord telegram interactive bot creator
+** DONE Fix orchestor using anthropic and call it for this
+
+
