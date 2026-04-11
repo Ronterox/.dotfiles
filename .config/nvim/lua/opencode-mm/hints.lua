@@ -52,7 +52,7 @@ M.show = function(chords, arg_buffer)
   local row = math.floor(config.height * 0.1)
 
   -- Create floating window
-  M.state.win = vim.api.nvim_open_win(M.state.buf, true, {
+  M.state.win = vim.api.nvim_open_win(M.state.buf, false, {
     relative = "win",
     width = width,
     height = height,
@@ -60,14 +60,8 @@ M.show = function(chords, arg_buffer)
     col = col,
     style = "minimal",
     focusable = false,
-    border = "rounded",
-    winhl = "Normal:MastermindHint"
+    border = "rounded"
   })
-
-  -- Set highlight group if not exists
-  if not vim.api.nvim_get_hl(0, { name = "MastermindHint" }) then
-    vim.api.nvim_set_hl(0, "MastermindHint", { link = "NormalFloat" })
-  end
 
   -- Make read-only
   vim.api.nvim_buf_set_option(M.state.buf, "modifiable", false)
@@ -96,7 +90,6 @@ M.update = function(arg_buffer)
     end
   end
 
-  vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, lines)
   vim.api.nvim_buf_set_option(M.state.buf, "modifiable", true)
   vim.api.nvim_buf_set_lines(M.state.buf, 0, -1, false, lines)
   vim.api.nvim_buf_set_option(M.state.buf, "modifiable", false)
@@ -104,15 +97,15 @@ end
 
 --- Hide and close floating hint window
 M.hide = function()
-  if M.state.win then
+  if M.state.win and vim.api.nvim_win_is_valid(M.state.win) then
     vim.api.nvim_win_close(M.state.win, true)
-    M.state.win = nil
   end
+  M.state.win = nil
 
-  if M.state.buf then
+  if M.state.buf and vim.api.nvim_buf_is_valid(M.state.buf) then
     vim.api.nvim_buf_delete(M.state.buf, { force = true })
-    M.state.buf = nil
   end
+  M.state.buf = nil
 end
 
 return M

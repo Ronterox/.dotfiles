@@ -12,6 +12,13 @@ function M.setup(opts)
 	require("opencode-mm.chords").setup(cfg)
 	require("opencode-mm.api").setup(cfg)
 
+	-- Global <leader><leader> mapping to activate mastermind in ANY buffer
+	-- This allows offline chorded text expansion without requiring the opencode server
+	vim.keymap.set("n", "<leader><leader>", function()
+		local bufnr = vim.api.nvim_get_current_buf()
+		require("opencode-mm.mastermind").enter(bufnr)
+	end, { noremap = true, silent = true })
+
 	vim.api.nvim_create_user_command("OpenCode", function(o)
 		M._command(o)
 	end, {

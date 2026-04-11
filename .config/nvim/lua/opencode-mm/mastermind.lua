@@ -15,10 +15,9 @@ function M.enter(bufnr)
 	if state.active then
 		return
 	end
-	local buffer = require("opencode-mm.buffer")
-	if not buffer.is_opencode_buf(bufnr) then
-		return
-	end
+
+	-- Mastermind now works on ANY buffer (not just opencode buffers)
+	-- This enables offline chorded text expansion without requiring the server
 
 	state.bufnr = bufnr
 	state.arg_buffer = ""
@@ -152,7 +151,10 @@ end
 
 function M._submit_and_exit()
 	if state.bufnr then
-		require("opencode-mm.conversation").submit(state.bufnr)
+		local buffer = require("opencode-mm.buffer")
+		if buffer.is_opencode_buf(state.bufnr) then
+			require("opencode-mm.conversation").submit(state.bufnr)
+		end
 	end
 	M.exit()
 end
