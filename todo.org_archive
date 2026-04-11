@@ -332,3 +332,43 @@ Archived entries from file /home/rontero/.dotfiles/todo.org
 ** DONE Fix orchestor using anthropic and call it for this
 
 
+
+* DONE add tests, then try to simplify while breaking tests
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 02:41
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+* Workflow Optimization
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 02:42
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:END:
+
+** DONE learn to travel the generated content by ai
+    - pseudo-cli navigation
+    - mastermind working
+
+** DONE Anotate Tool ideas for saving context:
+
+* DONE /powerup claude 
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 03:27
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: Work on the browser to test nvim ai work
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE code-overview cli
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-11 Sat 03:28
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: Background Cool projects
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:

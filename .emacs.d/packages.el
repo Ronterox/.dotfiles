@@ -9,6 +9,11 @@
 (unless (assoc 'melpa package-archives)
   (package-refresh-contents))
 
+(use-package xclip
+  :ensure t
+  :config
+  (xclip-mode 1))
+
 (use-package magit
   :ensure t
   :bind ("C-x g" . magit-status))

@@ -43,6 +43,7 @@
 (setq tab-always-indent 'complete)
 (add-to-list 'completion-styles 'initials t)
 
+;; (define-key evil-visual-state-map (kbd "C-c") 'evil-yank-to-clipboard)
 (define-key evil-normal-state-map (kbd "g c c") 'comment-line)
 (define-key evil-normal-state-map (kbd "C-q") 'recentf-open-files)
 

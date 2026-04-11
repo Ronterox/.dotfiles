@@ -32,31 +32,16 @@
 
 * TODO Work on the browser to test nvim ai work
 
-* Workflow Optimization
+* TODO Complete at least 2 claude courses
 
-** TODO learn to travel the generated content by ai
-    - pseudo-cli navigation
-    - mastermind working
+* TODO do the ai thinking on file part
+    - /oh-my-claudecode:plan as you can see we can list all opencode sessions in a directory and export it's json output. I want to be
 
-** TODO Anotate Tool ideas for saving context:
-    - Self evolving IDE, run tmux on nvim panel
-    - Get tmux information mcp and send keys
-    - Slackers ability to wait for response automatically
-    - Send relevant information to other AI on event, hook on edits and stuff
-    - Setting up whole new agents to the same project that commmunicate through slack
-    - Teto voice* AI Optimization
-
-** TODO Complete at least 2 claude courses
-** TODO /powerup claude 
-
-* TODO use ai to figure out what i broke
-* TODO add tests, then try to simplify while breaking tests
-* TODO do the ai thinking on file part* Background Cool projects
+* Background Cool projects
 
 ** TODO game-engine cli
 ** TODO ai-thoughts and usage overview cli
 ** TODO docasaurus manage documentation on system project, auto check for what, and what isn't documented generate a website
-** DONE code-overview cli
 ** TODO trading candles as text cli?
 
 =This I should be doign on the background, then the cool stuff is below=
@@ -72,3 +57,4 @@
 ** TODO Do the same hardcore planning on the claude code side
 
 https://github.com/triggerdotdev/trigger.dev
+https://karthinks.com/software/avy-can-do-anything/
