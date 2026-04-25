@@ -398,3 +398,285 @@ Archived entries from file /home/rontero/.dotfiles/todo.org
 :ARCHIVE_CATEGORY: todo
 :ARCHIVE_TODO: DONE
 :END:
+
+* DONE Work on the browser to test nvim ai work
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-12 Sun 19:55
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Estiramiento precio momemtum
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-12 Sun 19:55
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+- Reducir X amount of bars as maximum and minimum
+
+
+* DONE Entregar .tex a la profe
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-12 Sun 19:55
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Entregar parte de la tesis
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-12 Sun 19:55
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* TFG 
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-12 Sun 19:56
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:END:
+
+** DONE Plan on the CLI that visualizes and parses text into a game experience
+** DONE Do the same hardcore planning on the claude code side
+
+
+
+* DONE Transcirpt my telegram audios
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-13 Mon 16:24
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE compile llama.cpp and improve a slow model
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-13 Mon 16:24
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE understand see tags, to see on what is failing the AI
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-13 Mon 16:24
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Poner las alertas a mi papa
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-13 Mon 16:24
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE rename expresso tools to AIToolingExpress
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-14 Tue 03:29
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* TODO watch other benchmarks to compare
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-14 Tue 22:31
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: TODO
+:END:
+
+- Following intrusctions test
+- Figuring out environment
+- Being proactive
+- Optimizing code
+- Simpifying code
+- Searching
+- Summarizing
+- Keeping context long conversation
+- Token consumption
+- Amount of thinking
+- <tags> insertion
+- ```separators```
+- You are x prompt
+- Contract prompts
+- Unsure prompts
+- Specific prompts
+- Technical prompts
+- 3D Work
+- 2D Work
+- New Framework no docs
+- New Framework with docs
+- My tools optimizing it
+- Image svg generation
+- Separation of concerns
+- Following instructions against it will
+- Jailbreaking
+- Explicit prohibition
+- Implicit Information
+- Math problems, like the Nth combination
+- Logic problems, like the car, or digits of pi
+- Visual description
+- Figuring out new tool with -h
+- Figuring out cookies on agent browser
+- With different memory systems or RAG
+- Breaking down into steps
+- Auto planning
+- Same model, verifier working together
+- Chat messages between each other
+- Studying for theroic topic
+- Studying for a practical topic
+
+"Essentially, Anthropic treats the model like a philosopher-engineer that needs to understand why it is doing something,
+whereas other labs often treat it like a search-engine-on-steroids designed to give you the fastest answer possible"c
+
+=do this first step after done with glm and minimax=
+
+
+* DONE Do the session thoughts search yourself
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-23 Thu 00:11
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Fix the bot not selling like at all, use ai to identify the issue on the commits
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-23 Thu 00:12
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Practicar Examen Latex
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-23 Thu 00:12
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+    - estructura bascia un documento conocer los comandos del tutorial
+    - format otexto y listas
+    - matematicas latex
+    - tabla e imagenes
+    - bibliografia y referencias
+    - paquestes y librerias
+    - documento completo
+
+* DONE Duchado
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-23 Thu 00:12
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: IR
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Clases
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-23 Thu 00:12
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: IR
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Curadrad tio dia
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-23 Thu 00:12
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: IR
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Mii Island fun
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-23 Thu 00:12
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: IR
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Comprar fruta
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-23 Thu 00:13
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: IR
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Comer
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-23 Thu 00:13
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: IR
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Pedir ali del express ya
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-23 Thu 00:13
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: IR
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Keep on Ricardo successing sexy for bby
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-23 Thu 00:13
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: IR
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Cuadrar alejandro dia
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-23 Thu 00:13
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: IR
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE No more ecchi, pure bby form on your mind* TODO Bring miko back with gemma 3
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-04-23 Thu 00:13
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: IR
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+

@@ -460,15 +460,6 @@ alias record-silent='ffmpeg -f x11grab -video_size 1920x1080 -framerate 30 -i :1
 
 # ------------------- Search -------------------
 
-alias fnew='firefox --new-window'
-alias lucky='fnew https://wheelofnames.com/'
-alias graph='fnew https://mermaid.js.org/'
-alias draw='fnew https://excalidraw.com/'
-alias imagetotext='fnew https://www.imagetotext.io/'
-alias mermaidlive='fnew https://mermaid.live/'
-alias wordcounter='fnew https://wordcounter.net/'
-alias imagebackground='fnew https://www.cutout.pro/'
-
 alias browser='uvx --with pyqt6,pyqt6-webengine qutebrowser'
 
 bang() {
@@ -489,11 +480,26 @@ bang() {
 }
 
 search() {
+	if [ $# -eq 0 ]; then
+		provider=$(s -l | fzf --prompt="Search provider: " --border)
+		[[ -z $provider ]] && return
+
+		inp=$(gum input --placeholder="Search on $provider...")
+		[[ -z $inp ]] && return
+
+		s -p "$provider" "$inp"
+		return
+	fi
+
 	if [ $# -eq 1 ]; then
 		bang "$@"
 		return
 	fi
-	bang "$@" && opencode run "$@"
+
+	bang "$@"
+	if gum confirm "Ask AI?" --default=0; then
+		opencode run "$@"
+	fi
 }
 
 alias ?='search'
@@ -505,6 +511,8 @@ export PATH="$HOME/.cargo/bin:$PATH"
 cargo-clean-cache() { rip -i ~/.cargo/registry/index/* ~/.cargo/.package-cache; }
 
 # ------------------- LLMs/AI -------------------
+
+export PATH=/usr/local/cuda/bin:$PATH
 
 alias skills='bunx skills'
 
@@ -524,9 +532,21 @@ alias javainstall='apti openjdk-*'
 
 cc() { # Claude code
     kilocli=("kilo" "kilo serve --port 11634 --print-logs")
+
     occli=("opencode" "opencode --omo" "opencode web --mdns")
     clothercli=("clother-minimax --yolo" "clother-zai --yolo")
-    allofthem=("kimi" "gemini" "${occli[@]}" "aider" "${clothercli[@]}" "ollama" "lms" "lm-studio" "cline" "${kilocli[@]}" "droid" "pi")
+
+    pros=("${kilocli[@]}" "${occli[@]}" "${clothercli[@]}")
+
+    opts="-ngl 99 --flash-attn auto -t 6 -c 4096 -b 512 --ubatch-size 128 --mlock"
+    llamama=("llama-cli -hf ggml-org/gemma-3-1b-it-GGUF $opts" "llama-cli -hf ggml-org/gemma-4-E2B-it-GGUF $opts" "llama-server -hf ggml-org/gemma-4-E2B-it-GGUF $opts")
+    locallm=("ollama" "lms" "lm-studio" "${llamama[@]}")
+
+    industry=("kimi" "gemini --yolo" "codex")
+    funny=("aider" "pi" "droid" "cline")
+
+    allofthem=("${industry[@]}" "${pros[@]}" "${locallm[@]}" "${funny[@]}")
+
     cli=$(gum filter "${allofthem[@]}")
     [[ -z $cli ]] && return
     echo "Launching: $cli $*..."

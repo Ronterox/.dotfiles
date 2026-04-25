@@ -4,7 +4,6 @@
 #+BEGIN_SRC sh
   anx recent
 #+END_SRC
-
 #+RESULTS:
 | [36m | 04/02    | 12:59pm[0m             | ║   | >      | detect      | 3           | types       | of        | days                              | of                                | trading     | manually                          | visualize                         | //                                | Analyze                           | whether     | up/down                           | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |                                   |                                   |             |                                   |             |
 | [36m | 21/02    | 11:01pm[0m             | ║   | >      | visual      | up          | down        | trading   | [35m[[0mCurrently[35m][0m | [33m[0m                       |             |                                   |                                   |                                   |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
@@ -25,19 +24,151 @@
 | [36m | 04/04    | 12:30am[0m             | ║   | >      | try         | ema         | 3,          | ema       | 9                                 | [35m[[0mCurrently[35m][0m | [33m[0m |                                   |                                   |                                   |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
 | [36m | Wed      | 9:39pm[0m              | ║   | >      | game-engine | cli         | will        | use       | half                              | local                             | for         | lowcost                           | and                               | for                               | exectuion                         | cloud       | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
 
-* TODO compile llama.cpp and improve a slow model
+* TODO Create the ultimate benchmark with the AI
 
-* TODO create the ultimate benchmark with the AI
+* TODO Watch other benchmarks to compare
+
+- Following intrusctions test
+- Figuring out environment
+- Being proactive
+- Optimizing code
+- Simpifying code
+- Searching
+- Summarizing
+- Keeping context long conversation
+- Token consumption
+- Amount of thinking
+- <tags> insertion
+- ```separators```
+- You are x prompt
+- Contract prompts
+- Unsure prompts
+- Specific prompts
+- Technical prompts
+- 3D Work
+- 2D Work
+- New Framework no docs
+- New Framework with docs
+- My tools optimizing it
+- Image svg generation
+- Separation of concerns
+- Following instructions against it will
+- Jailbreaking
+- Explicit prohibition
+- Implicit Information
+- Math problems, like the Nth combination
+- Logic problems, like the car, or digits of pi
+- Visual description
+- Figuring out new tool with -h
+- Figuring out cookies on agent browser
+- With different memory systems or RAG
+- Breaking down into steps
+- Auto planning
+- Same model, verifier working together
+- Chat messages between each other
+- Studying for theroic topic
+- Studying for a practical topic
+
+"Essentially, Anthropic treats the model like a philosopher-engineer that needs to understand why it is doing something,
+whereas other labs often treat it like a search-engine-on-steroids designed to give you the fastest answer possible"
+
+Auto Jailbreak
+https://github.com/p-e-w/heretic
+
+Auto Test Prompts best prompts
+https://github.com/promptfoo/promptfoo
+
+AI Benchmarks (code arena and SWE-BENCH)
+https://llm-stats.com/
+
+* TODO Look at claude stuff AIResearch
+
+* MEMORY SYSTEM
+** weird
+https://github.com/volcengine/OpenViking
+** TRADITIONAL
+https://github.com/HKUDS/RAG-Anything
+** mem palace
+https://freedium-mirror.cfd/https://medium.com/@creativeaininja/mempalace-the-viral-ai-memory-system-that-got-22k-stars-in-48-hours-an-honest-look-and-setup-26c234b0a27b
+** wiki memory
+https://freedium-mirror.cfd/https://pub.towardsai.net/andrej-karpathy-killed-rag-or-did-he-the-llm-wiki-pattern-7824d876e790
+** simple memory
+https://freedium-mirror.cfd/https://ai.plainenglish.io/build-your-first-claude-code-skill-a-simple-project-memory-system-that-saves-hours-1d13f21aff9e
+
 =do this first step after done with glm and minimax=
 
 * TODO Before final reset, make sure they help you create a realistic simulation
 
-* TODO Work on the browser to test nvim ai work
+* TODO Trading candles as text cli?
+
+* TODO Improve mastermind and ai workflow
+
+WE CAN USE GEMMA ON LLAMA CPP HOLY SHEEET SO SEXY
+
+- generate project with template initial
+- high level writing of what you need
+- AI goes generating on background and thinking about as your write
+- Generates structures to select, gives you reason, you select one you prefer
+- Enter mastermind mode, write a couple of details like implement this function
+- Ask question about how to implement stuff instantly, (maybe ai should have answers in advance given what you tag you understand)
+- Loop started
+  Run -> Pre Read output -> fix -> implement -> Run <- ..
+  AI on background creating and running its own tests
+  Other AI keeps on Adding information on docs?
+  We run the project tool and update knowledge
+
+- Looks like mastermind mode should use all words in all buffers
+- Save all the typing I have done, so that I can pass it to an AI, plus mouse postion and tell it I'm stucked
+- Maybe it laucnhges auto after many fails
+
+- We need to first have an investigator to write context of what the project has
+  Pre existing errors, weird quirks, what is using and for what, where to find information for each
+  All of this should be investigated before hand working on the project
+  How each file relate to each file
+
+- Is very important a tooling for the AI to get documentation
+  Either that or the lsp always working
+
+* TODO Optimization architecture
+
+ Hacer una toda A18, arquitectura, decisiones. Hacer preguntas para generar documentación, como, ¿qué son tus ideas de por qué esto está sucediendo? ¿Alguna cosa, como, errores que se han hecho, que se han hecho antes? Y... arquitectura, decisiones, por qué ha hecho eso, excluido a la base de los pagos. ¿Cómo funciona? ¿Por qué los pagos trabajan? Hay que figurear un poco de los pagos, ¿no?
+ Todo en caveman. También estaría bien una eai documentando en la versión social entre las redes y que un equipo completo que canaliza el que chequea intenciones que está pasando y que estés anotando en tiempo real constantemente todo lo que esté haciendo el usuario de Martin X con lo de siempre. Un pequeño yame en la descripción y si le interesa pues vea al más de escuchar. Y dentro tiene referencias o aplicaciones de qué líneas de líneas estamos dando qué cosas para que vea la idea sin interés y lo absorbo.
+ Todo siempre en caveman para ahorrar y que sea efectivo y a todos ni menos palabras. Ya directo, sea más rápido. Y pasa, pasa.
+ Transcreate estos álios, solo para que tu puedas tener una forma para transcrear álios ya en tu PC.
+ en cada guardado tiene que guardarse hasta el ondutri, información del ondutri, los kit diff, la posición de ratón o cosas así, cualquier lo que está viendo el usuario mismo lo que tiene el buscador que puede que tenga que ver el output de alguna terminal más y que todo esté en un orden específico tipo documentación porque pasan estas cosas que cuando pasa un error busca una idea, busca automáticamente si ese error tiene que ver con algo que ya existente o es algo nuevo si tiene que tomar algún detalle cuando trabaje con algún tipo de paquete o archivo y que vaya como en el gitp preguntándote poco a poco en partes del código y es mi parte el código que tiene seleccionado sobre decisiones de arquitectura y como documentarlo por ti en cave fan siempre de que esté cumplido
+ información del proyecto con OneFetch, un high-level engine MD con toda esta información por lo menos es simplemente corta de lo que se trata el proyecto, OneFetch.
+ Hando y resumen de cada una de las sesiones y conversaciones con un pequeño titulo en M de aquí arriba llame para ver si tiene algo interés, si hay algo que haya pasado antes, no pegue el que habrá pensado y poder hacer una cena ahí, esto es información.
+ Es muy importante hacer un equipo real y ver si tener una historia.
+ Por último el Mastermind tiene que también controlar la guía, no solamente escribir, sino ver todas las informaciones de archivos, por ejemplo, pensamientos que tuvo la guía en un archivo, controlar varias guías al mismo tiempo, varios paneles, ver qué están haciendo ahora en vivo, toda esa información tiene que poder controlar el Mastermind para simplemente controlar las guías al mismo tiempo cuando quieres, no programar manual, sino pudo ponerte a lanzar trajo esto.
+
+* TODO Code intelligence for pseudo-cli, change everything
+
+* TODO Make a search engine for md files, for easy lookup memory system
+
+* TODO generate a mermaid view of all the steps that the AI took visually
+
+* Tooling For Code
+
+https://github.com/qutebrowser/qutebrowser/blob/main/misc/userscripts/qute-bitwarden 
+
+- eslint max-lines + max length? Unless necessary, then AI can add a comment that disables that
+  limit with the reason (LoB locality of behaviour)
+
+- Architecture decision records, that's AI memory
+- Look for matching regex patterns, and if there is 2 allow the inline copy, if it's found in more than 2. then generalize
+- Pure functions is a good way to work with stuff, and eliminates the object oriented requirement
+- Code Climate and Sonar Qube
+- Group code by all that feature needs, not by technical type like component/ image/* IR
+
+** TODO Look to Exercise
+
+** TODO Filtro 3 y 9 + trading
+
+** TODO Create day patterns
 
 * Background Cool projects
 
-** TODO game-engine cli
-** TODO trading candles as text cli?
+* TODO game-engine cli
 
 =This I should be doign on the background, then the cool stuff is below=
 
@@ -46,10 +177,6 @@
 ** TODO play kkrieger
 ** TODO play low space javascript games download the best ones
 
-* TFG 
-
-** TODO Plan on the CLI that visualizes and parses text into a game experience
-** TODO Do the same hardcore planning on the claude code side
-
 https://github.com/triggerdotdev/trigger.dev
 https://karthinks.com/software/avy-can-do-anything/
+
