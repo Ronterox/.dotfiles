@@ -144,11 +144,9 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 
-alias tree='tre'
-alias grep='rg'
-
 alias nf='echo && fastfetch && backup --show && ls && echo'
 alias cls='clear && ls'
+alias grep='rg'
 
 alias stats="typefilesize && scc --cocomo-project-type 'optimal,0.4,0.85,1.2,0.35'"
 alias battery='upower -i $(upower -e | grep battery) | egrep "percentage|time to empty"'
@@ -425,12 +423,45 @@ api() {
     kill $WATCH_PID $CADDY_PID 2>/dev/null || true
 }
 
+# ------------------- Parsing -------------------
+
+# jq,yq,mq commands
+
+jqi() {
+    # while true; do
+    # done
+    echo "Not implement"
+}
+
+jq_schema () {
+  jq -s '
+    def schema:
+      if type == "object" then
+        map_values(schema)
+      elif type == "array" then
+        if length > 0 then
+          # Merge all objects in array to catch all possible keys,
+          # then run schema on the result
+          [ add | schema ]
+        else
+          []
+        end
+      else
+        type
+      end;
+    map(schema) | unique | .[]
+  ' "$@"
+}
+
+# we can just gron + rg
+alias ungron='gron --ungron'
+
 # ------------------- Viewer -------------------
 
 [ ! -x "$(command -v batcat)" ] && alias batcat='bat'
 
 cat() {
-    if [[ $# -eq 0 ]] && [[ ! -t 0 ]]; then
+    if [[ $# -eq 0 ]] || [[ ! -t 0 ]]; then
         batcat
     else
         for f in "$@"; do
@@ -446,6 +477,7 @@ cat() {
 alias icat='timg'
 alias asciicat='img2txt'
 # Markdown Command
+alias slides-generate='bunx @marp-team/marp-cli@latest --pdf --theme gaia'
 # Mermaid Command
 
 # ------------------- ffmpeg  -------------------
@@ -515,6 +547,7 @@ cargo-clean-cache() { rip -i ~/.cargo/registry/index/* ~/.cargo/.package-cache; 
 export PATH=/usr/local/cuda/bin:$PATH
 
 alias skills='bunx skills'
+alias ping-telegram='pingme telegram --token $(pass show telegram/token/teto) --channel $(pass show telegram/id/me) --msg'
 
 # ------------------- Java -------------------
 
@@ -530,7 +563,16 @@ alias javainstall='apti openjdk-*'
 
 # ------------------- Agent CLI  -------------------
 
+lcli() {
+    url="$1"
+    ctx="$2"
+    echo "llama-cli -hf $url -ngl 99 --flash-attn auto -t 6 -c $ctx -b 512 --ubatch-size 128 --mlock"
+    echo "llama-server -hf $url -ngl 99 --flash-attn auto -t 6 -c $ctx -b 512 --ubatch-size 128 --mlock"
+}
+
 cc() { # Claude code
+    # TODO: Should definitely add installation methdos for when missing
+    # TODO: Should add description preview
     kilocli=("kilo" "kilo serve --port 11634 --print-logs")
 
     occli=("opencode" "opencode --omo" "opencode web --mdns")
@@ -538,12 +580,19 @@ cc() { # Claude code
 
     pros=("${kilocli[@]}" "${occli[@]}" "${clothercli[@]}")
 
-    opts="-ngl 99 --flash-attn auto -t 6 -c 4096 -b 512 --ubatch-size 128 --mlock"
-    llamama=("llama-cli -hf ggml-org/gemma-3-1b-it-GGUF $opts" "llama-cli -hf ggml-org/gemma-4-E2B-it-GGUF $opts" "llama-server -hf ggml-org/gemma-4-E2B-it-GGUF $opts")
+    ORG=$IFS
+    IFS=$'\n'
+    llamama=(
+	$(lcli ggml-org/gemma-3-1b-it-GGUF 16384)
+	$(lcli ggml-org/gemma-4-E2B-it-GGUF 4096)
+	$(lcli unsloth/Qwen3.5-0.8B-GGUF 16384)
+    )
+    IFS=$ORG
+
     locallm=("ollama" "lms" "lm-studio" "${llamama[@]}")
 
-    industry=("kimi" "gemini --yolo" "codex")
-    funny=("aider" "pi" "droid" "cline")
+    industry=("kimi" "gemini --yolo" "codex" "copilot")
+    funny=("aider" "pi" "droid" "cline" "aichat" "deepseek-tui" "kiro-cli")
 
     allofthem=("${industry[@]}" "${pros[@]}" "${locallm[@]}" "${funny[@]}")
 
@@ -603,7 +652,7 @@ alias ipy='uvx ipython -i'
 alias vi='nvim'
 alias vim='nvim'
 
-# ------------------- Tmux  -------------------
+# ------------------- Tmux -------------------
 
 alias tmuxls='tmux ls'
 alias tmuxa='tmux attach -t'
@@ -880,3 +929,9 @@ export NVM_DIR="$HOME/.nvm"
 
 # OpenClaw Completion
 source "/home/rontero/.openclaw/completions/openclaw.bash"
+
+# Added by mq-task installer
+export PATH="$PATH:/home/rontero/.local/bin"
+
+# Added by mq-conv installer
+export PATH="$PATH:/home/rontero/.mq/bin"

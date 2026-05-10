@@ -1,8 +1,13 @@
+echo "'Recommended to use: bun i -g @mermaid-js/mermaid-cli'"
+
 if test -f "$1"; then
   data=$(cat "$1")
 else
   data=$1
 fi
-link=https://mermaid.ink/img/"$(echo "$data" | base64 -w 0)"; 
-echo $link;
-curl -s $link | kitty +kitten icat
+
+link=https://mermaid.ink/img/"$(echo "$data" | base64 -w 0)";
+echo Downloading $link...;
+
+wget "$link" -O "$PWD/mermaid.png"
+

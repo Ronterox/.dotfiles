@@ -1,30 +1,76 @@
 #+TITLE: Todos
 #+SEQ_TODO: TODO | DONE
 
-#+BEGIN_SRC sh
-  anx recent
+#+BEGIN_SRC sh :results scalar
+  anx recent | ansifilter
 #+END_SRC
 #+RESULTS:
-| [36m | 04/02    | 12:59pm[0m             | ║   | >      | detect      | 3           | types       | of        | days                              | of                                | trading     | manually                          | visualize                         | //                                | Analyze                           | whether     | up/down                           | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |                                   |                                   |             |                                   |             |
-| [36m | 21/02    | 11:01pm[0m             | ║   | >      | visual      | up          | down        | trading   | [35m[[0mCurrently[35m][0m | [33m[0m                       |             |                                   |                                   |                                   |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
-| [36m | 03/03    | 2:12pm[0m              | ║   | >      | realistic   | simulations | on          | bot       | //                                | Figure                            | out         | with                              | all                               | of                                | old                               | data        | a                                 | good                              | way                               | to                                | simulate                          | [35m[[0mCurrently[35m][0m | [33m[0m                       |             |                                   |             |
-| [36m | 20/03    | 10:31pm[0m             | ║   | >      | like        | really      | later,      | i         | need                              | to                                | write       | my                                | own                               | ai                                | scratch                           | again       | (cli                              | for                               | miko                              | mind)                             | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |             |                                   |             |
-| [36m | 24/03    | 3:27pm[0m              | ║   | >      | speaking    | with        | the         | AI        | from                              | inside                            | the         | codebase                          | would                             | be                                | actual                            | peak        | [31m@done([0m[35m           | [35m[[0mCurrently[35m][0m | [33m417h58m14s[0m             |                                   |                                   |                                   |                                   |             |                                   |             |
-| ║      | 11/04/26 | 01:25:59[0m[31m)[0 |     |        |             |             |             |           |                                   |                                   |             |                                   |                                   |                                   |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
-| [36m | 24/03    | 4:29pm[0m              | ║   | >      | the         | ai          | should      | have      | its                               | own                               | editor      | which                             | I                                 | can                               | follow                            | alone       | i                                 | another                           | screen                            | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |             |                                   |             |
-| [36m | 24/03    | 4:42pm[0m              | ║   | >      | what        | if          | I           | turn      | it                                | into                              | a           | real                              | AI,                               | that                              | helps                             | proactively | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
-| [36m | 24/03    | 4:48pm[0m              | ║   | >      | what        | if          | on          | the       | plan,                             | the                               | AI          | writes                            | pseudo                            | code                              | fiels                             | for         | me                                | to                                | complete,                         | or                                | the                               | tdd                               | [35m[[0mCurrently[35m][0m | [33m[0m |                                   |             |
-| [36m | 25/03    | 12:33am[0m             | ║   | >      | simulate    | best        | combination | of        | parameters                        | [35m[[0mCurrently[35m][0m | [33m[0m |                                   |                                   |                                   |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
-| [36m | 25/03    | 2:07pm[0m              | ║   | >      | make        | a           | method      | to        | write                             | whole                             | strategies  | with                              | ai?                               | [35m[[0mCurrently[35m][0m | [33m[0m                       |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
-| [36m | 27/03    | 12:00pm[0m             | ║   | >      | visualize   | session     | file        | access,   | token                             | usage                             | etc         | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
-| [36m | 29/03    | 6:49pm[0m              | ║   | >      | AI          | 3D          | chara       | worudo    | rendo                             | [35m[[0mCurrently[35m][0m | [33m[0m |                                   |                                   |                                   |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
-| [36m | 31/03    | 1:38am[0m              | ║   | >      | get         | used        | to          | exploring | the                               | ai                                | codebase    | liek                              | really                            | it                                | feels                             | good        | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
-| [36m | 02/04    | 7:32pm[0m              | ║   | >      | I           | wish        | to          | visualize | my                                | notes                             | on          | docusaurus                        | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
-| [36m | 02/04    | 9:16pm[0m              | ║   | >      | create      | a           | website     | generator | like                              | mkdocs                            | but         | with                              | everything                        | [35m[[0mCurrently[35m][0m | [33m[0m                       |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
-| [36m | 04/04    | 12:30am[0m             | ║   | >      | try         | ema         | 3,          | ema       | 9                                 | [35m[[0mCurrently[35m][0m | [33m[0m |                                   |                                   |                                   |                                   |             |                                   |                                   |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
-| [36m | Wed      | 9:39pm[0m              | ║   | >      | game-engine | cli         | will        | use       | half                              | local                             | for         | lowcost                           | and                               | for                               | exectuion                         | cloud       | [35m[[0mCurrently[35m][0m | [33m[0m                       |                                   |                                   |                                   |                                   |                                   |             |                                   |             |
+#+begin_example
+      29/11  4:35pm ║ >  migrate from laravel to ruby, with dev plan of course // Hotwire is insane               [Currently] 
+      05/12  2:14am ║ >  later cita para medico llamada minimo // Con bby aqui                                    [Currently] 
+      03/02 10:24pm ║ >  c100 do nvidia cuda test // Start wtching that tutorial                                  [Currently] 
+      04/02 12:59pm ║ >  detect 3 types of days of trading manually visualize // Analyze whether up/down          [Currently] 
+      21/02 11:01pm ║ >  visual up down trading                                                                   [Currently] 
+      03/03  2:12pm ║ >  realistic simulations on bot  // Figure out with all of old data a good way to simulate  [Currently] 
+      15/03  7:13pm ║ >  I really want to make a game like that one pong image, a self aware AI who can see its  [Currently] 
+                    ║    own code and modify it
+      20/03 10:31pm ║ >  like really later, i need to write my own ai scratch again (cli for miko mind)           [Currently] 
+      24/03  4:29pm ║ >  the ai should have its own editor which I can follow alone i another screen              [Currently] 
+      24/03  4:42pm ║ >  what if I turn it into a real AI, that helps proactively                                 [Currently] 
+      25/03 12:33am ║ >  simulate best combination of parameters                                                  [Currently] 
+      25/03  2:07pm ║ >  make a method to write whole strategies with ai?                                         [Currently] 
+      27/03 12:00pm ║ >  visualize session file access, token usage etc                                           [Currently] 
+      29/03  6:49pm ║ >  AI 3D chara worudo rendo                                                                 [Currently] 
+      31/03  1:38am ║ >  get used to exploring the ai codebase liek really it feels good                          [Currently] 
+      04/04 12:30am ║ >  try ema 3, ema 9                                                                         [Currently] 
+      08/04  9:39pm ║ >  game-engine cli will use half local for lowcost and for exectuion cloud                  [Currently] 
+      23/04 10:24pm ║ >  leer simulacro de latex                                                                  [Currently] 
+      24/04  7:20pm ║ >  tradear lo que hablamos                                                                  [Currently] 
+      24/04  7:20pm ║ >  technical analize for life power and bby                                                 [Currently] 
+      24/04  7:20pm ║ >  server ssh github send stuff and parsec like connection check for windows pc             [Currently] 
+      25/04  2:23am ║ >  test windows managers i3wm dwm sxwm                                                      [Currently] 
+      25/04  3:12pm ║ >  cli build interactive mode                                                               [Currently] 
+      25/04 10:24pm ║ >  editar primer tomo libro de mie abuela y darle sus numeros                               [Currently] 
+      26/04 10:28pm ║ >  hack interbus website                                                                    [Currently] 
+      29/04 11:58am ║ >  setup fulcrum servers for custom data handler                                            [Currently] 
+        Fri  1:20pm ║ >  once tfg advance, I can do Im learn with it all that is left through difficulty levels  [Currently] 
+                    ║    like the ai sandbox (nvidia cuda, ml zero to hero, tetOS)
+        Sun 11:34pm ║ >  should probably download all my songs                                                    [Currently] 
+        Mon 12:12am ║ >  do the trading stuff + while doing the work server stuff and AI                          [Currently] 
+            12:46am ║ >  Understand all code, and work WITH, not FOR AI                                           [Currently] 
+            12:47am ║ >  Optimize for being able to always control the whole machine                              [Currently] 
+#+end_example
 
-* TODO Create the ultimate benchmark with the AI
+
+#+BEGIN_SRC sh :results scalar
+  anx schedule $(date +%H:%M) 'Bot Futures > Fulcrum Happy > Tools Happy (Dev)'
+#+END_SRC
+#+RESULTS:
+: 22:22 Bot Futures 
+: \->23:12  Fulcrum Happy 
+:  \->24:02  Tools Happy (Dev)
+:   \->24:52 Done
+: 
+
+#+BEGIN_SRC sh :results scalar
+  anx schedule $(date +%H:%M) 'Hypothesis - > Investigation - > Test - > Validate - > Iterate'
+#+END_SRC
+#+RESULTS:
+: 22:22 Hypothesis - 
+: \->23:12  Investigation - 
+:  \->24:02  Test - 
+:   \->24:52  Validate - 
+:    \->25:42  Iterate
+:     \->26:32 Done
+: 
+
+* TODO Easy setup work for Matlab
+
+* TODO Estudiar latexito
+
+* TODO Read Claude & Angel Dust
+
+* TODO Setup rem.cli to check what is effective for harnessing* TODO Create the ultimate benchmark with the AI
 
 * TODO Watch other benchmarks to compare
 
@@ -81,22 +127,6 @@ https://github.com/promptfoo/promptfoo
 AI Benchmarks (code arena and SWE-BENCH)
 https://llm-stats.com/
 
-* TODO Look at claude stuff AIResearch
-
-* MEMORY SYSTEM
-** weird
-https://github.com/volcengine/OpenViking
-** TRADITIONAL
-https://github.com/HKUDS/RAG-Anything
-** mem palace
-https://freedium-mirror.cfd/https://medium.com/@creativeaininja/mempalace-the-viral-ai-memory-system-that-got-22k-stars-in-48-hours-an-honest-look-and-setup-26c234b0a27b
-** wiki memory
-https://freedium-mirror.cfd/https://pub.towardsai.net/andrej-karpathy-killed-rag-or-did-he-the-llm-wiki-pattern-7824d876e790
-** simple memory
-https://freedium-mirror.cfd/https://ai.plainenglish.io/build-your-first-claude-code-skill-a-simple-project-memory-system-that-saves-hours-1d13f21aff9e
-
-=do this first step after done with glm and minimax=
-
 * TODO Before final reset, make sure they help you create a realistic simulation
 
 * TODO Trading candles as text cli?
@@ -145,11 +175,11 @@ WE CAN USE GEMMA ON LLAMA CPP HOLY SHEEET SO SEXY
 
 * TODO Make a search engine for md files, for easy lookup memory system
 
-* TODO generate a mermaid view of all the steps that the AI took visually
+* TODO game-engine cli
+
+=This I should be doign on the background, then the cool stuff is below=
 
 * Tooling For Code
-
-https://github.com/qutebrowser/qutebrowser/blob/main/misc/userscripts/qute-bitwarden 
 
 - eslint max-lines + max length? Unless necessary, then AI can add a comment that disables that
   limit with the reason (LoB locality of behaviour)
@@ -162,15 +192,21 @@ https://github.com/qutebrowser/qutebrowser/blob/main/misc/userscripts/qute-bitwa
 
 ** TODO Look to Exercise
 
-** TODO Filtro 3 y 9 + trading
+* MEMORY SYSTEM
+** weird
+https://github.com/volcengine/OpenViking
+** TRADITIONAL
+https://github.com/HKUDS/RAG-Anything
+** mem palace
+https://freedium-mirror.cfd/https://medium.com/@creativeaininja/mempalace-the-viral-ai-memory-system-that-got-22k-stars-in-48-hours-an-honest-look-and-setup-26c234b0a27b
+** wiki memory
+https://freedium-mirror.cfd/https://pub.towardsai.net/andrej-karpathy-killed-rag-or-did-he-the-llm-wiki-pattern-7824d876e790
+** simple memory
+https://freedium-mirror.cfd/https://ai.plainenglish.io/build-your-first-claude-code-skill-a-simple-project-memory-system-that-saves-hours-1d13f21aff9e
 
-** TODO Create day patterns
+=do this first step after done with glm and minimax=
 
 * Background Cool projects
-
-* TODO game-engine cli
-
-=This I should be doign on the background, then the cool stuff is below=
 
 * Game Compression  
 

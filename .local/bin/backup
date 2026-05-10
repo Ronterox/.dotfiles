@@ -3,7 +3,7 @@
 REPOSITORY="/media/rontero/LinuxBackup/Backup/"
 LOGFILE="$HOME/.dotfiles/.local/share/backup.log"
 
-export BORG_PASSCOMMAND="sudo -u $USER pass show env/borg"
+export BORG_PASSCOMMAND="sudo -u $USER pass show borg/password"
 
 case "$1" in
     --run)
@@ -30,7 +30,7 @@ case "$1" in
 		read -rn1 -p "Press any key to run backup... "
 
         borgdaily "$REPOSITORY" && \
-        bw list items --session "$(pass show env/bitwarden)" | pass insert -m -f bitwarden/backup
+        bw list items --session "$(pass show bitwarden/env)" | pass insert -m -f bitwarden/backup
 
         if [ $? -eq 0 ]; then
             echo "Backup successful!"
