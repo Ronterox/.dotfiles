@@ -64,13 +64,19 @@
 :     \->26:32 Done
 : 
 
-* TODO Easy setup work for Matlab
+* DONE Easy setup work for Matlab
 
 * TODO Estudiar latexito
 
 * TODO Read Claude & Angel Dust
 
-* TODO Setup rem.cli to check what is effective for harnessing* TODO Create the ultimate benchmark with the AI
+* TODO Setup rem.cli to check what is effective for harnessing
+
+* TODO Indicador de mi papa cuando pueda
+
+* DONE Turn back on Teto voice openc
+
+* DONE Fix futures trading* TODO Create the ultimate benchmark with the AI
 
 * TODO Watch other benchmarks to compare
 

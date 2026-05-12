@@ -935,3 +935,4 @@ export PATH="$PATH:/home/rontero/.local/bin"
 
 # Added by mq-conv installer
 export PATH="$PATH:/home/rontero/.mq/bin"
+export PATH="/usr/share/dotnet:$PATH"

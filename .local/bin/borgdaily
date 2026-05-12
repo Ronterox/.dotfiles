@@ -44,4 +44,7 @@ sudo -E borg prune \
     --keep-monthly 0 \
     "$REPOSITORY"
 
+echo "Reclaiming space..."
+sudo -E borg compact "$REPOSITORY"
+
 echo "Backup completed: $(date)" | sudo tee -a $LOG_FILE

@@ -25,7 +25,18 @@ return {
 		end,
 	},
 
-	{ 'williamboman/mason.nvim', cmd = { 'Mason' }, config = true },
+	{
+		'williamboman/mason.nvim',
+		cmd = { 'Mason' },
+		config = function()
+			require('mason').setup({
+				registries = {
+					"github:mason-org/mason-registry",
+					"github:Crashdummyy/mason-registry",
+				},
+			})
+		end
+	},
 
 	{
 		'L3MON4D3/LuaSnip',
