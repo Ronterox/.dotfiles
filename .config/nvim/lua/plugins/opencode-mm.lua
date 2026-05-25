@@ -1,5 +1,6 @@
 return {
 	{
+		enabled = false,
 		dir = vim.fn.stdpath("config") .. "/lua/opencode-mm",
 		name = "opencode-mm",
 		lazy = true,

@@ -41,42 +41,108 @@
             12:47am ║ >  Optimize for being able to always control the whole machine                              [Currently] 
 #+end_example
 
-
-#+BEGIN_SRC sh :results scalar
-  anx schedule $(date +%H:%M) 'Bot Futures > Fulcrum Happy > Tools Happy (Dev)'
-#+END_SRC
-#+RESULTS:
-: 22:22 Bot Futures 
-: \->23:12  Fulcrum Happy 
-:  \->24:02  Tools Happy (Dev)
-:   \->24:52 Done
-: 
-
 #+BEGIN_SRC sh :results scalar
   anx schedule $(date +%H:%M) 'Hypothesis - > Investigation - > Test - > Validate - > Iterate'
 #+END_SRC
 #+RESULTS:
-: 22:22 Hypothesis - 
-: \->23:12  Investigation - 
-:  \->24:02  Test - 
-:   \->24:52  Validate - 
+* TODO Puro game design :D? awiwiwi
+* TODO Start using the cli latex planning thesis method 
+** TODO Do an MVP
+: 22:22 Hypothesis
+: \->23:12  Investigation
+:  \->24:02  Test
+:   \->24:52  Validate
 :    \->25:42  Iterate
 :     \->26:32 Done
-: 
-
-* DONE Easy setup work for Matlab
-
-* TODO Estudiar latexito
-
-* TODO Read Claude & Angel Dust
 
 * TODO Setup rem.cli to check what is effective for harnessing
+Once is loaded into memory, you can spawn it as much as you like.
+** DONE Investigate and understand simple function calling for LLMs
+*** DONE Understand how a simple chat works 
+** TODO Add test tasks
+*** TODO Add some automated bash tests to verify the agent succeeds
+**** TODO Without/With initialization
+**** TODO Low/HIgh temperature
+**** TODO With/Without Thinking
+*** TODO Finding the joke file
+** TODO Start benchmarking different agents
+*** TODO Try different personas for different tasks
+*** DONE Check on context limitations, and launching specific personas sub agents
+*** DONE Give it a sub agent command that only gets him the final result
+** DONE Add commands
+*** DONE Load file command
+*** DONE Clear context history
+*** DONE See context usage
 
-* TODO Indicador de mi papa cuando pueda
+* TODO Viajando
+** TODO Ver conciertos con bby
+** TODO Ver que clases no puede perder
+** TODO Ver que dias yo no puedo perder
 
-* DONE Turn back on Teto voice openc
+* TODO Preparar para examenes
+** TODO Aplicaciones Moviles 
+*** TODO Ir a tutoria
+** TODO Mantenimiento y evolucion
+*** TODO Escribir a Desire preguntando por examen
+** TODO Liderazgo y Metodologias
+*** TODO Escribir a Carmen para preguntar como sera el examen y ya* TODO Read Claude & Angel Dust
+** TODO Aprender mas sobre agentes y contexto
+** DONE Potito angel dust
 
-* DONE Fix futures trading* TODO Create the ultimate benchmark with the AI
+* TODO Finish infection plan
+** TODO Write the client script
+** TODO Limit port access to server as proxy
+
+* TODO After full script
+** TODO Rewrite on Zig code
+** TODO Add OpenAPI support
+*** TODO Add tool calling support
+*** TODO Add completion support
+
+* TODO Harnessing
+** TODO After we got our AI client
+** TODO We can start harnessing
+** TODO Benchmarking AI
+** TODO Comparing qwen versions
+
+* TODO Sits ups, pushups on every compile time or AI generation
+
+* TODO Play the cli game and finish some levels
+** TODO Complete another level
+
+* TODO Hacer algo de lo de mi abuela
+** TODO Put it into a pdf book 
+** TODO Fix all images and sizes
+** TODO Create the book on amazon
+** TODO Give her the links and values of each of her books
+
+* TODO Game about AI editing it's own code
+
+Make a game like that one pong image, a self aware AI who can see its own code and modify it
+
+* TODO Game about handling with voice for AI
+
+Just like lifeline but smarter better gameplay
+
+* TODO Get the UI running the code
+
+** TODO Investigate with Stelios about what is needed
+
+** TODO Create a test part 1 execution
+
+* TODO Get to play with JAAAAI
+
+** TODO My JAI is Zig
+
+** TODO And my other JAI is Odin
+
+* TODO Complete more anx tasks
+
+* TODO Clean up more phone tabs tasks* TODO Have fun with erlang
+
+universal server looks fun
+
+* TODO Create the ultimate benchmark with the AI
 
 * TODO Watch other benchmarks to compare
 

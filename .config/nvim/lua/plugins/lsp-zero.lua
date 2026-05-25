@@ -169,12 +169,12 @@ return {
 							ruff = {
 								enabled = true,
 								formatEnabled = true,
-								lineLength = 100,
+								lineLength = 125,
 							},
 							pycodestyle = {
 								enabled = false,
 								ignore = { 'W391' },
-								maxLineLength = 100
+								maxLineLength = 125
 							}
 						}
 					}

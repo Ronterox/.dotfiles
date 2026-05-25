@@ -756,3 +756,208 @@ https://github.com/qutebrowser/qutebrowser/blob/main/misc/userscripts/qute-bitwa
 :ARCHIVE_TODO: DONE
 :END:
 
+
+* DONE Easy setup work for Matlab
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-13 Wed 21:56
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Turn back on Teto voice openc
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-13 Wed 21:56
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Fix futures trading
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-13 Wed 21:56
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Estudiar latexito
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-19 Tue 18:38
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+- 1 para aprender
+- 2 poder hacer el examen tu mismo literalmente solo
+  - Ver tutorial primero otra vez
+  - Ponte objetivos que creas que salgan
+
+
+* DONE Start reading fulcurm code
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-19 Tue 18:38
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Pay as you go on oracle
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-19 Tue 18:38
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+I just need to login and upgrade
+
+
+* DONE Just buy the linode bullshit
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-19 Tue 18:38
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+* DONE Indicador de mi papa cuando pueda
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-19 Tue 18:38
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+5 minutos senal, pero entrada por 3 siguiente vela
+
+
+* DONE Implement the algorithm for Fulcrum on Matlab
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-19 Tue 18:38
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+Is better something simple small that you understand,
+that something big that looks like it does the job but you don't understand
+
+
+* DONE Fix my start tool using z
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-20 Wed 01:52
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+* DONE Fix for realtime logs
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-21 Thu 01:55
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: Implement fixes and get bot running
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+** DONE Simplify code on realtime logs
+
+
+* DONE Remove redundant tests
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-21 Thu 01:55
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: Implement fixes and get bot running
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+* DONE Compress old logs data for new clean start
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-21 Thu 01:55
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: Implement fixes and get bot running
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Fulcrum mathworks
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-25 Mon 15:55
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+** DONE Hablar con mathworks GPU
+** DONE Hablar con Stelios GPU
+** DONE Lanzar un test en UI
+
+
+* DONE Implement fixes and get bot running
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-25 Mon 15:55
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+** DONE Add tests for it
+** DONE Add SILK to the list of stuff
+
+
+* DONE Run everyday futures
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-25 Mon 15:55
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+** DONE Fix report values and names
+*** DONE Test it
+** DONE Add auto scheduling
+*** DONE Closing after 17
+*** DONE Opening at 18
+*** DONE Report every x hours
+
+
+* DONE Prepararse
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-25 Mon 15:55
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+** DONE Ejerchicho de saltos
+** DONE Ropita y tickets
+** DONE Afeitadito
+
+
+* DONE Preparo bby
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-25 Mon 15:55
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+** DONE Uñita pintada
+** DONE Carita pintada
+** DONE Pierna y Cara afeitada
+
+
+* DONE AI Script
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-25 Mon 15:55
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+** DONE Rewrite simple script chat
+** DONE Adjust for qwen chat version
+** DONE Make it pretty
+** DONE Add tool calling
+
