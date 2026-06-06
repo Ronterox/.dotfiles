@@ -1,97 +1,86 @@
 #+TITLE: Todos
 #+SEQ_TODO: TODO | DONE
 
-#+BEGIN_SRC sh :results scalar
-  anx recent | ansifilter
-#+END_SRC
-#+RESULTS:
-#+begin_example
-      29/11  4:35pm ║ >  migrate from laravel to ruby, with dev plan of course // Hotwire is insane               [Currently] 
-      05/12  2:14am ║ >  later cita para medico llamada minimo // Con bby aqui                                    [Currently] 
-      03/02 10:24pm ║ >  c100 do nvidia cuda test // Start wtching that tutorial                                  [Currently] 
-      04/02 12:59pm ║ >  detect 3 types of days of trading manually visualize // Analyze whether up/down          [Currently] 
-      21/02 11:01pm ║ >  visual up down trading                                                                   [Currently] 
-      03/03  2:12pm ║ >  realistic simulations on bot  // Figure out with all of old data a good way to simulate  [Currently] 
-      15/03  7:13pm ║ >  I really want to make a game like that one pong image, a self aware AI who can see its  [Currently] 
-                    ║    own code and modify it
-      20/03 10:31pm ║ >  like really later, i need to write my own ai scratch again (cli for miko mind)           [Currently] 
-      24/03  4:29pm ║ >  the ai should have its own editor which I can follow alone i another screen              [Currently] 
-      24/03  4:42pm ║ >  what if I turn it into a real AI, that helps proactively                                 [Currently] 
-      25/03 12:33am ║ >  simulate best combination of parameters                                                  [Currently] 
-      25/03  2:07pm ║ >  make a method to write whole strategies with ai?                                         [Currently] 
-      27/03 12:00pm ║ >  visualize session file access, token usage etc                                           [Currently] 
-      29/03  6:49pm ║ >  AI 3D chara worudo rendo                                                                 [Currently] 
-      31/03  1:38am ║ >  get used to exploring the ai codebase liek really it feels good                          [Currently] 
-      04/04 12:30am ║ >  try ema 3, ema 9                                                                         [Currently] 
-      08/04  9:39pm ║ >  game-engine cli will use half local for lowcost and for exectuion cloud                  [Currently] 
-      23/04 10:24pm ║ >  leer simulacro de latex                                                                  [Currently] 
-      24/04  7:20pm ║ >  tradear lo que hablamos                                                                  [Currently] 
-      24/04  7:20pm ║ >  technical analize for life power and bby                                                 [Currently] 
-      24/04  7:20pm ║ >  server ssh github send stuff and parsec like connection check for windows pc             [Currently] 
-      25/04  2:23am ║ >  test windows managers i3wm dwm sxwm                                                      [Currently] 
-      25/04  3:12pm ║ >  cli build interactive mode                                                               [Currently] 
-      25/04 10:24pm ║ >  editar primer tomo libro de mie abuela y darle sus numeros                               [Currently] 
-      26/04 10:28pm ║ >  hack interbus website                                                                    [Currently] 
-      29/04 11:58am ║ >  setup fulcrum servers for custom data handler                                            [Currently] 
-        Fri  1:20pm ║ >  once tfg advance, I can do Im learn with it all that is left through difficulty levels  [Currently] 
-                    ║    like the ai sandbox (nvidia cuda, ml zero to hero, tetOS)
-        Sun 11:34pm ║ >  should probably download all my songs                                                    [Currently] 
-        Mon 12:12am ║ >  do the trading stuff + while doing the work server stuff and AI                          [Currently] 
-            12:46am ║ >  Understand all code, and work WITH, not FOR AI                                           [Currently] 
-            12:47am ║ >  Optimize for being able to always control the whole machine                              [Currently] 
-#+end_example
-
-#+BEGIN_SRC sh :results scalar
-  anx schedule $(date +%H:%M) 'Hypothesis - > Investigation - > Test - > Validate - > Iterate'
-#+END_SRC
-#+RESULTS:
 * TODO Puro game design :D? awiwiwi
-* TODO Start using the cli latex planning thesis method 
 ** TODO Do an MVP
-: 22:22 Hypothesis
-: \->23:12  Investigation
-:  \->24:02  Test
-:   \->24:52  Validate
-:    \->25:42  Iterate
-:     \->26:32 Done
 
-* TODO Setup rem.cli to check what is effective for harnessing
-Once is loaded into memory, you can spawn it as much as you like.
-** DONE Investigate and understand simple function calling for LLMs
-*** DONE Understand how a simple chat works 
-** TODO Add test tasks
-*** TODO Add some automated bash tests to verify the agent succeeds
-**** TODO Without/With initialization
-**** TODO Low/HIgh temperature
-**** TODO With/Without Thinking
-*** TODO Finding the joke file
-** TODO Start benchmarking different agents
-*** TODO Try different personas for different tasks
-*** DONE Check on context limitations, and launching specific personas sub agents
-*** DONE Give it a sub agent command that only gets him the final result
-** DONE Add commands
-*** DONE Load file command
-*** DONE Clear context history
-*** DONE See context usage
+* Ultimate Procedure
 
-* TODO Viajando
-** TODO Ver conciertos con bby
-** TODO Ver que clases no puede perder
-** TODO Ver que dias yo no puedo perder
+Setup:
+    1. Make sure to be rested, sleep, relax. otherwise nothing works
+    2. No phone, no music/asmr, but only music/asmr that bring hype a power
+    3. Easy access food, and water for chilling
+    4. No interruptions, nor distracting programs/apps
 
-* TODO Preparar para examenes
-** TODO Aplicaciones Moviles 
-*** TODO Ir a tutoria
-** TODO Mantenimiento y evolucion
-*** TODO Escribir a Desire preguntando por examen
-** TODO Liderazgo y Metodologias
-*** TODO Escribir a Carmen para preguntar como sera el examen y ya* TODO Read Claude & Angel Dust
+Method:
+    1. Get information about the issue, anything you can think of-
+       : Analyze as you do this, you will get understanding of the problem
+    2. Figure out an hypothesis of what may be happening, or what it's missing
+       : You may iterate between step 1 and step 2. This is the parsing/generation step
+    3. Fix issues iterating on small feedback loop steps.
+       : Always go by the simplest possible solution (most always the fastest one)
+       : But be smart, even if it takes more time
+    4. Test and verify results, do not confirm until really tested
+       : Create a test methodology for future use cases of same project
+    5. Deliver, chill out and close the project case.
+       : This is really important for the cult of done
+
+#+BEGIN_SRC sh :results scalar
+  anx recent | rg bot: | ansifilter
+#+END_SRC
+#+RESULTS:
+:       04/02 12:59pm ║ >  bot:detect 3 types of days of trading manually visualize // Analyze whether up/down      [Bot] 
+:       21/02 11:01pm ║ >  bot:visual up down trading. Buy/Sell separately                                          [Bot] 
+:       25/03 12:33am ║ >  bot:simulate best combination of parameters                                              [Bot] 
+:       25/03  2:07pm ║ >  bot:make a method to write whole strategies with ai?                                     [Bot] 
+:         Mon  4:39pm ║ >  bot:i know, i just know I can predict this at least by 80%                               [Bot] 
+:              1:02pm ║ >  bot:td long trades improvement                                                           [Bot] 
+:              1:03pm ║ >  bot:tree prediction algorithm for exits and entries separately                           [Bot] 
+
+Delivery:
+    1. Think about what we want. (Raw information)
+    2. Mold it, the idea/plan (Process Information)
+    3. Implement it (Apply Processed Information)
+
+* TODO Erlang Conway Game Of life
+** TODO Elixir version
+*** Basics erlang, elixir, what should we know?
+** TODO Erlang version
+*** Universal Server Try it
+
+* DONE See update on Stelios and Shangqi
+
+* From now on, entertainment we create it ourselves
+
+* TODO 30 Do more Ziglings
+** 20 More Ziglings
+*** 10 more ziglings 
+* TODO More tests for REM CLI
+** TODO We got raw data. Need to cleanup unused. Or sort.
+** TODO Add so longing tests and why explanation.
+    Tiers:
+    - Raw Knowledge
+    - Skills
+    - Orchestration Frameworks
+    - Sub-Agents
+    - Agents.md
+*** TODO Prepare a good text document with system visualization
+*** TODO Should definitely get MORE metrics of the problem solutions (benchmarking)
+
+* TODO Monitoring Zombies
+** Manage ports
+** Manage multiple PCs
+
+* TODO Making money on summer
+** Accenture, remote millions work liek Tiago
+** Creating those AI thirst traps projects
+** Making actual Money trading
+*** By myself trades futures
+*** Trade with the bot method
+** Selling that big ass project I have for AIs studies and Games
+
+* TODO Read Claude & Angel Dust
 ** TODO Aprender mas sobre agentes y contexto
-** DONE Potito angel dust
-
-* TODO Finish infection plan
-** TODO Write the client script
-** TODO Limit port access to server as proxy
 
 * TODO After full script
 ** TODO Rewrite on Zig code
@@ -106,15 +95,10 @@ Once is loaded into memory, you can spawn it as much as you like.
 ** TODO Comparing qwen versions
 
 * TODO Sits ups, pushups on every compile time or AI generation
+I want to do calisthenics like that old man, like that strong chub guy
 
 * TODO Play the cli game and finish some levels
 ** TODO Complete another level
-
-* TODO Hacer algo de lo de mi abuela
-** TODO Put it into a pdf book 
-** TODO Fix all images and sizes
-** TODO Create the book on amazon
-** TODO Give her the links and values of each of her books
 
 * TODO Game about AI editing it's own code
 
@@ -124,28 +108,16 @@ Make a game like that one pong image, a self aware AI who can see its own code a
 
 Just like lifeline but smarter better gameplay
 
-* TODO Get the UI running the code
-
-** TODO Investigate with Stelios about what is needed
-
-** TODO Create a test part 1 execution
-
 * TODO Get to play with JAAAAI
-
-** TODO My JAI is Zig
-
+** TODO My JAI is Zig. PLEASE use it a lot before trying Odin
 ** TODO And my other JAI is Odin
 
-* TODO Complete more anx tasks
-
-* TODO Clean up more phone tabs tasks* TODO Have fun with erlang
-
+* TODO Have fun with erlang
 universal server looks fun
 
 * TODO Create the ultimate benchmark with the AI
 
 * TODO Watch other benchmarks to compare
-
 - Following intrusctions test
 - Figuring out environment
 - Being proactive
@@ -262,8 +234,6 @@ WE CAN USE GEMMA ON LLAMA CPP HOLY SHEEET SO SEXY
 - Code Climate and Sonar Qube
 - Group code by all that feature needs, not by technical type like component/ image/* IR
 
-** TODO Look to Exercise
-
 * MEMORY SYSTEM
 ** weird
 https://github.com/volcengine/OpenViking
@@ -276,13 +246,8 @@ https://freedium-mirror.cfd/https://pub.towardsai.net/andrej-karpathy-killed-rag
 ** simple memory
 https://freedium-mirror.cfd/https://ai.plainenglish.io/build-your-first-claude-code-skill-a-simple-project-memory-system-that-saves-hours-1d13f21aff9e
 
-=do this first step after done with glm and minimax=
-
-* Background Cool projects
-
 * Game Compression  
 
-** TODO play kkrieger
 ** TODO play low space javascript games download the best ones
 
 https://github.com/triggerdotdev/trigger.dev

@@ -1,4 +1,13 @@
-echo "'Recommended to use: bun i -g @mermaid-js/mermaid-cli'"
+#!/usr/bin/env bash
+
+set -e
+
+if hash bun 2>/dev/null; then
+	bunx @mermaid-js/mermaid-cli "$@"
+	exit 0
+fi
+
+echo "Recommended to install bun for: bunx @mermaid-js/mermaid-cli --input '-' --output 'out.svg'"
 
 if test -f "$1"; then
   data=$(cat "$1")

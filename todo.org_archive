@@ -961,3 +961,276 @@ that something big that looks like it does the job but you don't understand
 ** DONE Make it pretty
 ** DONE Add tool calling
 
+
+* DONE Setup rem.cli to check what is effective for harnessing
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-26 Tue 01:58
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+Once is loaded into memory, you can spawn it as much as you like.
+** DONE Investigate and understand simple function calling for LLMs
+*** DONE Understand how a simple chat works 
+** DONE Add test tasks
+*** DONE Add some automated bash tests to verify the agent succeeds
+**** DONE Without/With initialization (really will always do what is best)
+**** DONE Low/HIgh temperature (kept zero)
+**** DONE With/Without Thinking (with thinking makes no sense not to unless?)
+*** DONE Finding the joke file
+** DONE Start benchmarking different agents
+*** DONE Try different personas for different tasks
+*** DONE Check on context limitations, and launching specific personas sub agents
+*** DONE Give it a sub agent command that only gets him the final result
+** DONE Add commands
+*** DONE Load file command
+*** DONE Clear context history
+*** DONE See context usage
+
+
+* DONE Start using the cli latex planning thesis method 
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-28 Thu 23:06
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Handle disconnections from IB broker
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-28 Thu 23:06
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+* DONE Setup daily running for verify to 1 hour
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-28 Thu 23:06
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+** DONE Rerun bots with new configs
+
+* DONE Correct configurations
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-28 Thu 23:06
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+* DONE Investigar por que dice que perdio cuando estuvo a favor el trade
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-28 Thu 23:06
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+Arreglar el setup, saber que esta haciendo lo correcto
+
+* DONE Fill missing trades given what happened to M2K
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-28 Thu 23:06
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+    1. Check C is correctly a Long AND BUYING A LONG 
+    2. Comment out check
+    3. Add logs for future debugging of positions
+    ---
+    1. What did before on the BUY what was it expecting context
+    2. How did it get to that amount of money. Why didn't it leave
+    3. Is it having the same stuff and config than TD* TODO Fix freaking futures version of bot
+*** DONE Revisar que los trades sigan a trading view
+https://www.tradingview.com/chart/vz1gNcYc/ Algunos Short dicen ser longs, o no se si sigue el mismo que trading view
+** DONE Retries if query is cancelled.
+main.py:187 retry if emtpy
+** DONE Be smart with old trades. Force it locally to happen. So that we can fix it
+analysis/extract_logs.py:139 bought ones vs sold ones skiping for every sold one over bought
+Or creating bought one templating for this cases
+** DONE Reporte. Si existe para hoy. Muestra para hoy. Sino para ayer. 
+production/botlauncher_argc:25 Check if pattern found on files
+*** DONE Report every hour. (ONCE FIXED)
+http://richserver:8080/job/Report%20Realtime/configure change to hourly once fixed
+*** DONE Check if all expected models are running every hour
+http://richserver:8080/ Match config names to size of ones running on docker
+Send those who are missing on email
+** DONE Adjust data days quantity given futures days
+Need one source of truth
+production/config.pkl:53 duration by size
+tests/test_backtest.py:14 tests
+tests/test_realtime.py:22 should definitely make them all get data from same place
+src/datatypes.py:53 default duration
+Makefile:11 should also define the defaults
+
+
+* DONE Preparar para examenes
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-28 Thu 23:06
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+** DONE Aplicaciones Moviles 
+*** DONE Ir a tutoria
+** DONE Mantenimiento y evolucion
+*** DONE Escribir a Desire preguntando por examen
+** DONE Liderazgo y Metodologias
+*** DONE Escribir a Carmen para preguntar como sera el examen y ya
+
+
+* DONE Get the UI running the code
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-28 Thu 23:06
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+** DONE Investigate with Stelios about what is needed
+** DONE Create a test part 1 execution
+
+
+* DONE Complete more anx tasks
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-28 Thu 23:06
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Clean up more phone tabs tasks
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-28 Thu 23:06
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Potito angel dust
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-28 Thu 23:06
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: Read Claude & Angel Dust
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Viajando
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-28 Thu 23:08
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+** DONE Ver conciertos con bby
+*** DONE Annotates which dates we have concert
+Tenemos concierto que ir el 12 de junio viernes
+Puede que tengamos lo de becerra el 11 de junio pero necesito confirmacion
+** DONE Ver que clases no puede perder
+No puede perder la del martes (para venir comingo a la tutoria)
+Pero puede que me ahorre el venir y buscarlo, y que no pierda la otra clase, si 
+hace las 2 clases la misma semana, Martes y Miercoles
+*** DONE Anotate which dates I need to be on Madrid
+Necesito estar en Madrid el 02 de junio (puede que pueda skipear, pero necesito confirmacion)
+la semana del 08 si o si me quedo alla, ya no puedo venir a fuengirola esa semana
+** DONE Confirmar las fechas finales, y plan final
+
+
+* DONE play kkrieger
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-29 Fri 00:59
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_OLPATH: Game Compression
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+* DONE Complete 50 Ziglings
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-31 Sun 02:30
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+***** DONE I got 10 so far
+**** DONE Got 20 finally
+*** DONE Got 30 bitch
+** DONE Got them 40
+
+
+* DONE Add on fun easy tasks, you ALREADY have DO NOT SEARCH.
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-05-31 Sun 22:05
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+This will start your momentum for the day. And will allow you to keep on having fun
+
+
+* DONE PLEASE SPEED I NEED THIS NO PIERDAS EL TIEMPO, HAZ LO DE MI ABUELA
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-06-01 Mon 02:04
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+
+
+* DONE Evaluate bot so that it follows TD
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-06-01 Mon 02:04
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+** DONE Fix ticks value for real simulations, using tick and multiplier check
+    1. Learn what is the tick size
+    2. Learn what is the tick value
+    3. How does the multiplier work
+    4. Ask, if you get this, and sell for that.
+       How much you really getting, and why?
+** DONE Set up a stop loss on the trades, Do semi-automatic trading
+    Manage on how much are you actually risking like options
+    1. I would risk 1500 but set another limit on 30% of that 1500
+       Future losses are unlimited otherwise
+    2. Verify what you are consuming on trades. And what you are able to trade as maximum
+       Buying power vs Cash
+    3. Check out multiplier output, is showing actual results on logs finally
+*** DONE Verify the strategy is on 1:1 on that single trade
+    1. Read code line by line, to see if why find inconsistencies
+    2. If we don't look. For candle information on that one candle.
+       Candles state just at that candle and why
+
+
+* DONE Hacer algo de lo de mi abuela
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-06-01 Mon 02:04
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+** DONE Put it into a pdf book 
+** DONE Fix all images and sizes
+** DONE Create the book on amazon
+** DONE Give her the links and values of each of her books
+
+
+* DONE Finish infection plan
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-06-04 Thu 02:03
+:ARCHIVE_FILE: ~/.dotfiles/todo.org
+:ARCHIVE_CATEGORY: todo
+:ARCHIVE_TODO: DONE
+:END:
+**** DONE Finish Molding the Idea
+** DONE Write the client script
+** DONE Limit port access to server as proxy
+
