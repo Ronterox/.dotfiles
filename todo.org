@@ -53,6 +53,7 @@ Delivery:
 * From now on, entertainment we create it ourselves
 
 * TODO 30 Do more Ziglings
+** Do ziglings Djisktra (compare speed)
 ** 20 More Ziglings
 *** 10 more ziglings 
 * TODO More tests for REM CLI

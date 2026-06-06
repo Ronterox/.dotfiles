@@ -22,6 +22,8 @@ case "$1" in
 			"edit: Opens to edit the doing file"
 			"recent: Shows all the recent doings oldest to newest"
 			"sort: Shows all the doings sorted by tag"
+			"last: Shows the last not done doing"
+			"count: Counts the number of doings per tag"
 			"archive: Archives the doings"
 			"note: pass the topic and call jrnl tooling for annotations"
 			"notes: Calls jrnl tooling with a limit of 10 notes"
@@ -34,9 +36,16 @@ case "$1" in
 		done
 		exit 0
 		;;
-    today|yesterday|sat|mon|tue|thu|fri|sun|wed|now|next|done|did|sort|later|recent|undo|archive|edit)
+    today|yesterday|sat|mon|tue|thu|fri|sun|wed|now|next|done|did|sort|later|recent|undo|archive|edit|last)
         doing "$@"
         ;;
+	count)
+		tags=$(anx sort | cut -d':' -f2 | cut -d'>' -f2 | awk '{print $1}' | sort -u)
+		for t in $tags; do
+			[ "$t" = "║" ] && continue
+			printf "%s: %s\n" ${t^} "$(anx recent | rg ${t^} | wc -l)"
+		done | sort --field-separator=: --key=2nr
+		;;
     todo)
 		todo "${2:-.}"
         ;;
@@ -82,6 +91,8 @@ case "$1" in
 		fi
 		;;
 	*)
-		rg -S "$*" ~/Documents/Projects/MarkdownProjects/ANX/
+		pattern="$*"
+		[[ "$pattern" =~ ^: ]] && pattern="${pattern:1}"
+		rg -S "$pattern" ~/Documents/Projects/MarkdownProjects/ANX/
 		;;
 esac
