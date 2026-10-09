@@ -45,6 +45,6 @@ sudo -E borg prune \
     "$REPOSITORY"
 
 echo "Reclaiming space..."
-sudo -E borg compact "$REPOSITORY"
+sudo -E time borg compact "$REPOSITORY"
 
 echo "Backup completed: $(date)" | sudo tee -a $LOG_FILE
