@@ -340,7 +340,7 @@ alias gitw='git worktree'
 alias gitwa='git worktree add'
 alias gitwr='git worktree remove'
 alias gitwl='git worktree list'
-git-fix() {
+git-worktree-fix() {
     # If you bare clone a local repo, the following is a origin fix:
 	git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
 }
@@ -402,7 +402,7 @@ gh-gitignore() {
 
 # ------------------- Web Dev -------------------
 
-fileserve() {
+server() {
     port=${1:-8080}
     echo "Setting up server on http://localhost:$port..."
     caddy file-server -r . -l ":$port" --browse
@@ -476,6 +476,7 @@ cat() {
 
 alias icat='timg'
 alias asciicat='img2txt'
+alias asciinematogif='agg'
 # Markdown Command
 alias slides-generate='bunx @marp-team/marp-cli@latest --pdf --theme gaia'
 # Mermaid Command
@@ -576,7 +577,7 @@ cc() { # Claude code
     kilocli=("kilo" "kilo serve --port 11634 --print-logs")
 
     occli=("opencode" "opencode --omo" "opencode web --mdns")
-    clothercli=("clother-minimax --yolo" "clother-zai --yolo")
+    clothercli=("clother-minimax --yolo --model MiniMax-3.0" "clother-zai --yolo" "clother-native --yolo" "clother-ollama --yolo")
 
     pros=("${kilocli[@]}" "${occli[@]}" "${clothercli[@]}")
 
@@ -591,7 +592,7 @@ cc() { # Claude code
 
     locallm=("ollama" "lms" "lm-studio" "${llamama[@]}")
 
-    industry=("kimi" "gemini --yolo" "codex" "copilot")
+    industry=("kimi" "gemini --yolo" "codex" "copilot" "agy --dangerously-skip-permissions")
     funny=("aider" "pi" "droid" "cline" "aichat" "deepseek-tui" "kiro-cli")
 
     allofthem=("${industry[@]}" "${pros[@]}" "${locallm[@]}" "${funny[@]}")
@@ -936,3 +937,14 @@ export PATH="$PATH:/home/rontero/.local/bin"
 # Added by mq-conv installer
 export PATH="$PATH:/home/rontero/.mq/bin"
 export PATH="/usr/share/dotnet:$PATH"
+
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/home/rontero/Documents/Program-Files/google-cloud-sdk/path.bash.inc' ]; then . '/home/rontero/Documents/Program-Files/google-cloud-sdk/path.bash.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/home/rontero/Documents/Program-Files/google-cloud-sdk/completion.bash.inc' ]; then . '/home/rontero/Documents/Program-Files/google-cloud-sdk/completion.bash.inc'; fi
+
+
+# Added by Antigravity CLI installer
+export PATH="/home/rontero/.local/bin:$PATH"

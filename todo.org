@@ -55,7 +55,8 @@ Delivery:
 * TODO 30 Do more Ziglings
 ** Do ziglings Djisktra (compare speed)
 ** 20 More Ziglings
-*** 10 more ziglings 
+*** DONE 10 more ziglings 
+
 * TODO More tests for REM CLI
 ** TODO We got raw data. Need to cleanup unused. Or sort.
 ** TODO Add so longing tests and why explanation.

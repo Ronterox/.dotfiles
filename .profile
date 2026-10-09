@@ -114,3 +114,7 @@ fi
 export PATH="$PATH:/home/rontero/.lmstudio/bin"
 # End of LM Studio CLI section
 
+
+
+# Added by Antigravity CLI installer
+export PATH="/home/rontero/.local/bin:$PATH"
