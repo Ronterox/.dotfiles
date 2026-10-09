@@ -2,11 +2,71 @@
 
 REPOSITORY="/media/rontero/LinuxBackup/Backup/"
 LOGFILE="$HOME/.dotfiles/.local/share/backup.log"
+BW_SESSION_ENTRY="bitwarden/env"
+BW_BACKUP_ENTRY="bitwarden/backup"
 
 export BORG_PASSCOMMAND="sudo -u $USER pass show borg/password"
 
+notify() {
+    echo "$1"
+    notify-send "$1"
+}
+
+# Print a valid Bitwarden session, logging in / unlocking (and saving the new session in pass) if needed
+bw_session() {
+    local session status
+    session=$(pass show "$BW_SESSION_ENTRY" 2>/dev/null)
+    status=$(bw status --session "$session" | jq -r '.status')
+
+    case "$status" in
+        unlocked)
+            echo "$session"
+            return 0
+            ;;
+        locked)
+            echo "Bitwarden session expired, unlocking..." >&2
+            session=$(bw unlock --raw)
+            ;;
+        unauthenticated)
+            echo "Not logged in to Bitwarden, logging in..." >&2
+            session=$(bw login --raw)
+            ;;
+        *)
+            echo "Unknown Bitwarden status: '$status'" >&2
+            return 1
+            ;;
+    esac
+
+    [ -n "$session" ] || return 1
+    printf '%s\n' "$session" | pass insert -m -f "$BW_SESSION_ENTRY" >/dev/null || return 1
+    echo "$session"
+}
+
+# Dump the Bitwarden vault into pass, never overwriting the previous dump with garbage
+bw_backup() {
+    local session items
+    echo "Backing up Bitwarden..."
+    session=$(bw_session) || return 1
+    bw sync --session "$session" >/dev/null || return 1
+    items=$(bw list items --session "$session") || return 1
+
+    if ! jq -e 'type == "array" and length > 0' <<<"$items" >/dev/null 2>&1; then
+        echo "Bitwarden returned no items, keeping previous backup" >&2
+        return 1
+    fi
+
+    printf '%s\n' "$items" | pass insert -m -f "$BW_BACKUP_ENTRY" >/dev/null || return 1
+    echo "Saved $(jq length <<<"$items") Bitwarden items to $BW_BACKUP_ENTRY"
+}
+
 case "$1" in
     --run)
+        # Bitwarden first, so the fresh dump in pass ends up inside the borg archive
+        if ! bw_backup; then
+            notify "Bitwarden backup failed!"
+            exit 1
+        fi
+
         echo "Starting backup... Calculating ETA..."
         durations=()
         for a in $(sudo -E borg list --short "$REPOSITORY"); do
@@ -27,24 +87,29 @@ case "$1" in
             echo "Expected Time: $(date -u -d @$total +%T)"
         fi
 
-		read -rn1 -p "Press any key to run backup... "
+        read -rn1 -p "Press any key to run backup... "
+        echo
 
-        borgdaily "$REPOSITORY" && \
-        bw list items --session "$(pass show bitwarden/env)" | pass insert -m -f bitwarden/backup
-
-        if [ $? -eq 0 ]; then
-            echo "Backup successful!"
-            notify-send "Backup successful!"
+        if borgdaily "$REPOSITORY"; then
+            notify "Backup successful!"
             date >> "$LOGFILE"
         else
-            echo "Backup failed!"
-            notify-send "Backup failed!"
+            notify "Backup failed!"
+            exit 1
+        fi
+        ;;
+    --bitwarden)
+        if bw_backup; then
+            notify "Bitwarden backup successful!"
+        else
+            notify "Bitwarden backup failed!"
+            exit 1
         fi
         ;;
     --show)
         if [ -f "$LOGFILE" ]; then
-            # If file older than 2 days show in red
-            if [ $(find "$LOGFILE" -mmin +1440) ]; then
+            # If file older than 1 day show in red
+            if [ "$(find "$LOGFILE" -mmin +1440)" ]; then
                 color=31
             else
                 color=32
@@ -55,13 +120,14 @@ case "$1" in
         fi
         ;;
     -h|--help)
-        echo "Usage: backup [--show|run|help]"
+        echo "Usage: backup [--show|--run|--bitwarden|--help]"
         echo "Backup your files to your external hard drive or cloud storage"
         echo
         echo "Options:"
-        echo "  --show    Show the backup status"
-        echo "  --run     Run the backup command"
-        echo "  --help    Display this help and exit"
+        echo "  --show       Show the backup status"
+        echo "  --run        Back up Bitwarden into pass, then run the borg backup"
+        echo "  --bitwarden  Only back up Bitwarden into pass"
+        echo "  --help       Display this help and exit"
         ;;
     *)
         echo "Unknown option: $1"
