@@ -82,7 +82,7 @@ session_for_project() {
 }
 
 open_projects() {
-    local path first='' name status=0
+    local selection=$1 path first='' name pane_id status=0
     local -A seen=()
     while IFS= read -r path; do
         [[ $path && ! ${seen[$path]+yes} ]] || continue
@@ -91,17 +91,21 @@ open_projects() {
         session_for_project "$path"
         name=$SESSION_NAME
         if ! tmux has-session -t "=$name" 2>/dev/null; then
-            if ! tmux new-session -d -s "$name" -c "$path"; then
+            if ! pane_id=$(tmux new-session -d -P -F '#{pane_id}' -s "$name" -c "$path"); then
                 printf 'Could not create tmux session for %s\n' "$path" >&2
                 status=1
                 continue
             fi
             tmux set-option -q -t "=$name" @project_path "$path"
-            tmux send-keys -t "=$name" start Enter
+            if ! tmux send-keys -t "$pane_id" start Enter; then
+                printf 'Could not start project in tmux session %s\n' "$name" >&2
+                status=1
+                continue
+            fi
         fi
         record "$path" "$name" || status=1
         [[ $first ]] || first=$name
-    done
+    done <<< "$selection"
     [[ $first ]] || return "$status"
     if [[ -n ${TMUX:-} ]]; then
         tmux switch-client -t "=$first" || return 1
@@ -140,6 +144,6 @@ case ${1:-} in
                 cut -f1
         )
         [[ $selection ]] || exit 0
-        open_projects <<< "$selection"
+        open_projects "$selection"
         ;;
 esac
