@@ -600,7 +600,7 @@ sshproxy() {
 }
 
 cc() { # Claude code
-    local IFS ORG cli
+    local IFS="$IFS" ORG cli
     local -a kilocli occli claudecli pros llamama locallm industry funny allofthem
     # TODO: Should definitely add installation methdos for when missing
     # TODO: Should add description preview
