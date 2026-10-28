@@ -1,7 +1,22 @@
 #!/bin/env bash
 
 tmux-sessions() {
-    session_name=$(tmux ls | cut -d: -f1 | fzf --prompt="Session: " --border --height=50% --preview="tmux list-windows -t {}")
+    # Claude session badges per tmux session, from the @claude_badge window
+    # option set by ~/.claude/hooks/tmux-badge.sh ("bg ink glyph initials").
+    declare -A badges
+    while IFS=$'\t' read -r s b; do
+        [ -z "$b" ] && continue
+        read -r bg ink glyph initials <<<"$b"
+        badges[$s]+=$(printf '\e[48;2;%d;%d;%d;38;2;%d;%d;%d;1m %s %s \e[0m ' \
+            "0x${bg:0:2}" "0x${bg:2:2}" "0x${bg:4:2}" "0x${ink:0:2}" "0x${ink:2:2}" "0x${ink:4:2}" \
+            "$glyph" "$initials")
+    done < <(tmux list-windows -a -F $'#{session_name}\t#{@claude_badge}')
+
+    session_name=$(tmux ls -F '#{session_name}' |
+        while read -r s; do printf '%s\t%-20s %s\n' "$s" "$s" "${badges[$s]}"; done |
+        fzf --ansi --delimiter=$'\t' --with-nth=2 --prompt="Session: " --border --height=50% \
+            --preview="tmux list-windows -t {1}" |
+        cut -f1)
     [ ! "$session_name" ] && return
 
     if [ -z $TMUX ]; then

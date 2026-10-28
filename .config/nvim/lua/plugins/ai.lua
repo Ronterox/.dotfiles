@@ -1,18 +1,23 @@
 return {
 	{
-		'supermaven-inc/supermaven-nvim',
+		'monkoose/neocodeium',
+		event = 'VeryLazy',
 		config = function()
-			require('supermaven-nvim').setup({
-				keymaps = {
-					accept_suggestion = "<Tab>",
-					clear_suggestion = "<C-]>",
-					accept_word = "<C-j>",
-				},
-				color = {
-					suggestion = '#8a8a8a',
-					cterm = '244',
-				},
-			})
+			local neocodeium = require('neocodeium')
+			neocodeium.setup()
+
+			-- Tab accepts a visible suggestion, otherwise keeps the default snippet jump / Tab
+			vim.keymap.set('i', '<Tab>', function()
+				if neocodeium.visible() then
+					neocodeium.accept()
+				elseif vim.snippet.active({ direction = 1 }) then
+					vim.snippet.jump(1)
+				else
+					vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Tab>', true, false, true), 'n', false)
+				end
+			end, { desc = 'Accept NeoCodeium suggestion' })
+			vim.keymap.set('i', '<C-j>', neocodeium.accept_word, { desc = 'Accept NeoCodeium word' })
+			vim.keymap.set('i', '<C-]>', neocodeium.clear, { desc = 'Clear NeoCodeium suggestion' })
 		end,
 	},
 	{

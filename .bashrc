@@ -318,6 +318,8 @@ alias gitc='git commit'
 
 alias gits='git status'
 alias gitd='git diff' # remember diff-so-fancy
+alias gitdf='git diff -- ":(exclude,glob)**/test*"'
+
 gitv(){ git count | grep -o '[0-9]' | paste -sd. | awk -F. '{print (NF<3?"0.":"")$0}'; }
 
 gitac() {
@@ -549,6 +551,7 @@ export PATH=/usr/local/cuda/bin:$PATH
 
 alias skills='bunx skills'
 alias ping-telegram='pingme telegram --token $(pass show telegram/token/teto) --channel $(pass show telegram/id/me) --msg'
+alias watch-files='fswatch -r -x --event Created --event Updated --event Removed --event Renamed --event AttributeModified .'
 
 # ------------------- Java -------------------
 
@@ -571,15 +574,29 @@ lcli() {
     echo "llama-server -hf $url -ngl 99 --flash-attn auto -t 6 -c $ctx -b 512 --ubatch-size 128 --mlock"
 }
 
+sshproxy() {
+	port=${PORT:-$1}
+	user=${USER:-root}
+	host=${HOST:-localhost}
+	echo "Connecting to $user@$host:$port..."
+	autossh -L "$port:localhost:$port" "$user@$host" -N
+}
+
 cc() { # Claude code
     # TODO: Should definitely add installation methdos for when missing
     # TODO: Should add description preview
     kilocli=("kilo" "kilo serve --port 11634 --print-logs")
 
     occli=("opencode" "opencode --omo" "opencode web --mdns")
-    clothercli=("clother-minimax --yolo --model MiniMax-3.0" "clother-zai --yolo" "clother-native --yolo" "clother-ollama --yolo")
+    claudecli=(
+		"clother-minimax --yolo --model MiniMax-3.0"
+		"clother-zai --yolo"
+		"clother-native --yolo"
+		"clother-ollama --yolo"
+		"HTTPS_PROXY=http://127.0.0.1:8080 NODE_EXTRA_CA_CERTS=~/.mitmproxy/mitmproxy-ca-cert.pem clother-native --yolo"
+	)
 
-    pros=("${kilocli[@]}" "${occli[@]}" "${clothercli[@]}")
+    pros=("${kilocli[@]}" "${occli[@]}" "${claudecli[@]}")
 
     ORG=$IFS
     IFS=$'\n'
@@ -592,7 +609,7 @@ cc() { # Claude code
 
     locallm=("ollama" "lms" "lm-studio" "${llamama[@]}")
 
-    industry=("kimi" "gemini --yolo" "codex" "copilot" "agy --dangerously-skip-permissions")
+    industry=("kimi" "gemini --yolo" "codex --yolo" "copilot" "agy --yolo")
     funny=("aider" "pi" "droid" "cline" "aichat" "deepseek-tui" "kiro-cli")
 
     allofthem=("${industry[@]}" "${pros[@]}" "${locallm[@]}" "${funny[@]}")
@@ -834,6 +851,15 @@ devproj() {
 
     [ "$start_file" ] && echo "$start_file" > start
     cdp -c "$cmd" "$proj_name"
+}
+
+# ------------------- Pen Testing -------------------
+
+alias jwt_tool='docker run -it --network "host" --rm -v "${PWD}:/tmp" -v "${HOME}/.jwt_tool:/root/.jwt_tool" ticarpi/jwt_tool'
+gitleaks() {
+	command=${1:-help}
+	shift
+	docker run -v ${HOSTFOLDER:-.}:/path zricethezav/gitleaks:latest "$command" /path "$@"
 }
 
 # ------------------- Startup -------------------
