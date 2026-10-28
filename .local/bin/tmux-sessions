@@ -19,7 +19,9 @@ tmux-sessions() {
         cut -f1)
     [ ! "$session_name" ] && return
 
-    if [ -z $TMUX ]; then
+    project-sessions record-session "$session_name"
+
+    if [ -z "${TMUX:-}" ]; then
         tmux a -t "$session_name"
     else
         tmux switch-client -t "$session_name"

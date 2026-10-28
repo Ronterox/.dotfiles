@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+
+# Project picker and tmux session history for Ctrl+F.
+set -o pipefail
+
+state_dir=${PROJECT_SESSIONS_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/project-sessions}
+history_file=$state_dir/history.tsv
+roots=("$HOME/Documents/Projects" "$HOME/.dotfiles")
+if [[ -n ${PROJECT_SESSIONS_ROOTS:-} ]]; then
+    IFS=: read -r -a roots <<< "$PROJECT_SESSIONS_ROOTS"
+fi
+
+is_project_path() {
+    local root
+    [[ -d $1 ]] || return 1
+    for root in "${roots[@]}"; do
+        [[ $1 == "$root" || $1 == "$root/"* ]] && return 0
+    done
+    return 1
+}
+
+record() {
+    local path=$1 name=${2:-} timestamp tmp old_path old_time old_name
+    is_project_path "$path" || return 0
+    umask 077
+    mkdir -p "$state_dir" || return 1
+    exec {lock_fd}>"$state_dir/history.lock" || return 1
+    flock -x "$lock_fd" || return 1
+    tmp=$(mktemp "$state_dir/.history.XXXXXX") || return 1
+    timestamp=$(date +%s)
+    printf '%s\t%s\t%s\n' "$timestamp" "$path" "$name" > "$tmp"
+    if [[ -f $history_file ]]; then
+        while IFS=$'\t' read -r old_time old_path old_name; do
+            [[ $old_path && $old_path != "$path" ]] && printf '%s\t%s\t%s\n' "$old_time" "$old_path" "$old_name" >> "$tmp"
+        done < "$history_file"
+    fi
+    mv -f "$tmp" "$history_file"
+    flock -u "$lock_fd"
+    exec {lock_fd}>&-
+}
+
+list_projects() {
+    local mode=$1 week timestamp path name opened
+    if [[ $mode == recent ]]; then
+        [[ -f $history_file ]] || return 0
+        week=$(date +%G-W%V)
+        while IFS=$'\t' read -r timestamp path name; do
+            [[ $timestamp =~ ^[0-9]+$ ]] || continue
+            is_project_path "$path" || continue
+            [[ $(date -d "@$timestamp" +%G-W%V 2>/dev/null) == "$week" ]] || continue
+            opened=$(date -d "@$timestamp" '+%a %H:%M')
+            printf '%s\t%-12s %-24s %s\n' "$path" "$opened" "$name" "$path"
+        done < "$history_file"
+    else
+        find "${roots[@]}" -maxdepth 2 -name .git -prune -o -type d -print 2>/dev/null |
+            sort -u |
+            while IFS= read -r path; do printf '%s\t%s\n' "$path" "$path"; done
+    fi
+}
+
+session_path() {
+    local name=$1 path
+    path=$(tmux show-options -qv -t "=$name" @project_path 2>/dev/null)
+    if [[ -z $path ]]; then
+        path=$(tmux list-panes -t "=$name" -F '#{pane_start_path}' 2>/dev/null | head -n 1)
+    fi
+    printf '%s' "$path"
+}
+
+session_for_project() {
+    local path=$1 name existing suffix
+    name=$(basename "$path" | tr -d '.')
+    [[ $name ]] || name=project
+    if tmux has-session -t "=$name" 2>/dev/null; then
+        existing=$(session_path "$name")
+        if [[ $existing != "$path" ]]; then
+            suffix=$(printf '%s' "$path" | sha256sum | cut -c1-8)
+            name="$name-$suffix"
+        fi
+    fi
+    SESSION_NAME=$name
+}
+
+open_projects() {
+    local path first='' name status=0
+    local -A seen=()
+    while IFS= read -r path; do
+        [[ $path && ! ${seen[$path]+yes} ]] || continue
+        seen[$path]=1
+        is_project_path "$path" || continue
+        session_for_project "$path"
+        name=$SESSION_NAME
+        if ! tmux has-session -t "=$name" 2>/dev/null; then
+            if ! tmux new-session -d -s "$name" -c "$path"; then
+                printf 'Could not create tmux session for %s\n' "$path" >&2
+                status=1
+                continue
+            fi
+            tmux set-option -q -t "=$name" @project_path "$path"
+            tmux send-keys -t "=$name" start Enter
+        fi
+        record "$path" "$name" || status=1
+        [[ $first ]] || first=$name
+    done
+    [[ $first ]] || return "$status"
+    if [[ -n ${TMUX:-} ]]; then
+        tmux switch-client -t "=$first" || return 1
+    else
+        tmux attach-session -t "=$first" || return 1
+    fi
+    return "$status"
+}
+
+case ${1:-} in
+    list)
+        list_projects "${2:-all}"
+        ;;
+    record-session)
+        path=$(session_path "$2")
+        record "$path" "$2"
+        ;;
+    preview)
+        session_for_project "$2"
+		tmux list-windows -t "=$SESSION_NAME" -F "[#{window_index}: #{window_name}]" 2>/dev/null | paste -sd, -
+        ;;
+    *)
+        script=$(readlink -f "$0")
+        printf -v quoted_script '%q' "$script"
+        mode=all
+        selection=$(
+            list_projects "$mode" |
+                fzf --delimiter=$'\t' --with-nth=2.. --query="$*" --border \
+                    --prompt="$mode> " --header='Alt-R recent week | Alt-A all | Alt-M multi | Alt-S single | Tab select | Enter open' \
+                    --bind="alt-r:clear-multi+reload($quoted_script list recent)+change-prompt(recent> )" \
+                    --bind="alt-a:clear-multi+reload($quoted_script list all)+change-prompt(all> )" \
+                    --bind='alt-m:change-multi+change-border-label(Multi: Tab selects projects)' \
+                    --bind='alt-s:clear-multi+change-multi(0)+change-border-label(Single project)' \
+                    --preview="$quoted_script preview {1}" \
+                    --preview-window=down:10% |
+                cut -f1
+        )
+        [[ $selection ]] || exit 0
+        open_projects <<< "$selection"
+        ;;
+esac

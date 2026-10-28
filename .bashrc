@@ -766,7 +766,7 @@ send() { tmux-send-cmd "$@" "$0 $*"; }
 
 PR_DIRS=(~/Documents/Projects/ ~/.dotfiles)
 
-cdpc() { cdp -c "start" "$@"; }
+cdpc() { project-sessions "$@"; }
 
 export -f cdpc
 
