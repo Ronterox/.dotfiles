@@ -600,8 +600,8 @@ sshproxy() {
 }
 
 cc() { # Claude code
-    local IFS="$IFS" ORG cli
-    local -a kilocli occli claudecli pros llamama locallm industry funny allofthem
+    local cli
+    local -a kilocli occli claudecli pros llamama locallm industry funny allofthem launch
     # TODO: Should definitely add installation methdos for when missing
     # TODO: Should add description preview
     kilocli=("kilo" "kilo serve --port 11634 --print-logs")
@@ -617,14 +617,11 @@ cc() { # Claude code
 
     pros=("${kilocli[@]}" "${occli[@]}" "${claudecli[@]}")
 
-    ORG=$IFS
-    IFS=$'\n'
-    llamama=(
-	$(lcli ggml-org/gemma-3-1b-it-GGUF 16384)
-	$(lcli ggml-org/gemma-4-E2B-it-GGUF 4096)
-	$(lcli unsloth/Qwen3.5-0.8B-GGUF 16384)
+    mapfile -t llamama < <(
+        lcli ggml-org/gemma-3-1b-it-GGUF 16384
+        lcli ggml-org/gemma-4-E2B-it-GGUF 4096
+        lcli unsloth/Qwen3.5-0.8B-GGUF 16384
     )
-    IFS=$ORG
 
     locallm=("ollama" "lms" "lm-studio" "${llamama[@]}")
 
@@ -636,7 +633,8 @@ cc() { # Claude code
     cli=$(gum filter "${allofthem[@]}")
     [[ -z $cli ]] && return
     echo "Launching: $cli $*..."
-    $cli $@
+    IFS=$' \t\n' read -r -a launch <<< "$cli"
+    "${launch[@]}" "$@"
 }
 
 opencode() {
