@@ -4,7 +4,8 @@
 # @meta require-tools argc
 
 install_missing() {
-    declare -A PKG_INSTALL=([apt]="install" [dnf]="install" [yum]="install" [pacman]="-S" [apk]="add" [brew]="install")
+    local pkg req PKG
+    local -A PKG_INSTALL=([apt]="install" [dnf]="install" [yum]="install" [pacman]="-S" [apk]="add" [brew]="install")
 
     for pkg in "${!PKG_INSTALL[@]}"; do
         if hash "$pkg" 2>/dev/null; then
@@ -62,6 +63,7 @@ main() {
 GH_BASE_URL="https://api.github.com"
 
 gh-lsf() {
+    local user repo branch recursive
     user=$1
     repo=$2
     branch=$3
@@ -74,12 +76,13 @@ asdf-plugins() { gh-lsf asdf-vm asdf-plugins master | rg ^plugins | cut -d'/' -f
 
 # @cmd Installs asdf if not installed.
 asdf-install() {
+    local version repo target
     version="v0.18.0"
     repo="https://github.com/asdf-vm/asdf"
     if ! hash asdf 2>/dev/null; then
         echo "asdf is not installed, proceeding to install it."
         if [[ "$(uname -s)" == "Linux" ]]; then
-            declare -A archs=([x86_64]="amd64" [arm64]="arm64" [aarch64]="arm64" [i686]="386" [i386]="386")
+            local -A archs=([x86_64]="amd64" [arm64]="arm64" [aarch64]="arm64" [i686]="386" [i386]="386")
             target="asdf-$version-linux-${archs[$(arch)]}.tar.gz"
             wget "$repo/releases/download/$version/$target"
             tar xvzf "$target" && rm "$target"
@@ -101,6 +104,7 @@ asdf-install() {
 # @cmd List all dependencies of the start file.
 # @alias deps,requirements
 dependencies() {
+    local deps dep
     deps=$(rg '@meta\s*requirements\s*([^#]+)|@meta\s*require-tools\s*([^#]+)' -o -r '$1$2' "start" | tr ',' '\n' | sort | uniq)
     if [ -z "$deps" ]; then
         echo "No dependencies found."
@@ -116,6 +120,7 @@ dependencies() {
 # @cmd Installs all the start file runtime dependencies through asdf.
 # @alias i
 install() {
+    local deps dep results
     deps=$(rg '@meta\s*requirements\s*([^#]+)' -o -r '$1' "start" | tr ',' '\n' | sort | uniq)
     if [ -z "$deps" ]; then
         echo "No dependencies found."
@@ -142,6 +147,8 @@ install() {
 
 # @cmd Extends your shell with special functions
 extend() {
+    local regex dept patterns
+    local -a depts
     depts=(tmux-send-cmd z send git gitv gitac)
     regex=""
     for dept in "${depts[@]}"; do
@@ -159,6 +166,7 @@ extend() {
 # @arg fn*
 # @meta require-tools sed
 create() {
+    local contents lines
     contents=""
     if [ -f start ]; then
         contents="$(cat start)"
@@ -187,6 +195,7 @@ create() {
 # @alias b
 # @meta require-tools rg
 build() {
+	local output cmd tmp
 	if [ ! -f "$argc_file" ]; then
 		echo "File $argc_file does not exist."
 		return

@@ -65,7 +65,7 @@ __tmux_init_completion()
 }
 
 _tmux() {
-    local cur prev words cword;
+    local cur prev words cword options
     if declare -F _init_completion >/dev/null 2>&1; then
         _init_completion
     else
@@ -344,7 +344,7 @@ __arduino-cli_get_completion_results() {
 # Separate activeHelp lines from real completions.
 # Fills the $activeHelp and $completions arrays.
 __arduino-cli_extract_activeHelp() {
-    local activeHelpMarker="_activeHelp_ "
+    local activeHelpMarker="_activeHelp_ " comp
     local endIndex=${#activeHelpMarker}
 
         while IFS='' read -r comp; do
@@ -522,6 +522,7 @@ fi
 
 _jkl_completion() {
     local cur prev words cword
+    local -a methods
     _init_completion || return
 
     methods=(:get :upload :update :delete :fzf :ssh :ip :location :send :0x0 :0x0text :shorta :weather :mapscii :uptime :joke :nyan :games :yt-url)

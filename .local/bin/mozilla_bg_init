@@ -3,6 +3,7 @@ firefox "about:blank" 2>/dev/null &
 WAITFOR="Mozilla Firefox"
 
 get_windows() {
+    local WINS win
     WINS=$(wmctrl -l | grep "$WAITFOR" | awk '{print $1}');
     for win in ${WINS[@]}; do
         [ "$#" -eq 0 ] && continue

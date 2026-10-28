@@ -79,7 +79,7 @@ else
     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
 
-unset color_prompt force_color_prompt wd
+unset color_prompt force_color_prompt wd CYAN YELLOW BLUE WHITE DARK_CYAN
 
 # If this is an xterm set the title to user@host:dir
 case "$TERM" in
@@ -166,6 +166,7 @@ __z_cd() {
 }
 
 __z() {
+    local _zoxide_result
     if [ "$#" -eq 0 ]; then
         __z_cd ~
     elif [ "$#" -eq 1 ] && [ "$1" = '-' ]; then
@@ -185,6 +186,7 @@ __z() {
 }
 
 lsz() {
+    local lscmd path dir
     lscmd="${1:-ls}" && shift
     [ $# -eq 0 ] && path="." || path="$*"
     dir=$($lscmd "$path" | fzf --height=50% --preview "cat \"$path\"/{} 2> /dev/null || tree -L 1 \"$path\"/{}")
@@ -199,6 +201,7 @@ lsa() { lsz "ls -a" "$@"; }
 lc() { locate "$*" | fzf --border; }
 
 h() {
+    local cmd
     cmd="$(history | cut -c 8- | sort | uniq | fzf +s --tac --prompt='Run command: ')"
     [ ! "$cmd" ] && return
     echo "$cmd" | xclip -selection clipboard
@@ -220,6 +223,7 @@ alias camera='ffplay -f v4l2 -video_size 1280x720 -i /dev/video1'
 
 hc() { h -d 1-$(calc $(hlen)-$HISTFILESIZE); } # Clear history
 man() {
+    local lookup
     lookup="${2:-$1}"
     command man $1 $2 || command $lookup --help | cat || command $lookup -h | cat;
 }
@@ -262,6 +266,7 @@ kitty-reload() { kill -SIGUSR1 $(pidof kitty); } # Problem: There is no kitty pr
 # ------------------- Apt -------------------
 
 apti() {
+    local results package
     results=$(apt-cache search "$1" | grep "$2" | awk '{print $1}')
     if [ ! "$results" ]; then
         echo "No results found!"
@@ -307,6 +312,7 @@ alias aptg='apt upgrade'
 alias giti='git init'
 alias gitu='git pull --rebase'
 gitp() {
+    local branch remote
     branch=$(gitb --show-current)
     [ ! "$1" ] && remote="origin" || remote="$1"
     git push "$remote" "$branch"
@@ -352,6 +358,7 @@ git-clone() {
 }
 
 git-worktree() {
+    local folder current_branch confirm
     folder=$(basename "$PWD")
     current_branch=$(gitb --show-current)
 
@@ -371,6 +378,7 @@ git-worktree() {
 
 alias gh-auth='gh auth login'
 gh-open(){
+    local repo
     repo=$(gh repo list -L 100 | fzf --prompt="Open Repo:" --border | awk '{print $1}')
     [ ! "$repo" ] && return
     gh repo view --web "$repo"
@@ -380,6 +388,7 @@ GH_BASE_URL="https://api.github.com"
 GH_RAW_URL="https://raw.githubusercontent.com"
 
 gh-lsf() {
+    local user repo branch recursive
     user=$1
     repo=$2
     branch=$3
@@ -388,6 +397,7 @@ gh-lsf() {
 }
 
 gh-get-raw() {
+    local user repo branch file
     user=$1
     repo=$2
     branch=$3
@@ -396,6 +406,7 @@ gh-get-raw() {
 }
 
 gh-gitignore() {
+    local file
     file=$(gh-lsf github gitignore main | fzf --prompt="Select .gitignore:" --border)
     [ ! "$file" ] && return
 
@@ -405,12 +416,14 @@ gh-gitignore() {
 # ------------------- Web Dev -------------------
 
 server() {
+    local port
     port=${1:-8080}
     echo "Setting up server on http://localhost:$port..."
     caddy file-server -r . -l ":$port" --browse
 }
 
 api() {
+    local port WATCH_PID CADDY_PID
     port=${1:-2015}
 
     echo "Running faker on background..."
@@ -498,6 +511,7 @@ alias record-silent='ffmpeg -f x11grab -video_size 1920x1080 -framerate 30 -i :1
 alias browser='uvx --with pyqt6,pyqt6-webengine qutebrowser'
 
 bang() {
+	local opts selected search
 	opts="--gb --np --unsafe"
     if [ -z "$1" ]; then
         selected="$(xh -b https://duckduckgo.com/bang.js | jq -c '.[] | {s,t}' | fzf --prompt="Bang!")"
@@ -515,6 +529,7 @@ bang() {
 }
 
 search() {
+	local provider inp
 	if [ $# -eq 0 ]; then
 		provider=$(s -l | fzf --prompt="Search provider: " --border)
 		[[ -z $provider ]] && return
@@ -568,6 +583,7 @@ alias javainstall='apti openjdk-*'
 # ------------------- Agent CLI  -------------------
 
 lcli() {
+    local url ctx
     url="$1"
     ctx="$2"
     echo "llama-cli -hf $url -ngl 99 --flash-attn auto -t 6 -c $ctx -b 512 --ubatch-size 128 --mlock"
@@ -575,6 +591,7 @@ lcli() {
 }
 
 sshproxy() {
+	local port user host
 	port=${PORT:-$1}
 	user=${USER:-root}
 	host=${HOST:-localhost}
@@ -583,6 +600,8 @@ sshproxy() {
 }
 
 cc() { # Claude code
+    local IFS ORG cli
+    local -a kilocli occli claudecli pros llamama locallm industry funny allofthem
     # TODO: Should definitely add installation methdos for when missing
     # TODO: Should add description preview
     kilocli=("kilo" "kilo serve --port 11634 --print-logs")
@@ -621,6 +640,7 @@ cc() { # Claude code
 }
 
 opencode() {
+    local cfg plg tmp plugins
     cfg="$HOME/.config/opencode/opencode.json"
     plg="$HOME/.config/opencode/plugins.json"
     tmp="/tmp/oc.json"
@@ -684,6 +704,7 @@ tmuxkill() { tmux kill-session -t "$(tmux display-message -p '#S')"; }
 alias tmuxkillall='tmux kill-server'
 
 tmuxmail() {
+    local session_name sleeptime mailto mailsuccess mailerror pane new_pane mailtext
     session_name=$1
     sleeptime=$2
     mailto=$3
@@ -695,13 +716,12 @@ tmuxmail() {
         return
     fi
 
-    checkpane() { tmux capture-pane -pt "$session_name" -S -10; }
-    pane=$(checkpane)
+    pane=$(tmux capture-pane -pt "$session_name" -S -10)
     while true; do
         clear
         echo "Sleeping for $sleeptime seconds, no ocurrences at $(date)..."
         sleep $sleeptime
-        new_pane=$(checkpane)
+        new_pane=$(tmux capture-pane -pt "$session_name" -S -10)
         [ "$new_pane" == "$pane" ] && break
         pane=$new_pane
     done
@@ -711,6 +731,7 @@ tmuxmail() {
 }
 
 tmuxwatch() {
+    local sleeptime mailto session_name session
     sleeptime=$1
     mailto=$2
 
@@ -727,6 +748,7 @@ tmuxwatch() {
 }
 
 tmuxuptime() {
+    local session_name created now uptime
     if [ -z "$1" ]; then
         session_name=$(tmux display-message -p '#S')
         if [ -z "$session_name" ]; then
@@ -744,6 +766,7 @@ tmuxuptime() {
 }
 
 tmux-send-cmd() {
+    local win_title cmd
     win_title="$1"
     cmd="$2"
 
@@ -771,6 +794,8 @@ cdpc() { project-sessions "$@"; }
 export -f cdpc
 
 cdp() {
+    local cmd opt session_path session_name
+    local OPTIND OPTARG
     cmd="tree -L 1"
     while getopts ":c:" opt; do
         case $opt in
@@ -810,6 +835,8 @@ declare -A inits=(
 )
 
 devproj() {
+    local lang proj_name cmd start_file tmpfile message
+    local select_branch echo_redirect start_branch
     lang=$(find "${PR_DIRS[@]}" -maxdepth 1 -type d -ipath "*$**" -exec basename {} \; | sed s/Projects// | fzf)
     [ ! "$lang" ] && return
 
@@ -857,6 +884,7 @@ devproj() {
 
 alias jwt_tool='docker run -it --network "host" --rm -v "${PWD}:/tmp" -v "${HOME}/.jwt_tool:/root/.jwt_tool" ticarpi/jwt_tool'
 gitleaks() {
+	local command
 	command=${1:-help}
 	shift
 	docker run -v ${HOSTFOLDER:-.}:/path zricethezav/gitleaks:latest "$command" /path "$@"

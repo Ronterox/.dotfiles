@@ -1,9 +1,10 @@
 #!/bin/env bash
 
 tmux-sessions() {
+    local s b bg ink glyph initials session_name
+    local -A badges=()
     # Claude session badges per tmux session, from the @claude_badge window
     # option set by ~/.claude/hooks/tmux-badge.sh ("bg ink glyph initials").
-    declare -A badges
     while IFS=$'\t' read -r s b; do
         [ -z "$b" ] && continue
         read -r bg ink glyph initials <<<"$b"

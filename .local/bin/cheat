@@ -5,6 +5,7 @@ path=$(realpath "$0" | xargs dirname)
 extract() { cat "$path/$*"; }
 
 run_query() {
+    local output clean_output
     output=$("$path/cheat.sh" "$1" "$2")
     clean_output=$(echo "$output" | sed -e 's/\x1b\[[0-9;]*m//g')
 
@@ -19,6 +20,7 @@ run_query() {
 }
 
 ask_query() {
+    local query
     read -rp "Your query (~keyword): " query
 
     if [ "$selected" == "navi" ]; then

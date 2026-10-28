@@ -39,7 +39,7 @@ rules() {
 }
 
 affirmation() {
-	AFFIRMATIONS=(Awesome! Good. Great! Cool. Nice! Perfect! Amazing! "Well Done.")
+	local -a AFFIRMATIONS=(Awesome! Good. Great! Cool. Nice! Perfect! Amazing! "Well Done.")
 	echo "${AFFIRMATIONS[$RANDOM % ${#AFFIRMATIONS[@]}]}"
 }
 
