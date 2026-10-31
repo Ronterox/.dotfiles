@@ -16,7 +16,19 @@ POPUP_COUNT=$(xdotool search --any "yad" 2>/dev/null | wc -l)
 
 Y=$((BASE_Y + (POPUP_COUNT * (HEIGHT + GAP))))
 
-(echo "1"; while true; do sleep 0.3; done) | yad --width=$WIDTH --height=$HEIGHT \
+# Feed the pulsating bar from a background helper and exit as soon as yad does.
+# A pipeline (`... | yad`) would keep this script alive forever: after yad dies
+# the feeder never writes again, so it never gets SIGPIPE and bash keeps waiting.
+(
+    while true; do
+        echo 1
+        sleep 0.3
+    done
+) &
+FEEDER=$!
+trap 'kill "$FEEDER" 2>/dev/null' EXIT
+
+yad --width=$WIDTH --height=$HEIGHT \
     --geometry=${WIDTH}x${HEIGHT}+${X}+${Y} \
     --title="Loading" \
     --class "yad-popup" \
