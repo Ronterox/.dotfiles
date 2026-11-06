@@ -930,6 +930,7 @@ blesh() {
 
 if [ "$HOME" == "$PWD" ]; then
     nf
+	whalechan start
 else
 	echo && la && echo
 	fortune ~/.local/share/fortune/quotes && echo
