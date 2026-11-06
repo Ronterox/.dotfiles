@@ -227,6 +227,10 @@ return {
 	{
 		"pmizio/typescript-tools.nvim",
 		dependencies = { "nvim-lua/plenary.nvim", "neovim/nvim-lspconfig" },
-		opts = {},
+		opts = {
+			-- typescript-tools does not look in bun's global store, so point it there
+			-- explicitly: `bun add -g typescript@5`
+			tsserver_path = vim.fn.expand "~/.bun/install/global/node_modules/typescript/lib/tsserver.js",
+		},
 	},
 }
