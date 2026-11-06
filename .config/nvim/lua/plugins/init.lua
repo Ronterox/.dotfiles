@@ -137,6 +137,4 @@ return {
 			-- your configuration comes here; leave empty for default settings
 		},
 	},
-
-	{ dir = '~/Documents/Projects/AIProjects/HarnessTools/aic/nvim/', config = function() require('aic').setup({}) end }
 }
