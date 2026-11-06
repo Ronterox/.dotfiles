@@ -564,6 +564,7 @@ cargo-clean-cache() { rip -i ~/.cargo/registry/index/* ~/.cargo/.package-cache; 
 
 export PATH=/usr/local/cuda/bin:$PATH
 
+alias dsh='bunx @deepseek-ai/dsh'
 alias skills='bunx skills'
 alias ping-telegram='pingme telegram --token $(pass show telegram/token/teto) --channel $(pass show telegram/id/me) --msg'
 alias watch-files='fswatch -r -x --event Created --event Updated --event Removed --event Renamed --event AttributeModified .'
@@ -606,7 +607,13 @@ cc() { # Claude code
     # TODO: Should add description preview
     kilocli=("kilo" "kilo serve --port 11634 --print-logs")
 
-    occli=("opencode" "opencode --omo" "opencode web --mdns")
+	deepseek=("dsh --profile tui" "dsh web")
+    occli=(
+		"opencode" "opencode --omo" "opencode web --mdns"
+		"opencode mini" "opencode mini --continue"
+		"opencode-mini-interceptor" "opencode-mini-interceptor --continue"
+		"ocm -u" "ocm -u --continue"
+	)
     claudecli=(
 		"clother-minimax --yolo --model MiniMax-3.0"
 		"clother-zai --yolo"
@@ -615,7 +622,7 @@ cc() { # Claude code
 		"HTTPS_PROXY=http://127.0.0.1:8080 NODE_EXTRA_CA_CERTS=~/.mitmproxy/mitmproxy-ca-cert.pem clother-native --yolo"
 	)
 
-    pros=("${kilocli[@]}" "${occli[@]}" "${claudecli[@]}")
+    pros=("${kilocli[@]}" "${occli[@]}" "${claudecli[@]}" "${deepseek[@]}")
 
     mapfile -t llamama < <(
         lcli ggml-org/gemma-3-1b-it-GGUF 16384
@@ -625,7 +632,7 @@ cc() { # Claude code
 
     locallm=("ollama" "lms" "lm-studio" "${llamama[@]}")
 
-    industry=("kimi" "gemini --yolo" "codex --yolo" "copilot" "agy --yolo")
+    industry=("kimi" "gemini --yolo" "codex --yolo" "copilot" "agy --dangerously-skip-permissions")
     funny=("aider" "pi" "droid" "cline" "aichat" "deepseek-tui" "kiro-cli")
 
     allofthem=("${industry[@]}" "${pros[@]}" "${locallm[@]}" "${funny[@]}")
