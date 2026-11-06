@@ -125,7 +125,11 @@ case ${1:-} in
         ;;
     preview)
         session_for_project "$2"
-		tmux list-windows -t "=$SESSION_NAME" -F "[#{window_index}: #{window_name}]" 2>/dev/null | paste -sd, -
+		if tmux has-session -t "=$SESSION_NAME" 2>/dev/null; then
+			tmux list-windows -t "=$SESSION_NAME" -F "[#{window_index}: #{window_name}]" 2>/dev/null | paste -sd, -
+		else
+			ls -a "$2" | paste -sd,
+		fi
         ;;
     *)
         script=$(readlink -f "$0")
