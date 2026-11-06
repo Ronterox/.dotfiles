@@ -1,9 +1,9 @@
 return {
 	-- Local FIM autocomplete, served by llama-server on 127.0.0.1:8012.
-	-- Plugin and server load on the first InsertEnter; the server is shared by
-	-- every nvim and outlives them. After 5 min idle it sleeps (frees VRAM and
-	-- RAM, keeps the process); the next request wakes it, ~15-20s like a cold
-	-- start. Stop it with `pkill -f fim-qwen`. Log: stdpath('log')/llama-server.log
+	-- Plugin and server load on the first InsertEnter. The server is shared by
+	-- every nvim using it and stopped when the last of them exits. After 5 min
+	-- idle it sleeps (frees VRAM and RAM, keeps the process); the next request
+	-- wakes it, ~15-20s like a cold start. Log: stdpath('log')/llama-server.log
 	{
 		'ggml-org/llama.vim',
 		event = 'InsertEnter',
@@ -31,6 +31,37 @@ return {
 			vim.cmd('inoremap <buffer> <expr> <silent> <M-l> llama#fim_inline(v:false, v:false)')
 
 			if vim.fn.executable('llama-server') == 0 then return end
+
+			-- Each nvim using the server leaves a file in clients/; the last one to
+			-- exit stops the server, but only one we started (recorded in pidfile).
+			local dir = vim.fn.stdpath('state') .. '/llama-fim'
+			local clients, pidfile = dir .. '/clients', dir .. '/server.pid'
+			vim.fn.mkdir(clients, 'p')
+			local me = clients .. '/' .. vim.fn.getpid()
+			vim.fn.writefile({}, me)
+
+			local function read(path)
+				local f = io.open(path)
+				if not f then return '' end
+				local s = f:read('*a'); f:close()
+				return s
+			end
+
+			vim.api.nvim_create_autocmd('VimLeavePre', {
+				callback = function()
+					os.remove(me)
+					for name in vim.fs.dir(clients) do
+						if vim.trim(read('/proc/' .. name .. '/comm')) == 'nvim' then return end
+						os.remove(clients .. '/' .. name) -- crashed nvim
+					end
+					local pid = tonumber(read(pidfile))
+					if pid and read('/proc/' .. pid .. '/cmdline'):find('fim-qwen', 1, true) then
+						vim.uv.kill(pid, 'sigterm')
+					end
+					os.remove(pidfile)
+				end,
+			})
+
 			local tcp = vim.uv.new_tcp()
 			if not tcp then return end
 			tcp:connect('127.0.0.1', 8012, function(err)
@@ -38,8 +69,11 @@ return {
 				if not err then return end -- already running
 				vim.schedule(function()
 					local log = vim.fn.stdpath('log') .. '/llama-server.log'
-					vim.system({ 'sh', '-c', 'exec llama-server --fim-qwen-3b-default --sleep-idle-seconds 300 >>"$0" 2>&1', log },
+					-- Detached so it survives this nvim while others still use it.
+					local proc = vim.system(
+						{ 'sh', '-c', 'exec llama-server --fim-qwen-3b-default --sleep-idle-seconds 300 >>"$0" 2>&1', log },
 						{ detach = true })
+					vim.fn.writefile({ tostring(proc.pid) }, pidfile)
 				end)
 			end)
 		end,
