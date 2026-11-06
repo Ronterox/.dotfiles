@@ -70,9 +70,12 @@ return {
 				vim.schedule(function()
 					local log = vim.fn.stdpath('log') .. '/llama-server.log'
 					-- Detached so it survives this nvim while others still use it.
-					local proc = vim.system(
-						{ 'sh', '-c', 'exec llama-server --fim-qwen-1.5b-default --sleep-idle-seconds 120 >>"$0" 2>&1', log },
-						{ detach = true })
+					-- The preset serves 4 slots x 32k ctx with an 8 GB RAM prompt
+					-- cache; llama.vim sends one request of ~1k tokens + ~10k extra
+					-- context, so 1 slot / 16k / no RAM cache saves ~830 MB VRAM.
+					local cmd = 'exec llama-server --fim-qwen-1.5b-default --sleep-idle-seconds 120'
+						.. ' -np 1 -c 16384 -ub 512 --cache-ram 0 >>"$0" 2>&1'
+					local proc = vim.system({ 'sh', '-c', cmd, log }, { detach = true })
 					vim.fn.writefile({ tostring(proc.pid) }, pidfile)
 				end)
 			end)
