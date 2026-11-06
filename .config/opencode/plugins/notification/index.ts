@@ -3,9 +3,14 @@ import os from "os"
 import path from "path"
 
 const home = os.homedir()
+// Shared with the Claude Code notification hook: finished / error / attention.
+const SOUNDS = path.join(home, ".claude/sounds")
+// Fallback cue when the sound library is unavailable.
 const TETO = path.join(home, ".opencode/plugins/teto.mp3")
 const VOICE = path.join(home, ".opencode/plugins/en_US-amy-medium.onnx")
 const POPUP = path.join(home, ".opencode/plugins/popup.sh")
+
+type SoundCategory = "finished" | "error" | "attention"
 
 // OpenCode 2 finishes a turn with `session.execution.*`. Other builds emit
 // `session.idle` or a `session.status` of `idle`. Listen to all of them and
@@ -13,6 +18,7 @@ const POPUP = path.join(home, ".opencode/plugins/popup.sh")
 const TERMINAL_EVENTS: readonly string[] = [
 	"session.execution.succeeded",
 	"session.execution.failed",
+	"session.execution.interrupted",
 	"session.idle",
 	"session.status",
 ]
@@ -169,6 +175,29 @@ async function playFile(file: string, ann: Announcement): Promise<boolean> {
 	return waitFor(ann, proc)
 }
 
+// Mirror the Claude Code hook: one random clip from the matching category, so
+// the same cue doesn't play every time.
+async function pickSound(category: SoundCategory): Promise<string> {
+	const dir = JSON.stringify(path.join(SOUNDS, category))
+	const proc = Bun.spawn(
+		[
+			"bash",
+			"-c",
+			`find ${dir} -maxdepth 1 -type f \\( -iname '*.mp3' -o -iname '*.ogg' -o -iname '*.oga' -o -iname '*.wav' -o -iname '*.flac' -o -iname '*.m4a' -o -iname '*.opus' \\) 2>/dev/null | shuf -n1`,
+		],
+		{ stdout: "pipe", stderr: "ignore" },
+	)
+	const picked = (await new Response(proc.stdout).text()).trim()
+	await proc.exited.catch(() => {})
+	return picked || TETO
+}
+
+function categoryFor(eventType: string): SoundCategory {
+	if (eventType === "session.execution.failed") return "error"
+	if (eventType === "session.execution.interrupted") return "attention"
+	return "finished"
+}
+
 async function generateAudio(sentence: string, ann: Announcement, force = false): Promise<Uint8Array | undefined> {
 	if (ann.stop && !force) return undefined
 	const proc = track(
@@ -208,7 +237,7 @@ async function playAudio(
 		Bun.spawn(
 			[
 				"aosd_cat",
-				"--font=Sans Bold 60",
+				"--font=Sans Bold 54",
 				"--fore-color=white",
 				"--back-color=black",
 				"--position=7",
@@ -270,7 +299,7 @@ function textOf(message: any): string {
 		.replace(/```[\s\S]*?```/g, "") // No code blocks
 }
 
-async function announce(ctx: any, sessionID: string): Promise<void> {
+async function announce(ctx: any, sessionID: string, category: SoundCategory): Promise<void> {
 	if (running.has(sessionID)) return
 
 	let lock: string | undefined
@@ -314,7 +343,7 @@ async function announce(ctx: any, sessionID: string): Promise<void> {
 			() => {},
 		)
 
-		const heardTone = await playFile(TETO, ann)
+		const heardTone = await playFile(await pickSound(category), ann)
 		if (heardTone) {
 			let nextAudio = generateAudio(sentences[0], ann)
 			for (let i = 0; i < sentences.length && !ann.stop; i++) {
@@ -356,7 +385,7 @@ export default Plugin.define({
 					if (!data.sessionID) continue
 					// Don't await: an announcement takes seconds of audio and must not
 					// block the event stream for other sessions.
-					void announce(ctx, data.sessionID).catch((error) => {
+					void announce(ctx, data.sessionID, categoryFor(event.type)).catch((error) => {
 						console.error("[notification]", error)
 					})
 				}
