@@ -1,23 +1,47 @@
 return {
+	-- Local FIM autocomplete, served by llama-server on 127.0.0.1:8012.
+	-- Plugin and server load on the first InsertEnter; the server is shared by
+	-- every nvim and outlives them. After 5 min idle it sleeps (frees VRAM and
+	-- RAM, keeps the process); the next request wakes it, ~15-20s like a cold
+	-- start. Stop it with `pkill -f fim-qwen`. Log: stdpath('log')/llama-server.log
 	{
-		'monkoose/neocodeium',
-		event = 'VeryLazy',
+		'ggml-org/llama.vim',
+		event = 'InsertEnter',
+		init = function()
+			vim.g.llama_config = {
+				show_info = 0,
+				-- Tab / S-Tab / C-L / C-H are buffer-local and exist only while a
+				-- suggestion is shown, so plain Tab keeps working otherwise.
+				keymap_fim_trigger = '<M-l>',
+				keymap_fim_accept_word = '<C-j>',
+				-- Defaults use <leader>l… (Space lag in insert, clashes with harpoon
+				-- <leader>l) and grab normal-mode <Tab>/<Esc> for the instruct
+				-- feature, which needs a chat model anyway.
+				keymap_debug_toggle = '',
+				keymap_inst_trigger = '',
+				keymap_inst_rerun = '',
+				keymap_inst_continue = '',
+				keymap_inst_accept = '',
+				keymap_inst_cancel = '',
+			}
+		end,
 		config = function()
-			local neocodeium = require('neocodeium')
-			neocodeium.setup()
+			-- llama.vim maps the trigger on InsertEnter, which already fired for the
+			-- insert that loaded it; map it for this buffer too.
+			vim.cmd('inoremap <buffer> <expr> <silent> <M-l> llama#fim_inline(v:false, v:false)')
 
-			-- Tab accepts a visible suggestion, otherwise keeps the default snippet jump / Tab
-			vim.keymap.set('i', '<Tab>', function()
-				if neocodeium.visible() then
-					neocodeium.accept()
-				elseif vim.snippet.active({ direction = 1 }) then
-					vim.snippet.jump(1)
-				else
-					vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Tab>', true, false, true), 'n', false)
-				end
-			end, { desc = 'Accept NeoCodeium suggestion' })
-			vim.keymap.set('i', '<C-j>', neocodeium.accept_word, { desc = 'Accept NeoCodeium word' })
-			vim.keymap.set('i', '<C-]>', neocodeium.clear, { desc = 'Clear NeoCodeium suggestion' })
+			if vim.fn.executable('llama-server') == 0 then return end
+			local tcp = vim.uv.new_tcp()
+			if not tcp then return end
+			tcp:connect('127.0.0.1', 8012, function(err)
+				tcp:close()
+				if not err then return end -- already running
+				vim.schedule(function()
+					local log = vim.fn.stdpath('log') .. '/llama-server.log'
+					vim.system({ 'sh', '-c', 'exec llama-server --fim-qwen-3b-default --sleep-idle-seconds 300 >>"$0" 2>&1', log },
+						{ detach = true })
+				end)
+			end)
 		end,
 	},
 	{
