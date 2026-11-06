@@ -644,26 +644,26 @@ cc() { # Claude code
     "${launch[@]}" "$@"
 }
 
-opencode() {
-    local cfg plg tmp plugins
-    cfg="$HOME/.config/opencode/opencode.json"
-    plg="$HOME/.config/opencode/plugins.json"
-    tmp="/tmp/oc.json"
-
-    if [[ ! -f "$plg" ]]; then
-	jq -c .plugin "$cfg" > "$plg"
-    fi
-
-    plugins=$(cat "$plg")
-
-    if [[ "$*" == *"--omo"* ]]; then
-	jq ".plugin = $plugins" "$cfg" > $tmp && cp $tmp "$cfg"
-	command opencode "${@/--omo/}"
-    else
-	jq ".plugin = ${plugins/oh-my-openagent@latest/}" "$cfg" > $tmp && cp $tmp "$cfg"
-	command opencode "$@"
-    fi
-}
+# opencode() {
+#     local cfg plg tmp plugins
+#     cfg="$HOME/.config/opencode/opencode.json"
+#     plg="$HOME/.config/opencode/plugins.json"
+#     tmp="/tmp/oc.json"
+#
+#     if [[ ! -f "$plg" ]]; then
+# 	jq -c .plugin "$cfg" > "$plg"
+#     fi
+#
+#     plugins=$(cat "$plg")
+#
+#     if [[ "$*" == *"--omo"* ]]; then
+# 	jq ".plugin = $plugins" "$cfg" > $tmp && cp $tmp "$cfg"
+# 	command opencode "${@/--omo/}"
+#     else
+# 	jq ".plugin = ${plugins/oh-my-openagent@latest/}" "$cfg" > $tmp && cp $tmp "$cfg"
+# 	command opencode "$@"
+#     fi
+# }
 
 # ------------------- Interpreters & Editors  -------------------
 
