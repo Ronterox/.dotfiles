@@ -1,9 +1,9 @@
 return {
 	-- Local FIM autocomplete, served by llama-server on 127.0.0.1:8012.
 	-- Plugin and server load on the first InsertEnter. The server is shared by
-	-- every nvim using it and stopped when the last of them exits. After 5 min
+	-- every nvim using it and stopped when the last of them exits. After 2 min
 	-- idle it sleeps (frees VRAM and RAM, keeps the process); the next request
-	-- wakes it, ~15-20s like a cold start. Log: stdpath('log')/llama-server.log
+	-- wakes it in ~3s, like a cold start. Log: stdpath('log')/llama-server.log
 	{
 		'ggml-org/llama.vim',
 		event = 'InsertEnter',
@@ -71,7 +71,7 @@ return {
 					local log = vim.fn.stdpath('log') .. '/llama-server.log'
 					-- Detached so it survives this nvim while others still use it.
 					local proc = vim.system(
-						{ 'sh', '-c', 'exec llama-server --fim-qwen-3b-default --sleep-idle-seconds 300 >>"$0" 2>&1', log },
+						{ 'sh', '-c', 'exec llama-server --fim-qwen-1.5b-default --sleep-idle-seconds 120 >>"$0" 2>&1', log },
 						{ detach = true })
 					vim.fn.writefile({ tostring(proc.pid) }, pidfile)
 				end)
