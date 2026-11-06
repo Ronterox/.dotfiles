@@ -1,8 +1,8 @@
 #!/bin/env bash
 
 tmux-sessions() {
-    local s b bg ink glyph initials session_name
-    local -A badges=()
+    local s b bg ink glyph initials session_name mark
+    local -A badges=() pending=()
     # Claude session badges per tmux session, from the @claude_badge window
     # option set by ~/.claude/hooks/tmux-badge.sh ("bg ink glyph initials").
     while IFS=$'\t' read -r s b; do
@@ -13,8 +13,24 @@ tmux-sessions() {
             "$glyph" "$initials")
     done < <(tmux list-windows -a -F $'#{session_name}\t#{@claude_badge}')
 
+    # Pending notifications per session, from the queue shared with notify.sh
+    # ("session_name<TAB>count"). Panes are resolved to their current session.
+    while IFS=$'\t' read -r s mark; do
+        [ -z "$s" ] && continue
+        pending[$s]=$(( ${pending[$s]:-0} + mark ))
+    done < <("$HOME/.claude/hooks/tmux-notifications.sh" list 2>/dev/null)
+
     session_name=$(tmux ls -F '#{session_name}' |
-        while read -r s; do printf '%s\t%-20s %s\n' "$s" "$s" "${badges[$s]}"; done |
+        while read -r s; do
+            # Red exclamation chip; a count when several are queued.
+            mark=
+            if [ "${pending[$s]:-0}" -gt 1 ]; then
+                mark=$(printf '\e[48;2;229;57;53;38;2;255;255;255;1m !%s \e[0m ' "${pending[$s]}")
+            elif [ "${pending[$s]:-0}" -eq 1 ]; then
+                mark=$(printf '\e[48;2;229;57;53;38;2;255;255;255;1m ! \e[0m ')
+            fi
+            printf '%s\t%-20s %s%s\n' "$s" "$s" "$mark" "${badges[$s]}"
+        done |
         fzf --ansi --delimiter=$'\t' --with-nth=2 --prompt="Session: " --border --height=50% \
             --preview="tmux list-windows -t {1}" |
         cut -f1)
