@@ -6,7 +6,9 @@ return {
 	-- wakes it in ~3s, like a cold start. Log: stdpath('log')/llama-server.log
 	{
 		'ggml-org/llama.vim',
-		event = 'InsertEnter',
+		-- TermEnter: terminal mode has its own client (rontero/llama_term.lua)
+		-- but needs the server started here.
+		event = { 'InsertEnter', 'TermEnter' },
 		init = function()
 			vim.g.llama_config = {
 				show_info = 0,
@@ -29,6 +31,7 @@ return {
 			-- llama.vim maps the trigger on InsertEnter, which already fired for the
 			-- insert that loaded it; map it for this buffer too.
 			vim.cmd('inoremap <buffer> <expr> <silent> <M-l> llama#fim_inline(v:false, v:false)')
+			require('rontero.llama_term').setup()
 
 			if vim.fn.executable('llama-server') == 0 then return end
 
