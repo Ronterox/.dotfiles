@@ -107,14 +107,18 @@ case "$1" in
         fi
         ;;
     --show)
+		# 1440 minutes is 24 hours
+		old_enough=$(find "$LOGFILE" -mmin +1440)
+
         if [ -f "$LOGFILE" ]; then
-            # If file older than 1 day show in red
-            if [ "$(find "$LOGFILE" -mmin +1440)" ]; then
-                color=31
-            else
-                color=32
-            fi
+			[[ "$old_enough" ]] && color=31 || color=32 # 31=red, 32=green
             echo -e "\e[${color}mLast backup: $(stat -c %y "$LOGFILE")\e[0m\n"
+
+			if [[ "$old_enough" ]] && [[ -d "$REPOSITORY" ]]; then
+				read -rn1 -p "Backup directory is available. Run backup? [Y/n] "
+				echo
+				[[ $REPLY =~ ^[Yy]$ ]] && $0 --run
+			fi
         else
             echo -e "\e[31mLast backup: Never\e[0m\n"
         fi
