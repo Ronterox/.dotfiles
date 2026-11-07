@@ -325,6 +325,7 @@ alias gitc='git commit'
 alias gits='git status'
 alias gitd='git diff' # remember diff-so-fancy
 alias gitdf='git diff -- ":(exclude,glob)**/test*"'
+alias git-global-run='find ~ -name .git -type d -exec dirname {} \; | xargs -I {} git -C {}'
 
 gitv(){ git count | grep -o '[0-9]' | paste -sd. | awk -F. '{print (NF<3?"0.":"")$0}'; }
 
