@@ -1,0 +1,661 @@
+#!/usr/bin/env bash
+# phonemic — use an Android phone as a microphone on any Linux PC.
+#
+# How it works: scrcpy captures the phone's mic over adb (USB or Wi-Fi) and
+# plays it into a virtual "PhoneMic-Sink"; a remapped source called "PhoneMic"
+# exposes that sink to apps as a normal microphone. Works on PulseAudio and
+# PipeWire (via pipewire-pulse). Needs Android 11+ and scrcpy 2.0+.
+#
+# Run `phonemic` with no arguments for the step-by-step guide.
+
+set -uo pipefail
+
+SINK=phonemic_sink
+SOURCE=phonemic
+CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/phonemic"
+LAST_WIFI="$CONF_DIR/last_wifi"
+GAIN_FILE="$CONF_DIR/gain_db"
+PIDFILE="${XDG_RUNTIME_DIR:-/tmp}/phonemic-$UID.pid"
+OPT_DIR="$HOME/.local/opt/scrcpy"
+BIN_DIR="$HOME/.local/bin"
+
+# Runtime settings (filled by flags or the guide).
+TRANSPORT=""      # usb | wifi
+MIC_SOURCE=""     # scrcpy --audio-source value
+KEEP=0            # keep the virtual mic after stopping
+MAKE_DEFAULT=""   # 1 = make PhoneMic the default input
+GAIN=""           # PhoneMic boost in dB (flag, else remembered in $GAIN_FILE)
+GUIDED=0
+SERIAL=""
+SCRCPY_PID=""
+PREV_DEFAULT_SOURCE=""
+
+# ---------------------------------------------------------------- ui helpers
+if [ -t 1 ]; then
+    B=$'\e[1m' D=$'\e[2m' R=$'\e[0m' RED=$'\e[31m' GRN=$'\e[32m' YEL=$'\e[33m' CYN=$'\e[36m'
+else
+    B="" D="" R="" RED="" GRN="" YEL="" CYN=""
+fi
+say()  { printf '%s\n' "$*"; }
+ok()   { printf '  %s✔%s %s\n' "$GRN" "$R" "$*"; }
+warn() { printf '  %s!%s %s\n' "$YEL" "$R" "$*"; }
+err()  { printf '  %s✘%s %s\n' "$RED" "$R" "$*" >&2; }
+die()  { err "$*"; exit 1; }
+hint() { printf '    %s%s%s\n' "$D" "$*" "$R"; }
+step() { printf '\n%s%s[%s]%s %s%s%s\n' "$B" "$CYN" "$1" "$R" "$B" "$2" "$R"; }
+interactive() { [ -t 0 ]; }
+
+# ask_yn "Question" y|n  -> 0 for yes. Non-interactive runs take the default.
+ask_yn() {
+    local q=$1 def=${2:-y} prompt reply
+    [ "$def" = y ] && prompt="[Y/n]" || prompt="[y/N]"
+    interactive || { [ "$def" = y ]; return; }
+    read -rp "  ? $q $prompt " reply
+    reply=${reply:-$def}
+    [[ $reply =~ ^[Yy] ]]
+}
+
+# choose "Question" "opt1" "opt2" ...  -> echoes the 1-based choice (default 1).
+choose() {
+    local q=$1 i reply; shift
+    if ! interactive; then echo 1; return; fi
+    printf '  ? %s\n' "$q" >&2
+    for i in $(seq 1 $#); do printf '    %s%d)%s %s\n' "$B" "$i" "$R" "${!i}" >&2; done
+    while :; do
+        read -rp "    choice [1]: " reply
+        reply=${reply:-1}
+        [[ $reply =~ ^[0-9]+$ ]] && [ "$reply" -ge 1 ] && [ "$reply" -le $# ] && { echo "$reply"; return; }
+    done
+}
+
+pause() { interactive && read -rp "  ↵ ${1:-Press Enter to continue}" _; }
+
+# ---------------------------------------------------------------- tools
+ADB=adb
+find_adb() {
+    if command -v adb >/dev/null; then ADB=adb
+    elif [ -x "$OPT_DIR/adb" ]; then ADB="$OPT_DIR/adb"
+    else return 1; fi
+}
+
+scrcpy_major() {
+    local v
+    v=$(scrcpy --version 2>/dev/null | awk 'NR==1{print $2}')
+    v=${v#v}
+    [ -n "$v" ] && echo "${v%%.*}" || echo 0
+}
+
+PM=""
+detect_pm() {
+    local pm
+    for pm in apt-get dnf pacman zypper; do
+        command -v "$pm" >/dev/null && { PM=$pm; return; }
+    done
+}
+
+# pkg_for TOOL -> package name for this distro, or empty if unknown.
+pkg_for() {
+    case "$PM:$1" in
+        apt-get:adb) echo adb ;;
+        apt-get:pactl | dnf:pactl | zypper:pactl) echo pulseaudio-utils ;;
+        pacman:pactl) echo libpulse ;;
+        dnf:adb | pacman:adb | zypper:adb) echo android-tools ;;
+        apt-get:scrcpy | pacman:scrcpy | zypper:scrcpy) echo scrcpy ;;
+    esac
+}
+
+pm_install() {
+    local cmd
+    case "$PM" in
+        apt-get) cmd=(sudo apt-get install -y "$@") ;;
+        dnf) cmd=(sudo dnf install -y "$@") ;;
+        pacman) cmd=(sudo pacman -S --needed --noconfirm "$@") ;;
+        zypper) cmd=(sudo zypper install -y "$@") ;;
+        *) return 1 ;;
+    esac
+    hint "running: ${cmd[*]}"
+    "${cmd[@]}"
+}
+
+# Install the official static scrcpy build (bundles adb) into ~/.local/opt.
+install_scrcpy_release() {
+    local tag tmp url
+    [ "$(uname -m)" = x86_64 ] || { err "The official build is x86_64 only; install scrcpy from your distro or build it."; return 1; }
+    command -v curl >/dev/null || { err "curl is needed to download scrcpy."; return 1; }
+    tag=$(curl -fsSL https://api.github.com/repos/Genymobile/scrcpy/releases/latest |
+        grep -m1 '"tag_name"' | cut -d'"' -f4)
+    [ -n "$tag" ] || { err "Could not reach GitHub to find the latest scrcpy release."; return 1; }
+    url="https://github.com/Genymobile/scrcpy/releases/download/$tag/scrcpy-linux-x86_64-$tag.tar.gz"
+    tmp=$(mktemp -d)
+    say "  Downloading scrcpy $tag…"
+    if ! curl -fL --progress-bar -o "$tmp/scrcpy.tgz" "$url"; then
+        rm -rf "$tmp"; err "Download failed: $url"; return 1
+    fi
+    rm -rf "${OPT_DIR:?}"
+    mkdir -p "$OPT_DIR" "$BIN_DIR"
+    tar -xzf "$tmp/scrcpy.tgz" -C "$OPT_DIR" --strip-components=1
+    rm -rf "$tmp"
+    if [ -e "$BIN_DIR/scrcpy" ] && [ ! -L "$BIN_DIR/scrcpy" ]; then
+        warn "$BIN_DIR/scrcpy exists and is not a symlink; left it alone."
+    else
+        ln -sfn "$OPT_DIR/scrcpy" "$BIN_DIR/scrcpy"
+    fi
+    case ":$PATH:" in *":$BIN_DIR:"*) ;; *)
+        export PATH="$BIN_DIR:$PATH"
+        warn "$BIN_DIR is not in your PATH; add it to your shell profile." ;;
+    esac
+    hash -r
+    ok "Installed scrcpy $tag to $OPT_DIR"
+}
+
+ensure_scrcpy() {
+    local major pkg c
+    major=$(scrcpy_major)
+    if [ "$major" -ge 2 ]; then ok "scrcpy $(scrcpy --version | awk 'NR==1{print $2}')"; return; fi
+    if [ "$major" -eq 0 ]; then warn "scrcpy is not installed (it streams the phone's mic)."
+    else warn "Your scrcpy is too old for audio (need 2.0+, have $major.x)."; fi
+    pkg=$(pkg_for scrcpy)
+    local opts=("Download the official build into ~/.local (latest, no sudo)")
+    [ -n "$pkg" ] && [ "$major" -eq 0 ] && opts+=("Install '$pkg' with $PM (distro versions can be old)")
+    opts+=("Skip, I'll install it myself")
+    c=$(choose "How do you want to get scrcpy?" "${opts[@]}")
+    case "${opts[c-1]}" in
+        Download*) install_scrcpy_release || return 1 ;;
+        Install*) pm_install "$pkg" || return 1 ;;
+        *) hint "Get it from https://github.com/Genymobile/scrcpy"; return 1 ;;
+    esac
+    major=$(scrcpy_major)
+    if [ "$major" -lt 2 ]; then
+        warn "Installed scrcpy is still too old ($major.x)."
+        ask_yn "Download the official build instead?" y && install_scrcpy_release || return 1
+    fi
+}
+
+ensure_adb() {
+    local pkg
+    if find_adb; then ok "adb"; return; fi
+    warn "adb is not installed (it talks to the phone)."
+    pkg=$(pkg_for adb)
+    if [ -n "$pkg" ] && ask_yn "Install '$pkg' with $PM?" y; then
+        pm_install "$pkg" && find_adb && { ok "adb"; return; }
+    fi
+    err "Install adb (often packaged as 'adb' or 'android-tools') and re-run."
+    return 1
+}
+
+ensure_audio() {
+    local pkg
+    if ! command -v pactl >/dev/null; then
+        warn "pactl is missing (used to create the virtual mic)."
+        pkg=$(pkg_for pactl)
+        if [ -n "$pkg" ] && ask_yn "Install '$pkg' with $PM?" y; then
+            pm_install "$pkg" || return 1
+        else
+            err "Install the PulseAudio client tools (pactl) and re-run."; return 1
+        fi
+    fi
+    if ! pactl info >/dev/null 2>&1; then
+        if pgrep -x pipewire >/dev/null; then
+            err "PipeWire is running without its PulseAudio layer. Install and enable 'pipewire-pulse':"
+            hint "systemctl --user enable --now pipewire-pulse.socket"
+        else
+            err "No PulseAudio-compatible sound server is running."
+        fi
+        return 1
+    fi
+    ok "Sound server: $(pactl info | sed -n 's/^Server Name: //p')"
+}
+
+check_tools() {
+    local fail=0
+    detect_pm
+    ensure_audio || fail=1
+    ensure_scrcpy || fail=1
+    ensure_adb || fail=1
+    return $fail
+}
+
+# ---------------------------------------------------------------- phone
+# Prints "serial<TAB>state" for every device adb knows about.
+adb_list() { "$ADB" devices 2>/dev/null | awk -F'\t' 'NR>1 && NF>=2 {print $1"\t"$2}'; }
+
+usb_instructions() {
+    say "  On your phone:"
+    say "    1. Settings → About phone → tap ${B}Build number${R} 7 times (unlocks Developer options)"
+    say "    2. Settings → System → Developer options → turn on ${B}USB debugging${R}"
+    say "    3. Plug it into this PC with a USB ${B}data${R} cable (charge-only cables won't work)"
+    say "    4. Tap ${B}Allow${R} on the \"Allow USB debugging?\" prompt (tick \"Always allow\")"
+}
+
+# Wait until exactly one usable device is selected into $SERIAL.
+wait_for_phone() {
+    local shown_help=0 shown_auth=0 shown_perm=0 list ready n c
+    "$ADB" start-server >/dev/null 2>&1
+    if [ "$TRANSPORT" != usb ] && [ -s "$LAST_WIFI" ] && ! adb_list | grep -q $'\tdevice$'; then
+        "$ADB" connect "$(cat "$LAST_WIFI")" >/dev/null 2>&1
+    fi
+    while :; do
+        list=$(adb_list)
+        ready=$(awk -F'\t' '$2=="device"{print $1}' <<<"$list")
+        n=$(grep -c . <<<"$ready")
+        if [ "$n" -eq 1 ]; then SERIAL=$ready; break; fi
+        if [ "$n" -gt 1 ]; then
+            mapfile -t devs <<<"$ready"
+            c=$(choose "Several phones found. Which one?" "${devs[@]}")
+            SERIAL=${devs[c-1]}; break
+        fi
+        if grep -q $'\tunauthorized' <<<"$list" && [ $shown_auth = 0 ]; then
+            warn "Phone found but not authorized: unlock it and tap ${B}Allow${R} on the USB debugging prompt."
+            hint "No prompt? Developer options → Revoke USB debugging authorizations, then replug."
+            shown_auth=1
+        elif grep -q $'\tno permissions' <<<"$list" && [ $shown_perm = 0 ]; then
+            warn "Linux is blocking access to the phone (missing udev rules)."
+            hint "Debian/Ubuntu: sudo apt install android-sdk-platform-tools-common"
+            hint "Arch: sudo pacman -S android-udev   Fedora: included in android-tools"
+            hint "Then: sudo usermod -aG plugdev \$USER, log out/in, and replug the phone."
+            shown_perm=1
+        elif [ -z "$list" ] && [ $shown_help = 0 ]; then
+            usb_instructions
+            shown_help=1
+        fi
+        [ $((shown_help + shown_auth + shown_perm)) -gt 0 ] &&
+            printf '\r  %s… waiting for the phone (Ctrl+C to quit)%s' "$D" "$R"
+        sleep 2
+    done
+    printf '\r\e[K'
+    local model sdk rel
+    model=$("$ADB" -s "$SERIAL" shell getprop ro.product.model 2>/dev/null | tr -d '\r')
+    sdk=$("$ADB" -s "$SERIAL" shell getprop ro.build.version.sdk 2>/dev/null | tr -d '\r')
+    rel=$("$ADB" -s "$SERIAL" shell getprop ro.build.version.release 2>/dev/null | tr -d '\r')
+    ok "Connected: ${model:-$SERIAL} (Android ${rel:-?})"
+    if [ "${sdk:-0}" -lt 30 ]; then
+        die "Android 11 or newer is required to capture the mic (this phone is Android $rel)."
+    fi
+    [[ $SERIAL == *:* ]] && TRANSPORT=${TRANSPORT:-wifi} || TRANSPORT=${TRANSPORT:-usb}
+}
+
+phone_wifi_ip() {
+    "$ADB" -s "$1" shell ip -f inet addr show wlan0 2>/dev/null |
+        awk '/inet /{split($2, a, "/"); print a[1]; exit}'
+}
+
+# Guided wireless setup; leaves $SERIAL pointing at ip:port.
+setup_wifi() {
+    local c addr ip code pair
+    c=$(choose "How should we connect over Wi-Fi?" \
+        "Plug in the USB cable once, then go wireless (works on any Android 11+)" \
+        "Pair with no cable at all (Wireless debugging + pairing code)")
+    if [ "$c" = 1 ]; then
+        TRANSPORT=usb
+        wait_for_phone
+        ip=$(phone_wifi_ip "$SERIAL")
+        [ -n "$ip" ] || die "Couldn't read the phone's Wi-Fi IP; is it on the same Wi-Fi as this PC?"
+        "$ADB" -s "$SERIAL" tcpip 5555 >/dev/null || die "adb tcpip failed."
+        sleep 2
+        addr="$ip:5555"
+    else
+        say "  On your phone: Developer options → turn on ${B}Wireless debugging${R} → tap it"
+        say "  → ${B}Pair device with pairing code${R}. Keep that screen open."
+        read -rp "  ? IP address & port shown under the code (e.g. 192.168.1.20:37123): " pair
+        read -rp "  ? Six-digit pairing code: " code
+        "$ADB" pair "$pair" "$code" || die "Pairing failed; check the address/code and try again."
+        say "  Now close the pairing popup. The Wireless debugging screen shows"
+        read -rp "  ? \"IP address & Port\" (e.g. 192.168.1.20:41234): " addr
+    fi
+    "$ADB" connect "$addr" | grep -q connected || die "Could not connect to $addr."
+    mkdir -p "$CONF_DIR" && echo "$addr" >"$LAST_WIFI"
+    SERIAL=$addr TRANSPORT=wifi
+    ok "Wireless connection to $addr (remembered for next time)"
+    [ "$c" = 1 ] && hint "You can unplug the cable now."
+}
+
+# ---------------------------------------------------------------- virtual mic
+has_node() { pactl list short "$1" | awk '{print $2}' | grep -qx "$2"; }
+
+create_mic() {
+    local def_sink
+    def_sink=$(pactl get-default-sink 2>/dev/null)
+    has_node sinks "$SINK" ||
+        pactl load-module module-null-sink sink_name="$SINK" \
+            sink_properties=device.description=PhoneMic-Sink >/dev/null ||
+        die "Could not create the virtual sink."
+    has_node sources "$SOURCE" ||
+        pactl load-module module-remap-source master="$SINK.monitor" source_name="$SOURCE" \
+            source_properties=device.description=PhoneMic >/dev/null ||
+        die "Could not create the virtual microphone."
+    # Some setups jump the default output to a new sink; put it back.
+    [ -n "$def_sink" ] && pactl set-default-sink "$def_sink" 2>/dev/null
+    [ -z "$GAIN" ] && [ -s "$GAIN_FILE" ] && GAIN=$(cat "$GAIN_FILE")
+    # Always set it: the sound server remembers old volumes for this name.
+    pactl set-source-volume "$SOURCE" "${GAIN:-0}dB"
+    if [ "${GAIN:-0}" != 0 ]; then
+        ok "Virtual microphone ${B}PhoneMic${R} is ready (boost +${GAIN} dB)"
+    else
+        ok "Virtual microphone ${B}PhoneMic${R} is ready"
+    fi
+}
+
+remove_mic() {
+    local id
+    # Remap source first, then the sink it reads from.
+    for mod in module-remap-source module-null-sink; do
+        pactl list short modules | awk -F'\t' -v m="$mod" -v sink="$SINK" -v src="$SOURCE" '
+            $2 == m { n = split($3, a, " ")
+                      for (i = 1; i <= n; i++)
+                          if (a[i] == "source_name=" src || a[i] == "sink_name=" sink) { print $1; break } }' |
+            while read -r id; do pactl unload-module "$id"; done
+    done
+}
+
+# Move scrcpy's playback stream onto our sink (PULSE_SINK covers most cases;
+# this catches SDL backends that ignore it).
+route_stream() {
+    local pid=$1 i ids
+    for i in $(seq 1 30); do
+        ids=$(pactl list sink-inputs 2>/dev/null | awk -v pid="$pid" '
+            /^Sink Input #/ { id = substr($3, 2) }
+            /application\.process\.id = / { v = $3; gsub(/"/, "", v); if (v == pid) print id }
+            /application\.(name|process\.binary) = .*scrcpy/ { print id }' | sort -u)
+        if [ -n "$ids" ]; then
+            for id in $ids; do pactl move-sink-input "$id" "$SINK" 2>/dev/null; done
+            return 0
+        fi
+        kill -0 "$pid" 2>/dev/null || return 1
+        sleep 0.5
+    done
+    return 1
+}
+
+# ---------------------------------------------------------------- streaming
+cleanup() {
+    trap - INT TERM EXIT
+    [ -n "$SCRCPY_PID" ] && kill "$SCRCPY_PID" 2>/dev/null && wait "$SCRCPY_PID" 2>/dev/null
+    rm -f "$PIDFILE"
+    [ -n "$PREV_DEFAULT_SOURCE" ] && pactl set-default-source "$PREV_DEFAULT_SOURCE" 2>/dev/null
+    if [ "$KEEP" = 1 ]; then
+        printf '\n  Stopped streaming. PhoneMic is kept (remove it with: phonemic stop).\n'
+    else
+        remove_mic
+        printf '\n  Stopped. PhoneMic removed.\n'
+    fi
+}
+
+# Record from PhoneMic for $2 seconds into raw file $1 (s16le mono 16 kHz)
+# while drawing a live level meter. Prints the "voice level" in dBFS: the
+# level the loudest 10% of 100 ms chunks reach, so one click or bump can't
+# pass for speech. Also prints the loudest chunk ("<voice> <max>").
+level_meter() {
+    local f=$1 secs=$2
+    # awk stops after $secs seconds (10 lines/s); SIGPIPE then ends parec.
+    parec -d "$SOURCE" --raw --format=s16le --channels=1 --rate=16000 --latency-msec=100 2>/dev/null |
+        tee "$f" | od -An -v -td2 -w3200 | awk -v lines=$((secs * 10)) '
+        function db(v) { return v > 0 ? 20 * log(v / 32768) / log(10) : -90 }
+        { m = 0
+          for (i = 1; i <= NF; i++) { v = $i < 0 ? -$i : $i; if (v > m) m = v }
+          d = int(db(m)); if (d < -90) d = -90; hist[d]++; if (m > top) top = m
+          n = int((db(m) + 60) / 2); if (n < 0) n = 0; if (n > 30) n = 30
+          bar = sprintf("%" n "s", ""); gsub(/ /, "█", bar)
+          printf "\r    %-30s %4d dB ", bar, db(m) > "/dev/stderr"; fflush("/dev/stderr") 
+          if (NR >= lines) exit }
+        END { printf "\r\033[K" > "/dev/stderr"
+              want = NR * 0.1; seen = 0
+              for (d = 0; d >= -90; d--) { seen += hist[d]; if (seen >= want && seen > 0) break }
+              if (d < -90) d = -90
+              printf "%d %d\n", d, db(top) }'
+}
+
+sink_name() {
+    local def
+    def=$(pactl get-default-sink 2>/dev/null)
+    pactl list sinks 2>/dev/null | awk -v d="$def" '
+        /^\tName: / { hit = ($2 == d) } hit && /^\tDescription: / { sub(/^\tDescription: /, ""); print; exit }'
+}
+
+# Mic mode of the running stream (from scrcpy's command line), or the chosen one.
+current_source() {
+    local pid
+    pid=$(cat "$PIDFILE" 2>/dev/null)
+    if [ -n "$pid" ] && [ -r "/proc/$pid/cmdline" ]; then
+        tr '\0' '\n' <"/proc/$pid/cmdline" | sed -n 's/^--audio-source=//p'
+    else
+        echo "${MIC_SOURCE:-mic}"
+    fi
+}
+
+mic_test() {
+    local f peak top out vol boost cur
+    has_node sources "$SOURCE" || { err "PhoneMic isn't running; start it with: phonemic"; return 1; }
+    f=$(mktemp)
+    say "  🎙  Talk into the phone now (5 s) — the bar should jump when you speak:"
+    read -r peak top < <(level_meter "$f" 5)
+    out=$(sink_name)
+    if [ "$top" -le -89 ]; then
+        warn "Pure silence (no signal at all). Android is blocking the mic:"
+        hint "• Quick settings / Privacy → Microphone access must be ON"
+        hint "• Unlock the phone, then stop and start phonemic again"
+        hint "• End any call or app that's using the mic (Samsung: also check Bixby/voice wake-up)"
+    elif [ "$top" -ge -35 ] && [ "$peak" -le -89 ]; then
+        warn "Only a moment of sound got through (loudest $top dB); talk for the whole 5 seconds."
+        hint "Calls mode mutes silence (that's the -90 dB when you're quiet); that's normal."
+    elif [ "$peak" -lt -35 ]; then
+        warn "Very faint (voice level $peak dB; normal speech is about -25 to -10 dB)."
+        hint "• Speak toward the phone's bottom mic, about a hand's width away, and don't cover it"
+        if [ "$(current_source)" = mic ]; then
+            hint "• Many phones (Samsung especially) send the plain mic very quietly. Calls mode adds"
+            hint "  automatic gain and is usually much louder: phonemic --source=mic-voice-communication"
+        fi
+    else
+        ok "The phone mic hears you (voice level $peak dB)."
+    fi
+    # Normalize the replay to about -6 dB so quiet takes are still audible
+    # (PulseAudio volume is cubic: factor^(1/3) * 65536).
+    vol=$(awk -v p="$( [ "$peak" -le -89 ] && echo "$top" || echo "$peak")" 'BEGIN { g = -6 - p; if (g < 0) g = 0; if (g > 40) g = 40
+        printf "%d", 65536 * (10 ^ (g / 20)) ^ (1 / 3) }')
+    say "  🔊 Playing it back (normalized) on: ${B}${out:-default output}${R} — check that it's on and not too quiet"
+    # Name the output explicitly: the sound server remembers per-app routes, and a
+    # replay that follows a stale one into PhoneMic-Sink just loops into the mic.
+    paplay -d "$(pactl get-default-sink)" -n phonemic-test \
+        --raw --format=s16le --channels=1 --rate=16000 --volume="$vol" "$f" 2>/dev/null
+    rm -f "$f"
+    if ! ask_yn "Did you hear the playback?" y; then
+        if [ "$peak" -ge -35 ]; then
+            warn "Then the mic is fine. Only the playback is off: check that '${out:-your output}' is on/connected,"
+            hint "or switch output in your sound settings and run: phonemic test"
+        fi
+        if [[ $(pactl get-default-sink 2>/dev/null) == bluez_* ]]; then
+            hint "Bluetooth output: if '${out}' is also connected to the phone, the phone takes it over"
+            hint "(calls mode looks like a phone call). Turn off Bluetooth on the phone and test again."
+        fi
+        hint "To test on other speakers: PULSE_SINK=<sink from 'pactl list short sinks'> phonemic test"
+        hint "Apps still get the mic as long as you choose \"PhoneMic\" as the input."
+    fi
+    if [ "$peak" -gt -89 ] && [ "$peak" -lt -18 ]; then
+        boost=$(( -12 - peak ))
+        cur=$(pactl get-source-volume "$SOURCE" | awk '/dB/{for(i=1;i<=NF;i++) if ($i=="dB,"||$i=="dB") {printf "%d", $(i-1); exit}}')
+        boost=$(( boost + ${cur:-0} )); [ "$boost" -gt 30 ] && boost=30
+        warn "Your voice is quiet for most apps."
+        if ask_yn "Boost PhoneMic by +$boost dB (remembered for next time)?" y; then
+            pactl set-source-volume "$SOURCE" "${boost}dB"
+            mkdir -p "$CONF_DIR" && echo "$boost" >"$GAIN_FILE"
+            ok "Boost set. Run ${B}phonemic test${R} again to hear the difference."
+            hint "Change it any time with --gain=DB (0 turns it off)."
+        fi
+    elif [ "$peak" -ge -18 ]; then
+        ok "Your voice level is good; no boost needed (more would clip and distort)."
+    fi
+}
+stream() {
+    local major codec buffer args rc
+    major=$(scrcpy_major)
+    # 30 ms buffers drop out (audible clicks) on some phones; 60 ms is still snappy.
+    if [ "$TRANSPORT" = wifi ]; then codec=opus buffer=100; else codec=raw buffer=60; fi
+    [ "$major" -lt 3 ] && MIC_SOURCE=mic
+    args=(-s "$SERIAL" --no-video --no-control --require-audio
+        --audio-source="${MIC_SOURCE:-mic}" --audio-codec="$codec" --audio-buffer="$buffer")
+    [ "$major" -ge 3 ] && args+=(--no-window)
+
+    if [ "$MAKE_DEFAULT" = 1 ]; then
+        PREV_DEFAULT_SOURCE=$(pactl get-default-source 2>/dev/null)
+        pactl set-default-source "$SOURCE" && ok "PhoneMic is now the default input"
+    fi
+    trap cleanup EXIT
+    trap 'exit 0' INT TERM
+
+    while :; do
+        PULSE_SINK=$SINK scrcpy "${args[@]}" >"${PIDFILE%.pid}.log" 2>&1 &
+        SCRCPY_PID=$!
+        echo "$SCRCPY_PID" >"$PIDFILE"
+        if route_stream "$SCRCPY_PID"; then
+            ok "Streaming the phone's mic ($TRANSPORT, ${MIC_SOURCE:-mic}) → ${B}PhoneMic${R}"
+            say ""
+            say "  ${B}Pick \"PhoneMic\" as the microphone in your app${R} (Discord, Zoom, OBS, browser…)."
+            hint "Keep the phone unlocked when starting. Ctrl+C here to stop."
+            [ "$GUIDED" = 1 ] && ask_yn "Do a quick mic test now?" y && mic_test
+            say ""
+            printf '  %s● live%s  (Ctrl+C to stop)\n' "$RED" "$R"
+        elif kill -0 "$SCRCPY_PID" 2>/dev/null; then
+            warn "scrcpy is running but its audio stream wasn't found."
+            hint "Open pavucontrol → Playback and send scrcpy to PhoneMic-Sink."
+        fi
+        wait "$SCRCPY_PID"; rc=$?
+        SCRCPY_PID=""
+        err "scrcpy stopped (exit $rc). Last messages:"
+        tail -n 5 "${PIDFILE%.pid}.log" | sed 's/^/      /' >&2
+        hint "Phone unplugged, locked at start, or Wi-Fi dropped? Fix it and retry."
+        ask_yn "Retry?" y || exit "$rc"
+        wait_for_phone
+        args[1]=$SERIAL
+    done
+}
+
+# ---------------------------------------------------------------- commands
+choose_mic_source() {
+    [ -n "$MIC_SOURCE" ] && return
+    if [ "$(scrcpy_major)" -lt 3 ]; then MIC_SOURCE=mic; return; fi
+    case $(choose "What will you use it for?" \
+        "General use (the phone's normal mic)" \
+        "Calls & meetings (phone does echo cancellation + noise suppression)" \
+        "Recording (natural sound, tuned for video)" \
+        "Raw (unprocessed, for audio nerds)") in
+        1) MIC_SOURCE=mic ;;
+        2) MIC_SOURCE=mic-voice-communication ;;
+        3) MIC_SOURCE=mic-camcorder ;;
+        4) MIC_SOURCE=mic-unprocessed ;;
+    esac
+}
+
+cmd_guide() {
+    GUIDED=1
+    say "${B}📱→🎙  phonemic${R} — use your Android phone as this PC's microphone"
+    step 1/4 "Checking what this PC needs"
+    check_tools || die "Fix the items above, then run phonemic again."
+
+    step 2/4 "Connecting your phone"
+    if [ -z "$TRANSPORT" ] && ! adb_list | grep -q $'\tdevice$'; then
+        if [ "$(choose "How will the phone connect?" \
+            "USB cable (lowest latency, also charges)" \
+            "Wi-Fi (same network as this PC)")" = 2 ]; then TRANSPORT=wifi; else TRANSPORT=usb; fi
+    fi
+    if [ "$TRANSPORT" = wifi ] && ! { [ -s "$LAST_WIFI" ] && "$ADB" connect "$(cat "$LAST_WIFI")" 2>/dev/null | grep -q connected; }; then
+        setup_wifi
+    else
+        wait_for_phone
+    fi
+
+    step 3/4 "Creating the virtual microphone"
+    create_mic
+    if [ -z "$MAKE_DEFAULT" ]; then
+        ask_yn "Make PhoneMic the default input while it runs? (apps pick it automatically)" n && MAKE_DEFAULT=1
+    fi
+    [ "$KEEP" = 1 ] || hint "It disappears when you stop (use --keep to leave it in place)."
+
+    step 4/4 "Streaming"
+    choose_mic_source
+    stream
+}
+
+cmd_start() {
+    check_tools || die "Missing requirements; run 'phonemic' for the guide."
+    if [ "$TRANSPORT" = wifi ] && ! { [ -s "$LAST_WIFI" ] && "$ADB" connect "$(cat "$LAST_WIFI")" 2>/dev/null | grep -q connected; }; then
+        setup_wifi
+    else
+        wait_for_phone
+    fi
+    create_mic
+    stream
+}
+
+cmd_stop() {
+    local pid
+    pid=$(cat "$PIDFILE" 2>/dev/null)
+    if [ -n "$pid" ] && kill "$pid" 2>/dev/null; then ok "Stopped scrcpy (pid $pid)"; fi
+    rm -f "$PIDFILE"
+    remove_mic
+    ok "PhoneMic removed"
+}
+
+cmd_status() {
+    local pid
+    find_adb || true
+    has_node sources "$SOURCE" 2>/dev/null && ok "PhoneMic device exists" || warn "PhoneMic device not present"
+    pid=$(cat "$PIDFILE" 2>/dev/null)
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then ok "Streaming (scrcpy pid $pid)"; else warn "Not streaming"; fi
+    [ "$(pactl get-default-source 2>/dev/null)" = "$SOURCE" ] && ok "PhoneMic is the default input"
+    adb_list | while IFS=$'\t' read -r s st; do hint "adb: $s ($st)"; done
+    [ -s "$LAST_WIFI" ] && hint "Last Wi-Fi phone: $(cat "$LAST_WIFI")"
+    return 0
+}
+
+usage() {
+    cat <<EOF
+${B}phonemic${R} — use an Android phone (11+) as a microphone on Linux.
+
+  phonemic              Step-by-step guide: installs what's missing, connects
+                        the phone, creates the PhoneMic input, starts streaming.
+  phonemic start        Same, without the questions (uses USB or the last Wi-Fi phone).
+  phonemic wifi         Set up / reuse a wireless connection, then start.
+  phonemic stop         Stop streaming and remove the PhoneMic device.
+  phonemic status       Show what's running.
+  phonemic test         Level meter + playback test (while PhoneMic is running).
+  phonemic doctor       Only check (and offer to install) requirements.
+
+Options (any command):
+  --usb | --wifi        Force the connection type.
+  --source=NAME         Phone mic mode: mic, mic-voice-communication,
+                        mic-camcorder, mic-unprocessed, ...
+  --default             Make PhoneMic the default input while running.
+  --keep                Keep the PhoneMic device after stopping.
+  --gain=DB             Boost PhoneMic by DB decibels (remembered; 0 = off).
+EOF
+}
+
+main() {
+    local sub="" a
+    for a in "$@"; do
+        case "$a" in
+            --usb) TRANSPORT=usb ;;
+            --wifi) TRANSPORT=wifi ;;
+            --source=*) MIC_SOURCE=${a#*=} ;;
+            --default) MAKE_DEFAULT=1 ;;
+            --keep) KEEP=1 ;;
+            --gain=*) GAIN=${a#*=}
+                [[ $GAIN =~ ^[0-9]+$ ]] || die "--gain takes whole dB, e.g. --gain=12"
+                mkdir -p "$CONF_DIR" && echo "$GAIN" >"$GAIN_FILE" ;;
+            -h | --help | help) usage; exit 0 ;;
+            -*) die "Unknown option: $a (see phonemic --help)" ;;
+            *) [ -z "$sub" ] && sub=$a || die "Unexpected argument: $a" ;;
+        esac
+    done
+    case "${sub:-guide}" in
+        guide) cmd_guide ;;
+        start) cmd_start ;;
+        wifi) TRANSPORT=wifi; cmd_guide ;;
+        stop) command -v pactl >/dev/null || die "pactl not found"; cmd_stop ;;
+        status) cmd_status ;;
+        test) mic_test ;;
+        doctor) detect_pm; check_tools && printf '\n  %sAll set.%s Run %sphonemic%s to start.\n' "$GRN" "$R" "$B" "$R" ;;
+        *) die "Unknown command: $sub (see phonemic --help)" ;;
+    esac
+}
+
+main "$@"
