@@ -27,6 +27,7 @@ case "$1" in
 			"archive: Archives the doings"
 			"note: pass the topic and call jrnl tooling for annotations"
 			"notes: Calls jrnl tooling with a limit of 10 notes"
+			"tasks: report tasks loop"
 			""
 		)
 		echo -e "\nUsage: anx <todo|plan|schedule|day|now|done|recent|archive> [args]"
@@ -89,6 +90,10 @@ case "$1" in
 		else
 			jrnl -contains "$*"
 		fi
+		;;
+	tasks)
+		shift
+		tasks --report
 		;;
 	*)
 		pattern="$*"
