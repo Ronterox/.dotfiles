@@ -7,20 +7,26 @@
 --   <C-j>    accept suggestion (falls through when none is shown)
 --   <M-l>    request now / dismiss (works in any terminal program)
 --
--- Auto-trigger only runs while a shell is the terminal's foreground process,
--- so vim, less, opencode etc. running inside it get nothing.
+-- Auto-trigger works in shells and in TUI prompts (opencode, codex, claude…),
+-- which keep the real cursor at the end of their input. It skips editors,
+-- pagers and monitors (SKIP), where keys aren't typed text.
 local M = {}
 
 local URL = 'http://127.0.0.1:8012/infill'
-local DEBOUNCE_MS = 150
+local DEBOUNCE_MS = 100
 local N_PREFIX = 60 -- scrollback lines sent as context
-local SHELLS = { bash = true, zsh = true, fish = true, sh = true, dash = true }
+-- Foreground programs (/proc comm) that get no auto-trigger.
+local SKIP = {}
+for _, name in ipairs({
+	'vi', 'vim', 'nvim', 'nano', 'emacs', 'less', 'more', 'most', 'man',
+	'top', 'htop', 'btop', 'watch', 'tig', 'lazygit', 'fzf',
+}) do SKIP[name] = true end
 -- Keys after which the input line is gone: Enter, C-c, C-d.
 local NO_TRIGGER = { ['\r'] = true, ['\3'] = true, ['\4'] = true }
 
 local ns = vim.api.nvim_create_namespace('llama_term')
 local timer = assert(vim.uv.new_timer())
-local job -- in-flight curl (vim.SystemObj)
+local job  -- in-flight curl (vim.SystemObj)
 local hint -- { buf, row, col, line, text }
 
 local function read(path)
@@ -30,13 +36,13 @@ local function read(path)
 	return s
 end
 
-local function shell_in_foreground(buf)
+local function auto_allowed(buf)
 	local pid = vim.b[buf].terminal_job_pid
 	local stat = pid and read('/proc/' .. pid .. '/stat')
 	-- fields after "(comm)": state ppid pgrp session tty_nr tpgid
 	local tpgid = stat and stat:match('%) %S+ %S+ %S+ %S+ %S+ (%d+)')
 	local comm = tpgid and read('/proc/' .. tpgid .. '/comm')
-	return comm ~= nil and SHELLS[vim.trim(comm)] == true
+	return comm ~= nil and not SKIP[vim.trim(comm)]
 end
 
 -- Cursor context, or nil when the cursor isn't at the end of the input.
@@ -49,7 +55,10 @@ local function context()
 	local first = math.max(0, row - 1 - N_PREFIX)
 	local prev = vim.api.nvim_buf_get_lines(buf, first, row - 1, false)
 	return {
-		buf = buf, row = row, col = col, line = line,
+		buf = buf,
+		row = row,
+		col = col,
+		line = line,
 		prefix = table.concat(prev, '\n') .. '\n',
 		-- the line is trimmed, so a just-typed trailing space may be missing
 		middle = line:sub(1, col) .. string.rep(' ', col - #line),
@@ -127,7 +136,7 @@ local function auto_trigger()
 	M.hide()
 	if vim.api.nvim_get_mode().mode ~= 't' then return end
 	local ctx = context()
-	if ctx and shell_in_foreground(ctx.buf) then request(ctx) end
+	if ctx and auto_allowed(ctx.buf) then request(ctx) end
 end
 
 -- Returns true if a suggestion was sent to the shell.
