@@ -12,11 +12,12 @@ notify() {
     notify-send "$1"
 }
 
-# Print a valid Bitwarden session, logging in / unlocking (and saving the new session in pass) if needed
+# Print a valid Bitwarden session, logging in / unlocking (and saving the new session in pass) if needed.
+# The session is passed via BW_SESSION, not --session: bw 2025.10 ignores --session for status/unlock --check.
 bw_session() {
     local session status
     session=$(pass show "$BW_SESSION_ENTRY" 2>/dev/null)
-    status=$(bw status --session "$session" | jq -r '.status')
+    status=$(BW_SESSION="$session" bw status | jq -r '.status')
 
     case "$status" in
         unlocked)
@@ -47,8 +48,9 @@ bw_backup() {
     local session items
     echo "Backing up Bitwarden..."
     session=$(bw_session) || return 1
-    bw sync --session "$session" >/dev/null || return 1
-    items=$(bw list items --session "$session") || return 1
+    export BW_SESSION="$session"
+    bw sync >/dev/null || return 1
+    items=$(bw list items) || return 1
 
     if ! jq -e 'type == "array" and length > 0' <<<"$items" >/dev/null 2>&1; then
         echo "Bitwarden returned no items, keeping previous backup" >&2
