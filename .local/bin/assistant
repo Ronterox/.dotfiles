@@ -1,0 +1,590 @@
+#!/usr/bin/env python3
+"""assistant — talk to this PC through the phone's mic.
+
+Starts `phonemic` (if PhoneMic isn't already up) and `dictate --live`, then
+acts on what you say. Every action is confirmed out loud first, and it keeps
+listening while it talks: answer, give another command, or say stop.
+
+  "Type …" / "Escribe …"                  dictate text until you pause
+  "Press …" / "Presiona …"                any key: "press control W", "presiona
+                                          escape", "press tab twice", "pulsa F5"
+  "Send it" / "Envíalo"                   press Enter
+  "Yes" / "Sí"   ·   "No"                 answer a confirmation
+  "Stop" / "Para"                         shut up and cancel
+
+Adding a command: write a function and decorate it with @command(...) in the
+COMMANDS section below.
+"""
+
+import argparse
+import os
+import queue
+import re
+import select
+import shutil
+import signal
+import subprocess
+import sys
+import threading
+import time
+import unicodedata
+
+HOME = os.path.expanduser("~")
+VOICE = os.environ.get("ASSISTANT_VOICE", f"{HOME}/.opencode/plugins/en_US-amy-medium.onnx")
+LOG_DIR = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "assistant")
+
+DICTATION_GAP = 1.5      # s of no new phrase that ends dictated text
+DICTATION_WAIT = 10      # s to wait for text after "type" before giving up
+CONFIRM_TIMEOUT = 30     # s a question stays open
+ECHO_WINDOW = 4          # s after speaking in which our own voice may come back
+
+YES = {"yes", "yeah", "yep", "yup", "si", "c", "correct", "correcto", "exacto", "claro",
+       "vale", "ok", "okay", "dale", "afirmativo", "confirm", "confirmo", "eso"}
+NO = {"no", "nope", "nah", "incorrecto", "negativo"}
+
+
+# ---------------------------------------------------------------- terminal ui
+TTY = sys.stdout.isatty()
+
+
+def ui(icon, text, color=""):
+    codes = {"dim": "2", "red": "31", "green": "32", "yellow": "33", "cyan": "36", "bold": "1"}
+    if TTY and color:
+        text = f"\033[{codes[color]}m{text}\033[0m"
+    print(f"\r\033[K{icon} {text}" if TTY else f"{icon} {text}", flush=True)
+
+
+def norm(text):
+    """Lowercase, no accents, no punctuation: for matching what was said."""
+    text = unicodedata.normalize("NFKD", text.lower())
+    text = "".join(c for c in text if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9ñ ]+", " ", text).split()
+
+
+# ---------------------------------------------------------------- voice
+class Speaker:
+    """The opencode notification voice (piper amy, ffplay at 1.25x). One piper
+    process stays loaded so speech starts in ~0.1 s; each utterance gets its
+    own player so it can be cut off instantly."""
+
+    def __init__(self, voice):
+        self.player = None
+        self.lock = threading.Lock()
+        self.last_text, self.last_end = "", 0.0
+        self.piper = subprocess.Popen(
+            ["piper", "-m", voice, "--output-raw"],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            bufsize=0, start_new_session=True)
+        threading.Thread(target=self._pump, daemon=True).start()
+
+    def _pump(self):
+        """Forward piper's audio to the current player; when piper goes quiet
+        for a moment the utterance is complete, so close the player's input
+        and let it play out."""
+        fd, fed = self.piper.stdout.fileno(), None
+        while True:
+            ready, _, _ = select.select([fd], [], [], 0.25)
+            with self.lock:
+                player = self.player
+            if not ready:
+                if fed is not None and fed is player:
+                    self._close(player)
+                    fed = None
+                continue
+            chunk = os.read(fd, 65536)
+            if not chunk:
+                return
+            if player and player.poll() is None:
+                try:
+                    player.stdin.write(chunk)
+                    player.stdin.flush()
+                    fed = player
+                except (BrokenPipeError, ValueError):
+                    pass
+
+    def _close(self, player):
+        with self.lock:
+            if self.player is player:
+                self.player = None
+        try:
+            player.stdin.close()
+        except (BrokenPipeError, OSError):
+            pass
+        threading.Thread(target=self._ended, args=(player,), daemon=True).start()
+
+    def _ended(self, player):
+        player.wait()
+        self.last_end = time.time()
+
+    def say(self, text):
+        self.stop()
+        player = subprocess.Popen(
+            ["ffplay", "-af", "atempo=1.25", "-v", "error", "-nodisp", "-autoexit",
+             "-f", "s16le", "-ar", "24000", "-i", "pipe:0"],
+            stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True)
+        with self.lock:
+            self.player = player
+        self.last_text = text
+        self.piper.stdin.write((text.replace("\n", " ") + "\n").encode())
+        self.piper.stdin.flush()
+
+    def speaking(self):
+        with self.lock:
+            p = self.player
+        return (p is not None and p.poll() is None) or time.time() - self.last_end < 0.1
+
+    def stop(self):
+        with self.lock:
+            p, self.player = self.player, None
+        if p and p.poll() is None:
+            p.kill()
+            self.last_end = time.time()
+
+    def is_echo(self, heard):
+        """True if a phrase is just our own voice picked up by the mic."""
+        if time.time() - self.last_end > ECHO_WINDOW and not self.speaking():
+            return False
+        words, ours = norm(heard), set(norm(self.last_text))
+        return len(words) >= 2 and sum(w in ours for w in words) / len(words) >= 0.6
+
+    def close(self):
+        self.stop()
+        try:
+            self.piper.stdin.close()
+        except OSError:
+            pass
+        self.piper.terminate()
+        try:
+            self.piper.wait(2)
+        except subprocess.TimeoutExpired:
+            self.piper.kill()
+
+
+# ---------------------------------------------------------------- keys
+# How you might say a key → (xdotool keysym, tmux key name, how to say it back).
+_KEYS = [
+    (("enter", "intro", "return", "entrar"), ("Return", "Enter", "Enter")),
+    (("escape", "esc", "escapar"), ("Escape", "Escape", "Escape")),
+    (("tab", "tabulador", "tabulacion"), ("Tab", "Tab", "Tab")),
+    (("space", "espacio", "barra espaciadora", "space bar"), ("space", "Space", "Space")),
+    (("backspace", "back space", "borrar", "retroceso"), ("BackSpace", "BSpace", "Backspace")),
+    (("delete", "suprimir", "supr"), ("Delete", "DC", "Delete")),
+    (("up", "arriba", "flecha arriba", "up arrow", "arrow up"), ("Up", "Up", "Up")),
+    (("down", "abajo", "flecha abajo", "down arrow", "arrow down"), ("Down", "Down", "Down")),
+    (("left", "izquierda", "flecha izquierda", "left arrow", "arrow left"), ("Left", "Left", "Left")),
+    (("right", "derecha", "flecha derecha", "right arrow", "arrow right"), ("Right", "Right", "Right")),
+    (("home", "inicio"), ("Home", "Home", "Home")),
+    (("end", "fin"), ("End", "End", "End")),
+    (("page up", "pageup", "re pag", "pagina arriba"), ("Prior", "PPage", "Page up")),
+    (("page down", "pagedown", "av pag", "pagina abajo"), ("Next", "NPage", "Page down")),
+    (("insert", "insertar"), ("Insert", "IC", "Insert")),
+]
+KEYS = {name: spec for names, spec in _KEYS for name in names}
+MODIFIERS = {"ctrl": "ctrl", "control": "ctrl", "contro": "ctrl", "ctl": "ctrl",
+             "shift": "shift", "mayus": "shift", "mayusculas": "shift",
+             "alt": "alt", "super": "super", "windows": "super", "win": "super", "meta": "super"}
+# Spanish/English letter names whisper may write out instead of the letter.
+LETTERS = {"be": "b", "ce": "c", "efe": "f", "ge": "g", "hache": "h", "jota": "j", "ka": "k",
+           "ele": "l", "eme": "m", "ene": "n", "pe": "p", "cu": "q", "erre": "r", "ere": "r",
+           "ese": "s", "te": "t", "uve": "v", "equis": "x", "zeta": "z", "ceta": "z",
+           "doble u": "w", "doble uve": "w", "double u": "w", "i griega": "y"}
+NUMBERS = {w: str(i) for i, ws in enumerate([
+    ("cero", "zero"), ("uno", "one"), ("dos", "two"), ("tres", "three"), ("cuatro", "four"),
+    ("cinco", "five"), ("seis", "six"), ("siete", "seven"), ("ocho", "eight"), ("nueve", "nine"),
+    ("diez", "ten"), ("once", "eleven"), ("doce", "twelve")]) for w in ws}
+KEY_FILLER = {"the", "key", "keys", "tecla", "teclas", "la", "el", "boton", "button", "mas", "plus",
+              "and", "please", "por", "favor", "ya", "ahora", "now"}
+
+
+class Keys:
+    """A parsed key press like "control shift t" or "tab twice"."""
+    TMUX_MOD = {"ctrl": "C-", "alt": "M-", "shift": "S-"}
+    WTYPE_MOD = {"ctrl": "ctrl", "alt": "alt", "shift": "shift", "super": "logo"}
+
+    def __init__(self, mods, key, times):
+        self.mods, self.key, self.times = mods, key, times   # key: (xdo, tmux, spoken)
+
+    def spoken(self):
+        mods = [{"ctrl": "Control"}.get(m, m.capitalize()) for m in self.mods]
+        times = {1: "", 2: " twice"}.get(self.times, f" {self.times} times")
+        return " ".join(mods + [self.key[2]]) + times
+
+    def xdotool(self):
+        return "+".join(self.mods + [self.key[0]])
+
+    def tmux(self):
+        if "super" in self.mods:
+            return None
+        key, mods = self.key[1], [m for m in self.mods]
+        if len(key) == 1 and "shift" in mods:         # S-a isn't a thing: send "A"
+            key, mods = key.upper(), [m for m in mods if m != "shift"]
+        return "".join(self.TMUX_MOD[m] for m in mods) + key
+
+
+def parse_keys(words):
+    """["control", "w"] → Keys; None if the words aren't a key press."""
+    words = [w for w in words if w not in KEY_FILLER]
+    times = 1
+    if words[-1:] == ["twice"]:
+        times, words = 2, words[:-1]
+    elif len(words) >= 2 and words[-1] in ("times", "veces", "vez"):
+        n = NUMBERS.get(words[-2], words[-2])
+        if not n.isdigit():
+            return None
+        times, words = int(n), words[:-2]
+    mods = []
+    while words and words[0] in MODIFIERS:
+        if MODIFIERS[words[0]] not in mods:
+            mods.append(MODIFIERS[words[0]])
+        words = words[1:]
+    name = " ".join(words)
+    if name in KEYS:
+        key = KEYS[name]
+    elif name in LETTERS or (len(name) == 1 and name.isalnum()):
+        k = LETTERS.get(name, name)
+        key = (k, k, k.upper())
+    elif name in NUMBERS:
+        key = (NUMBERS[name],) * 3
+    elif m := re.fullmatch(r"(?:f|efe) ?(\w+)", name):
+        n = NUMBERS.get(m.group(1), m.group(1))
+        if not (n.isdigit() and 1 <= int(n) <= 12):
+            return None
+        key = (f"F{n}", f"F{n}", f"F{n}")
+    else:
+        return None
+    return Keys(mods, key, max(1, min(times, 20)))
+
+
+# ---------------------------------------------------------------- keyboard
+class Keyboard:
+    """Types into the focused window (xdotool / wtype), or a tmux pane."""
+
+    def __init__(self, tmux_target=None):
+        self.tmux = tmux_target
+        self.wayland = bool(os.environ.get("WAYLAND_DISPLAY")) and shutil.which("wtype")
+
+    def type(self, text):
+        if self.tmux:
+            cmd = ["tmux", "send-keys", "-t", self.tmux, "-l", text]
+        elif self.wayland:
+            cmd = ["wtype", "--", text]
+        else:
+            cmd = ["xdotool", "type", "--clearmodifiers", "--delay", "8", "--", text]
+        subprocess.run(cmd, check=False)
+
+    def can_press(self, keys):
+        return not (self.tmux and keys.tmux() is None)
+
+    def press(self, keys):
+        for _ in range(keys.times):
+            if self.tmux:
+                cmd = ["tmux", "send-keys", "-t", self.tmux, keys.tmux()]
+            elif self.wayland:
+                mods = [Keys.WTYPE_MOD[m] for m in keys.mods]
+                cmd = (["wtype"] + [x for m in mods for x in ("-M", m)] + ["-k", keys.key[0]]
+                       + [x for m in reversed(mods) for x in ("-m", m)])
+            else:
+                cmd = ["xdotool", "key", "--clearmodifiers", keys.xdotool()]
+            subprocess.run(cmd, check=False)
+
+
+# ---------------------------------------------------------------- commands
+COMMANDS = []   # (trigger word lists, handler, whole, parse)
+FILLER = {"please", "now", "por", "favor", "ya", "ahora", "lo", "it"}
+
+
+class Match:
+    def __init__(self, rest, value=None):
+        self.rest, self.value = rest, value   # rest: original spelling; value: parse() result
+
+
+def command(*triggers, whole=False, parse=None):
+    """Register a handler for phrases that start with any of the triggers.
+    Triggers are matched without case/accents/punctuation. The handler gets
+    the assistant and a Match: .rest is the rest of the phrase in its original
+    spelling, .value what parse(rest words) returned.
+    whole=True: the phrase must be only the trigger (plus "please"/"por favor"),
+    so everyday words like "para" don't fire mid-sentence.
+    parse=fn: the command only counts mid-dictation when fn understands the
+    rest ("presiona control w"); otherwise the handler gets value=None."""
+    def register(fn):
+        COMMANDS.append(([t.split() for t in triggers], fn, whole, parse))
+        return fn
+    return register
+
+
+def match_command(text, dictating=False):
+    """While dictating only phrases that are entirely a command count, so
+    "Escribe una función…" is text, not a new command."""
+    words, original = norm(text), text.split()
+    for triggers, fn, whole, parse in COMMANDS:
+        for t in triggers:
+            if words[:len(t)] != t:
+                continue
+            rest_words = words[len(t):]
+            rest = " ".join(original[len(t):]).lstrip(" ,.:;!¡?¿-")
+            if parse:
+                value = parse(rest_words) if rest_words else None
+                if value is None and dictating:
+                    continue
+                return fn, Match(rest, value)
+            if (whole or dictating) and not set(rest_words) <= FILLER:
+                continue
+            return fn, Match(rest)
+    return None, None
+
+
+@command("type", "tipe", "taip", "escribe", "escribir", "escriba", "escribe esto")
+def cmd_type(a, m):
+    a.start_dictation(m.rest)
+
+
+@command("press", "presiona", "presione", "pulsa", "pulse", "oprime", "aprieta", "teclea",
+         parse=parse_keys)
+def cmd_press(a, m):
+    keys = m.value
+    if keys is None:
+        return a.announce("?", f"which key? (heard: {m.rest or 'nothing'})",
+                          "Which key? Say for example: press control W.", "yellow")
+    if not a.keyboard.can_press(keys):
+        return a.announce("✕", f"tmux can't send {keys.spoken()}", f"I can't send {keys.spoken()} to tmux.", "red")
+    a.confirm(f"Press {keys.spoken()}?", lambda: a.keyboard.press(keys),
+              f"⌨ pressed {keys.spoken()}", f"Pressed {keys.spoken()}.")
+
+
+# Shortcuts for Enter. "presenta" is how whisper often hears "press enter".
+@command("presenta", "presenter", "send it", "sendit", "send", "envialo", "envia", "enviar")
+def cmd_send(a, m):
+    keys = Keys([], KEYS["enter"], 1)
+    a.confirm("Press enter?", lambda: a.keyboard.press(keys), "⏎ pressed Enter", "Enter pressed.")
+
+
+@command("stop", "para", "parar", "alto", "cancel", "cancela", "cancelar", "callate", whole=True)
+def cmd_stop(a, m):
+    a.cancel("stopped", "Stopped.")
+
+
+# ---------------------------------------------------------------- assistant
+class Assistant:
+    """Every move is announced out loud (and printed). Announcements are short
+    so they never get in the way: speaking again, or any new phrase that's a
+    command, cuts them off."""
+
+    def __init__(self, speaker, keyboard):
+        self.speaker, self.keyboard = speaker, keyboard
+        self.state = "idle"            # idle | dictating | confirming
+        self.buffer, self.since = [], 0.0
+        self.pending = None            # (action, printed result, spoken result)
+
+    def announce(self, icon, printed, spoken, color=""):
+        ui(icon, printed, color)
+        if spoken:
+            self.speaker.say(spoken)
+
+    # -- flows used by commands
+    def start_dictation(self, first=""):
+        self.state, self.buffer, self.since = "dictating", [first] if first else [], time.time()
+        if first:   # text came with the command; the question follows the pause
+            ui("✎", "dictating… (pause when done)", "cyan")
+        else:
+            self.announce("✎", "dictating… (pause when done)", "Go ahead, I'm listening.", "cyan")
+
+    def confirm(self, question, action, printed, spoken):
+        self.state, self.pending, self.since = "confirming", (action, printed, spoken), time.time()
+        self.announce("?", question, question, "yellow")
+
+    def cancel(self, printed, spoken=None):
+        self.speaker.stop()
+        was_busy = self.state != "idle"
+        self.state, self.buffer, self.pending = "idle", [], None
+        if was_busy or spoken:
+            self.announce("✕", printed, spoken, "dim")
+
+    # -- events
+    def on_phrase(self, text):
+        if self.speaker.is_echo(text):
+            ui("·", f"(my own voice) {text}", "dim")
+            return
+        ui("🎙", text, "bold")
+        words = norm(text)
+
+        if self.state == "confirming" and words:
+            if words[0] in YES:
+                return self._accept()
+            if words[0] in NO:
+                return self.cancel("no", "Okay, cancelled.")
+
+        fn, match = match_command(text, dictating=self.state == "dictating")
+        if fn:
+            self.speaker.stop()
+            if self.state != "idle" and fn is not cmd_stop:
+                # Silent: the new command announces itself.
+                self.cancel("replaced by a new command")
+            return fn(self, match)
+
+        if self.state == "dictating":
+            self.buffer.append(text)
+            self.since = time.time()
+        elif self.state == "confirming":
+            self.announce("·", "say yes / sí, no, or stop", "Say yes, or no.", "dim")
+
+    def tick(self):
+        now = time.time()
+        if self.state == "dictating":
+            if self.buffer and now - self.since >= DICTATION_GAP:
+                text = " ".join(self.buffer)
+                self.confirm(f"Did you mean: {text.rstrip('.!?¡¿ ')}?",
+                             lambda: self.keyboard.type(text), f"⌨ typed: {text}", "Typed.")
+            elif not self.buffer and now - self.since >= DICTATION_WAIT:
+                self.cancel("nothing to type", "I didn't hear anything, cancelled.")
+        elif self.state == "confirming" and now - self.since >= CONFIRM_TIMEOUT:
+            self.cancel("no answer, dropped it", "No answer, cancelled.")
+
+    def _accept(self):
+        action, printed, spoken = self.pending
+        self.speaker.stop()
+        self.state, self.pending = "idle", None
+        action()
+        self.announce("✔", printed, spoken, "green")
+
+
+# ---------------------------------------------------------------- processes
+def phonemic_up():
+    out = subprocess.run(["pactl", "list", "short", "sources"], capture_output=True, text=True).stdout
+    return any(line.split("\t")[1:2] == ["phonemic"] for line in out.splitlines())
+
+
+def start_phonemic():
+    log_path = os.path.join(LOG_DIR, "phonemic.log")
+    log = open(log_path, "w")
+    proc = subprocess.Popen(["phonemic", "start"], stdin=subprocess.DEVNULL, stdout=log,
+                            stderr=subprocess.STDOUT, start_new_session=True)
+    ui("…", "starting phonemic (phone mic)…", "dim")
+    deadline = time.time() + 45
+    while time.time() < deadline:
+        if proc.poll() is not None:
+            break
+        with open(log_path, errors="replace") as f:
+            if "Streaming the phone" in f.read():
+                ui("✔", "phone mic is live", "green")
+                return proc
+        time.sleep(0.5)
+    stop_group(proc)
+    with open(log_path, errors="replace") as f:
+        tail = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", f.read()).strip().splitlines()[-6:]
+    sys.exit("phonemic didn't start. Run `phonemic` once to set the phone up.\n  "
+             + "\n  ".join(tail))
+
+
+def stop_group(proc, timeout=6):
+    """Ctrl+C the process group (lets the scripts clean up), then force it."""
+    if not proc or proc.poll() is not None:
+        return
+    for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGKILL):
+        try:
+            os.killpg(proc.pid, sig)
+        except ProcessLookupError:
+            return
+        try:
+            proc.wait(timeout)
+            return
+        except subprocess.TimeoutExpired:
+            pass
+
+
+def start_dictate(args, events):
+    cmd = ["dictate", "--live", "--no-copy", "-d", args.device or "phonemic"]
+    if args.model:
+        cmd.append("-t" if args.model == "turbo" else "-s")
+    if args.lang:
+        cmd += ["-l", args.lang]
+    proc = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, start_new_session=True)
+    log = open(os.path.join(LOG_DIR, "dictate.log"), "wb")
+
+    def read_text():
+        for line in proc.stdout:
+            text = line.decode(errors="replace").strip()
+            if text:
+                events.put(("phrase", text))
+        events.put(("exit", proc.wait()))
+
+    def read_status():
+        seen = b""
+        while chunk := os.read(proc.stderr.fileno(), 4096):
+            log.write(chunk)
+            log.flush()
+            seen = (seen + chunk)[-4096:]
+            if b"live on" in seen:
+                events.put(("ready", None))
+                seen = b""
+
+    threading.Thread(target=read_text, daemon=True).start()
+    threading.Thread(target=read_status, daemon=True).start()
+    return proc
+
+
+def on_sigterm(*_):
+    raise KeyboardInterrupt
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0],
+                                 epilog=__doc__.split("\n", 2)[2],
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--tmux", metavar="TARGET",
+                    help="type into this tmux pane (e.g. main:1.0) instead of the focused window")
+    ap.add_argument("--model", choices=["turbo", "small"], help="whisper model (default: dictate's)")
+    ap.add_argument("-l", "--lang", help="spoken language (default: dictate's)")
+    ap.add_argument("-d", "--device", metavar="SOURCE",
+                    help="listen on this input instead of the phone (skips phonemic)")
+    args = ap.parse_args()
+
+    needed = ["phonemic", "dictate", "piper", "ffplay", "pactl"]
+    if not args.tmux:
+        needed.append("wtype" if os.environ.get("WAYLAND_DISPLAY") and shutil.which("wtype") else "xdotool")
+    missing = [c for c in needed if not shutil.which(c)]
+    if missing:
+        sys.exit(f"missing: {', '.join(missing)}")
+    if not os.path.exists(VOICE):
+        sys.exit(f"voice not found: {VOICE} (set ASSISTANT_VOICE)")
+    os.makedirs(LOG_DIR, exist_ok=True)
+
+    events = queue.Queue()
+    phonemic = None if args.device or phonemic_up() else start_phonemic()
+    speaker = Speaker(VOICE)
+    dictate = start_dictate(args, events)
+    assistant = Assistant(speaker, Keyboard(args.tmux))
+    signal.signal(signal.SIGTERM, on_sigterm)
+    ui("…", "loading speech recognition…", "dim")
+    target = f"tmux pane {args.tmux}" if args.tmux else "the focused window"
+    try:
+        while True:
+            try:
+                kind, value = events.get(timeout=0.2)
+            except queue.Empty:
+                assistant.tick()
+                continue
+            if kind == "ready":
+                ui("✔", f"listening. Typing goes to {target}. Ctrl+C to quit.", "green")
+                speaker.say("Listening.")
+            elif kind == "phrase":
+                assistant.on_phrase(value)
+            elif kind == "exit":
+                ui("✘", f"dictate stopped (exit {value}); see {LOG_DIR}/dictate.log", "red")
+                speaker.say("Speech recognition stopped.")
+                time.sleep(2)
+                break
+            assistant.tick()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        ui("…", "shutting down", "dim")
+        speaker.close()
+        stop_group(dictate)
+        stop_group(phonemic)   # only if we started it
+
+
+if __name__ == "__main__":
+    main()

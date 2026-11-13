@@ -1,0 +1,395 @@
+#!/usr/bin/env bash
+# dictate — speak, get text. Records from PhoneMic (see `phonemic`) or the
+# default mic, transcribes with whisper.cpp, prints it and copies it.
+#
+#   dictate              record until Ctrl+C, then transcribe
+#   dictate --live       text appears after every pause (model stays loaded)
+#   dictate -f FILE      transcribe an existing audio file
+#   dictate -t | -s      use the turbo / small model this time
+#   dictate default model turbo|small    remember a model
+#   dictate default lang es|en|auto      remember a language
+#   dictate words [add|rm|edit] …        your vocabulary (names, jargon)
+
+set -uo pipefail
+
+CONF="${XDG_CONFIG_HOME:-$HOME/.config}/dictate/defaults"
+WORDS_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/dictate/words"   # one term per line
+LAST="${XDG_CACHE_HOME:-$HOME/.cache}/dictate/last.wav"   # re-run: dictate -f <this>
+HF="https://huggingface.co"
+declare -A MODEL_FILE=(
+    [small]=ggml-small-q8_0.bin
+    [turbo]=ggml-large-v3-turbo-q8_0.bin
+)
+declare -A MODEL_URL=(
+    [small]="$HF/ggerganov/whisper.cpp/resolve/main/ggml-small-q8_0.bin"
+    [turbo]="$HF/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin"
+)
+VAD_FILE=ggml-silero-v5.1.2.bin
+VAD_URL="$HF/ggml-org/whisper-vad/resolve/main/$VAD_FILE"
+
+if [ -t 2 ]; then B=$'\e[1m' D=$'\e[2m' R=$'\e[0m' RED=$'\e[31m'
+else B="" D="" R="" RED=""; fi
+info() { printf '%s%s%s\n' "$D" "$*" "$R" >&2; }
+die() { printf '%s✘%s %s\n' "$RED" "$R" "$*" >&2; exit 1; }
+
+# ---------------------------------------------------------------- config
+conf_get() { [ -f "$CONF" ] && sed -n "s/^$1=//p" "$CONF" | tail -n1; }
+conf_set() {
+    mkdir -p "$(dirname "$CONF")"
+    { [ -f "$CONF" ] && grep -v "^$1=" "$CONF"; echo "$1=$2"; } >"$CONF.tmp" && mv "$CONF.tmp" "$CONF"
+}
+
+models_dir() {
+    local d
+    for d in "${WHISPER_MODELS:-}" \
+        "$HOME/Documents/Projects/AIProjects/AIToolingExpress/whisper/models" \
+        "${XDG_DATA_HOME:-$HOME/.local/share}/whisper/models"; do
+        [ -n "$d" ] && [ -d "$d" ] && { echo "$d"; return; }
+    done
+    echo "${XDG_DATA_HOME:-$HOME/.local/share}/whisper/models"
+}
+
+# fetch NAME URL DEST — download a model after asking.
+fetch() {
+    local name=$1 url=$2 dest=$3 reply
+    printf '%s is missing (%s).\n' "$name" "$dest" >&2
+    if [ -t 0 ]; then read -rp "Download it now? [Y/n] " reply; else reply=n; fi
+    [[ ${reply:-y} =~ ^[Yy] ]] || return 1
+    mkdir -p "$(dirname "$dest")"
+    curl -fL --progress-bar -o "$dest.part" "$url" && mv "$dest.part" "$dest"
+}
+
+# ---------------------------------------------------------------- audio
+# Prefer PhoneMic when it's running, else the system default input.
+pick_source() {
+    if [ -n "$SOURCE" ]; then echo "$SOURCE"
+    elif pactl list short sources 2>/dev/null | awk '{print $2}' | grep -qx phonemic; then echo phonemic
+    else echo @DEFAULT_SOURCE@; fi
+}
+
+# Raw s16le mono 16 kHz from the mic on stdout.
+record_raw() {
+    parec -d "$1" --raw --format=s16le --channels=1 --rate=16000 --latency-msec=50 2>/dev/null
+}
+
+# Live level meter on stderr while passing audio through unchanged.
+meter() {
+    tee >(od -An -v -td2 -w3200 | awk '
+        { m = 0; for (i = 1; i <= NF; i++) { v = $i < 0 ? -$i : $i; if (v > m) m = v }
+          d = m > 0 ? 20 * log(m / 32768) / log(10) : -90
+          n = int((d + 60) / 2); if (n < 0) n = 0; if (n > 25) n = 25
+          bar = sprintf("%" n "s", ""); gsub(/ /, "█", bar)
+          printf "\r  \033[31m●\033[0m rec %5.1fs %-25s  Ctrl+C to stop ", NR / 10, bar > "/dev/stderr"
+          fflush("/dev/stderr") }')
+}
+
+# raw2wav RAW WAV — add a 44-byte header (16 kHz mono 16-bit PCM).
+raw2wav() {
+    local n
+    n=$(stat -c %s "$1")
+    le() { printf '\\x%02x\\x%02x\\x%02x\\x%02x' $(($1 & 255)) $(($1 >> 8 & 255)) $(($1 >> 16 & 255)) $(($1 >> 24 & 255)); }
+    {
+        # shellcheck disable=SC2059
+        printf "RIFF$(le $((n + 36)))WAVEfmt $(le 16)\\x01\\x00\\x01\\x00$(le 16000)$(le 32000)\\x02\\x00\\x10\\x00data$(le "$n")"
+        cat "$1"
+    } >"$2"
+}
+
+# Warn about recordings that will transcribe badly: clipped (too loud,
+# distorted) or very quiet.
+audio_check() {
+    od -An -v -td2 -w2 "$1" | awk '
+        { v = $1 < 0 ? -$1 : $1; n++; if (v > peak) peak = v; if (v >= 32000) clip++ }
+        END {
+            if (!n) exit
+            db = peak > 0 ? 20 * log(peak / 32768) / log(10) : -90
+            pct = 100 * clip / n
+            if (pct > 0.05)
+                printf "\033[33m!\033[0m Audio is clipping (%.2f%% of samples maxed out): too loud, words get distorted.\n  Lower the boost, e.g. phonemic --gain=0, or switch mic mode.\n", pct > "/dev/stderr"
+            else if (db < -30)
+                printf "\033[33m!\033[0m Audio is quiet (peak %.0f dB): try phonemic test and accept a boost.\n", db > "/dev/stderr"
+        }'
+}
+
+# Drop whisper's classic silence hallucinations; join lines.
+clean_text() {
+    sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' |
+        grep -viE '^\[.*\]$|^\(.*\)$|^$|amara\.org|^[¡¿"]*(subtítulos|gracias por ver|suscr[ií]bete|thanks for watching)' |
+        paste -sd' '
+}
+
+copy_clip() {
+    [ "$COPY" = 1 ] || { cat >/dev/null; return 1; }
+    # Clipboard tools stay running to own the selection; setsid keeps them alive
+    # after this terminal closes.
+    local run=()
+    command -v setsid >/dev/null && run=(setsid -f)
+    if [ -n "${WAYLAND_DISPLAY:-}" ] && command -v wl-copy >/dev/null; then "${run[@]}" wl-copy
+    elif command -v xclip >/dev/null; then "${run[@]}" xclip -selection clipboard
+    elif command -v xsel >/dev/null; then "${run[@]}" xsel -ib
+    else cat >/dev/null; return 1; fi
+}
+
+# ---------------------------------------------------------------- vocabulary
+# Terms you use (one per line, # comments) become part of whisper's prompt,
+# which biases it toward those spellings. Your --prompt goes last, so it
+# counts most.
+vocab() { [ -f "$WORDS_FILE" ] && sed -e 's/#.*//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' "$WORDS_FILE" | grep -v '^$'; }
+
+build_prompt() {
+    local terms n
+    [ "$USE_WORDS" = 1 ] && terms=$(vocab | paste -sd',' | sed 's/,/, /g')
+    if [ -n "${terms:-}" ]; then
+        n=$(wc -w <<<"$terms")
+        [ "$n" -gt 120 ] && info "vocabulary has $n words; whisper only reads ~150 words of prompt, keep it focused"
+        PROMPT="${terms}.${PROMPT:+ $PROMPT}"
+        # For --live: segments made only of these words are prompt echo, not speech.
+        export DICTATE_WORDS_FILE="$WORDS_FILE"
+    fi
+}
+
+cmd_words() {
+    local t
+    mkdir -p "$(dirname "$WORDS_FILE")"
+    case "${1:-list}" in
+        list)
+            if [ -n "$(vocab)" ]; then vocab; info "($WORDS_FILE — dictate words add|rm|edit)"
+            else info "No vocabulary yet. Add some: dictate words add \"Claude Code\" Neovim tmux"; fi ;;
+        add)
+            shift; [ $# -gt 0 ] || die "usage: dictate words add TERM…"
+            for t in "$@"; do
+                if vocab | grep -qixF -- "$t"; then info "already there: $t"
+                else echo "$t" >>"$WORDS_FILE"; info "added: $t"; fi
+            done ;;
+        rm)
+            shift; [ $# -gt 0 ] || die "usage: dictate words rm TERM…"
+            for t in "$@"; do
+                grep -vixF -- "$t" "$WORDS_FILE" >"$WORDS_FILE.tmp"; mv "$WORDS_FILE.tmp" "$WORDS_FILE"
+                info "removed: $t"
+            done ;;
+        edit) "${EDITOR:-vi}" "$WORDS_FILE" ;;
+        *) die "usage: dictate words [list|add TERM…|rm TERM…|edit]" ;;
+    esac
+}
+
+# ---------------------------------------------------------------- modes
+whisper_args() {
+    W_ARGS=(-m "$MODEL_PATH" -l "$LANG_CODE" -nt)
+    [ -f "$VAD_PATH" ] && W_ARGS+=(--vad -vm "$VAD_PATH")
+    [ -n "$PROMPT" ] && W_ARGS+=(--prompt "$PROMPT")
+}
+
+transcribe_file() {
+    local wav=$1 text log
+    log=$(mktemp)
+    whisper_args
+    info "transcribing with $MODEL_NAME ($LANG_CODE)…"
+    text=$(whisper-cli "${W_ARGS[@]}" -np -f "$wav" 2>"$log") || { cat "$log" >&2; rm -f "$log"; die "whisper-cli failed"; }
+    rm -f "$log"
+    text=$(clean_text <<<"$text")
+    [ -n "$text" ] || die "No speech recognized."
+    printf '%s\n' "$text"
+    if copy_clip <<<"$text"; then info "(copied to clipboard)"; fi
+}
+
+mode_record() {
+    local tmp src
+    tmp=$(mktemp -d)
+    src=$(pick_source)
+    info "🎙  listening on ${B}${src}${R}${D} · $MODEL_NAME · $LANG_CODE"
+    # Ctrl+C ends the recording only; the script carries on to transcribe.
+    trap ':' INT
+    record_raw "$src" | meter >"$tmp/a.raw"
+    trap - INT
+    sleep 0.2   # let the meter's last redraw land before clearing the line
+    printf '\r\e[K' >&2
+    [ -s "$tmp/a.raw" ] || { rm -rf "$tmp"; die "Nothing was recorded from $src."; }
+    audio_check "$tmp/a.raw"
+    mkdir -p "$(dirname "$LAST")"
+    raw2wav "$tmp/a.raw" "$LAST"
+    rm -rf "$tmp"
+    transcribe_file "$LAST"
+}
+
+mode_file() {
+    local tmp=""
+    [ -f "$1" ] || die "No such file: $1"
+    case "${1,,}" in
+        *.wav) ;;
+        *)  command -v ffmpeg >/dev/null || die "ffmpeg is needed to read ${1##*.} files."
+            tmp=$(mktemp --suffix=.wav)
+            ffmpeg -loglevel error -y -i "$1" -ar 16000 -ac 1 -c:a pcm_s16le "$tmp" || die "ffmpeg could not read $1"
+            set -- "$tmp" ;;
+    esac
+    transcribe_file "$1"
+    [ -z "$tmp" ] || rm -f "$tmp"
+}
+
+# Live: keep the model loaded in whisper-server, cut the mic stream at pauses,
+# and send each phrase to it as soon as you stop talking.
+mode_live() {
+    local tmp src port pid all
+    command -v whisper-server >/dev/null || die "--live needs whisper-server (built with whisper.cpp)."
+    command -v python3 >/dev/null || die "--live needs python3."
+    tmp=$(mktemp -d)
+    src=$(pick_source)
+    port=$(python3 -I -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1])')
+    whisper_args
+    # The server decodes greedily by default; beam search like whisper-cli is
+    # noticeably better on mumbled speech and costs little on a GPU.
+    whisper-server "${W_ARGS[@]}" -bs 5 -bo 5 --host 127.0.0.1 --port "$port" >"$tmp/server.log" 2>&1 &
+    pid=$!
+    # shellcheck disable=SC2064 # expand $pid now: it is local
+    trap "kill $pid 2>/dev/null" EXIT
+    info "loading $MODEL_NAME…"
+    until curl -fs -o /dev/null "http://127.0.0.1:$port/"; do
+        kill -0 "$pid" 2>/dev/null || { tail -5 "$tmp/server.log" >&2; die "whisper-server failed to start."; }
+        sleep 0.2
+    done
+    info "🎙  live on ${B}${src}${R}${D} · $MODEL_NAME · $LANG_CODE — pause to get text, Ctrl+C to finish"
+    live_py >"$tmp/live.py"
+    trap ':' INT
+    record_raw "$src" | python3 -I -u "$tmp/live.py" "$port" "$tmp" "$LANG_CODE"
+    trap - INT
+    all=$(paste -sd' ' "$tmp/all.txt" 2>/dev/null)
+    rm -rf "$tmp"
+    printf '\r\e[K' >&2
+    if [ -n "$all" ] && copy_clip <<<"$all"; then info "(whole session copied to clipboard)"; fi
+}
+
+# Phrase splitter for --live: reads raw mic audio on stdin, prints each phrase's
+# text on stdout as soon as whisper-server returns it, and logs it to all.txt.
+live_py() {
+    cat <<'PY'
+import math, os, queue, re, signal, struct, subprocess, sys, threading, wave
+port, tmp, lang = sys.argv[1], sys.argv[2], sys.argv[3]
+signal.signal(signal.SIGINT, signal.SIG_IGN)   # parec ending (EOF) stops us
+RATE, FRAME = 16000, 480                        # 30 ms frames
+PRE, END_SIL, MIN_SPEECH, MAX_LEN = 10, 20, 8, 25 * 1000 // 30
+BAD = re.compile(r'^\s*(\[.*\]|\(.*\))\s*$|amara\.org|^\W*(subtítulos|gracias por ver|suscr[ií]bete|thanks for watching)', re.I)
+out = open(os.path.join(tmp, "all.txt"), "a")
+try:
+    with open(os.environ["DICTATE_WORDS_FILE"]) as f:
+        VOCAB = set(re.findall(r"\w+", re.sub(r"#.*", "", f.read()).lower()))
+except (KeyError, OSError):
+    VOCAB = set()
+
+def echo_of_prompt(line):
+    """On noise whisper sometimes just recites the vocabulary prompt."""
+    words = re.findall(r"\w+", line.lower())
+    return bool(VOCAB) and len(words) >= 2 and all(w in VOCAB for w in words)
+jobs = queue.Queue()
+
+def worker():
+    n = 0
+    while True:
+        frames = jobs.get()
+        if frames is None:
+            return
+        n += 1
+        path = os.path.join(tmp, f"seg{n}.wav")
+        with wave.open(path, "wb") as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE)
+            w.writeframes(b"".join(frames))
+        r = subprocess.run(["curl", "-fs", f"http://127.0.0.1:{port}/inference",
+                            "-F", f"file=@{path}", "-F", "response_format=text",
+                            "-F", f"language={lang}"], capture_output=True, text=True)
+        os.unlink(path)
+        lines = [l.strip() for l in r.stdout.splitlines()
+                 if l.strip() and not BAD.search(l) and not echo_of_prompt(l)]
+        if lines:
+            text = " ".join(lines)
+            sys.stderr.write("\r\033[K"); sys.stderr.flush()
+            print(text, flush=True)
+            out.write(text + "\n"); out.flush()
+
+t = threading.Thread(target=worker); t.start()
+floor, buf, pre, speech, silence = -60.0, [], [], 0, 0
+while True:
+    chunk = sys.stdin.buffer.read(FRAME * 2)
+    if len(chunk) < FRAME * 2:
+        break
+    s = struct.unpack(f"<{FRAME}h", chunk)
+    rms = math.sqrt(sum(x * x for x in s) / FRAME)
+    db = 20 * math.log10(rms / 32768) if rms > 0 else -90
+    if not buf:                               # track the room's noise floor
+        floor = 0.95 * floor + 0.05 * db if db < floor + 6 else floor
+    talking = db > max(floor + 10, -55)
+    if buf:
+        buf.append(chunk)
+        speech += talking
+        silence = 0 if talking else silence + 1
+        if silence >= END_SIL or len(buf) >= MAX_LEN:
+            if speech >= MIN_SPEECH:
+                jobs.put(buf)
+            buf, speech, silence = [], 0, 0
+    elif talking:
+        buf, speech, silence = pre + [chunk], 1, 0
+    else:
+        pre = (pre + [chunk])[-PRE:]
+    if buf:
+        sys.stderr.write("\r  \033[31m●\033[0m hearing you…"); sys.stderr.flush()
+if buf and speech >= MIN_SPEECH:
+    jobs.put(buf)
+jobs.put(None); t.join()
+PY
+}
+
+usage() {
+    sed -n '2,12s/^# \{0,1\}//p' "$0"
+    cat <<EOF
+
+Options:
+  -t, --turbo       large-v3-turbo (most accurate)     -s, --small   small (fastest)
+  -l, --lang LANG   spoken language: es, en, auto, …   -f, --file FILE
+  --prompt TEXT     names/jargon to spell right        --live
+  -d, --device SRC  input source (default: PhoneMic if running, else default mic)
+  --no-copy         don't copy the result to the clipboard
+  --no-words        ignore your vocabulary (dictate words) this time
+
+Now: model=${MODEL_NAME} lang=${LANG_CODE} models in $(models_dir)
+EOF
+}
+
+# ---------------------------------------------------------------- main
+MODEL_NAME=$(conf_get model); MODEL_NAME=${MODEL_NAME:-turbo}
+LANG_CODE=$(conf_get lang); LANG_CODE=${LANG_CODE:-es}
+SOURCE="" PROMPT="" COPY=1 MODE=record FILE="" USE_WORDS=1
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -t | --turbo) MODEL_NAME=turbo ;;
+        -s | --small) MODEL_NAME=small ;;
+        -l | --lang) LANG_CODE=${2:?--lang needs a value}; shift ;;
+        -f | --file) MODE=file FILE=${2:?--file needs a path}; shift ;;
+        -d | --device) SOURCE=${2:?--device needs a source}; shift ;;
+        --prompt) PROMPT=${2:?--prompt needs text}; shift ;;
+        --live) MODE=live ;;
+        --no-copy) COPY=0 ;;
+        --no-words) USE_WORDS=0 ;;
+        words) shift; cmd_words "$@"; exit ;;
+        -h | --help) usage; exit 0 ;;
+        default)
+            case "${2:-}:${3:-}" in
+                model:small | model:turbo | lang:?*) conf_set "$2" "$3"; info "default $2 = $3"; exit 0 ;;
+                *) die "usage: dictate default model small|turbo  |  dictate default lang LANG" ;;
+            esac ;;
+        *) die "Unknown option: $1 (see dictate --help)" ;;
+    esac
+    shift
+done
+
+build_prompt
+command -v whisper-cli >/dev/null || die "whisper-cli not found (build whisper.cpp and put it on PATH)."
+DIR=$(models_dir)
+MODEL_PATH="$DIR/${MODEL_FILE[$MODEL_NAME]}"
+VAD_PATH="$DIR/$VAD_FILE"
+[ -f "$MODEL_PATH" ] || fetch "Model '$MODEL_NAME'" "${MODEL_URL[$MODEL_NAME]}" "$MODEL_PATH" || die "No model."
+[ -f "$VAD_PATH" ] || fetch "The voice-activity model (stops made-up text in silence)" "$VAD_URL" "$VAD_PATH" ||
+    info "continuing without VAD"
+
+case $MODE in
+    record) command -v parec >/dev/null || die "parec not found (install pulseaudio-utils)."; mode_record ;;
+    file) mode_file "$FILE" ;;
+    live) mode_live ;;
+esac

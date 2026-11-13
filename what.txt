@@ -1,0 +1,9 @@
+Ok, send it
+Ok say
+say
+YES,yep,sip,si,no,nope,cancel
+type and enter directly mode after did you mean?
+No questions asked mode as well
+For pi, but be able to stop it
+ctrl+c (without the press)
+enter (without the press)
