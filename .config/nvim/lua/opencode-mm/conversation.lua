@@ -1,12 +1,71 @@
 local M = {}
 
-M.state = { streaming = {} }
+local events = require("opencode-mm.events")
 
-local function get_buffer() return require("opencode-mm.buffer") end
-local function get_session() return require("opencode-mm.session") end
-local function get_stream() return require("opencode-mm.stream") end
-local function get_api() return require("opencode-mm.api") end
-local function get_config() return require("opencode-mm.config") end
+--- Shared streaming state (kept here for backwards compatibility).
+M.state = events.state
+
+local function get_buffer()
+	return require("opencode-mm.buffer")
+end
+local function get_session()
+	return require("opencode-mm.session")
+end
+local function get_stream()
+	return require("opencode-mm.stream")
+end
+local function get_api()
+	return require("opencode-mm.api")
+end
+local function get_config()
+	return require("opencode-mm.config")
+end
+
+local function list(value)
+	return type(value) == "table" and value or {}
+end
+
+local function record(value)
+	return type(value) == "table" and value or {}
+end
+
+local function model_ref(value)
+	if type(value) ~= "string" or value == "" then
+		return nil
+	end
+	local provider, id = value:match("([^/]+)/(.+)")
+	if not provider or not id then
+		return nil
+	end
+	return { providerID = provider, id = id }
+end
+
+local function model_ref_with_variant(value, variant)
+	local ref = model_ref(value)
+	if ref and variant and variant ~= "" then
+		ref.variant = variant
+	end
+	return ref
+end
+
+local function model_string(model)
+	if type(model) == "table" and model.providerID and model.id then
+		return model.providerID .. "/" .. model.id
+	end
+	return nil
+end
+
+local function connect_stream(bufnr)
+	local stream = get_stream()
+	if not stream.is_connected() then
+		get_api().setup(get_config().get())
+		stream.connect(get_api(), function()
+			M._subscribe_events(bufnr)
+		end)
+	else
+		M._subscribe_events(bufnr)
+	end
+end
 
 function M.load(bufnr, session_id, callback)
 	local session, buffer = get_session(), get_buffer()
@@ -16,7 +75,7 @@ function M.load(bufnr, session_id, callback)
 			vim.notify("Failed to load session: " .. vim.inspect(err), vim.log.levels.ERROR)
 			return callback and callback(err)
 		end
-		local info = res.body
+		local info = record(res and res.body and res.body.data)
 
 		session.get_messages(session_id, function(m_err, m_res)
 			if m_err then
@@ -25,27 +84,24 @@ function M.load(bufnr, session_id, callback)
 			end
 
 			vim.schedule(function()
-				local cfg = get_config().get()
-				local defs = cfg and cfg.defaults or {}
+				local defaults = get_config().get().defaults or {}
+				local model_info = type(info.model) == "table" and info.model or {}
 				buffer.render_frontmatter(bufnr, {
-					model = defs.model or "",
-					system = defs.system or "",
+					model = model_string(info.model) or defaults.model or "",
+					variant = model_info.variant or "",
+					system = defaults.system or "",
 					session = session_id,
 				})
-				buffer.render_messages(bufnr, (m_res and m_res.body) or {})
+				buffer.render_messages(bufnr, list(m_res and m_res.body and m_res.body.data))
 				buffer.set_session_id(bufnr, session_id)
-				local lc = vim.api.nvim_buf_line_count(bufnr)
-				vim.api.nvim_buf_set_lines(bufnr, lc, lc, false, { "", "### User", "" })
-
-				local stream = get_stream()
-				if not stream.is_connected() then
-					local api = get_api()
-					api.setup(get_config().get())
-					stream.connect(api, function() M._subscribe_events(bufnr) end)
-				else
-					M._subscribe_events(bufnr)
+				events.state.streamed[bufnr] = {}
+				events.state.thinking[bufnr] = nil
+				events.state.reasoning_done[bufnr] = nil
+				buffer.ensure_section(bufnr, "User")
+				connect_stream(bufnr)
+				if callback then
+					callback(nil, info)
 				end
-				if callback then callback(nil, info) end
 			end)
 		end)
 	end)
@@ -60,161 +116,93 @@ function M.submit(bufnr)
 	end
 
 	local meta = buffer.parse_frontmatter(bufnr)
+	local defaults = get_config().get().defaults or {}
+
+	local function send(sid)
+		local model = model_ref_with_variant(meta.model, meta.variant)
+			or model_ref_with_variant(defaults.model, defaults.variant)
+
+		local function prompt_now()
+			events.state.streaming[sid] = true
+			events.state.streamed[bufnr] = {}
+			events.state.thinking[bufnr] = nil
+			events.state.reasoning_done[bufnr] = nil
+			buffer.ensure_section(bufnr, "Assistant")
+			session.send_message(sid, prompt, {}, function(err)
+				if err then
+					vim.schedule(function()
+						vim.notify("Failed to send: " .. vim.inspect(err), vim.log.levels.ERROR)
+						events.state.streaming[sid] = nil
+					end)
+				end
+			end)
+		end
+
+		if model then
+			session.set_model(sid, model, function(err)
+				if err then
+					vim.schedule(function()
+						vim.notify("Failed to switch model: " .. vim.inspect(err), vim.log.levels.WARN)
+					end)
+				end
+				vim.schedule(prompt_now)
+			end)
+		else
+			prompt_now()
+		end
+	end
+
 	if meta.session == "" then
 		session.create({}, function(err, res)
 			if err then
 				vim.notify("Failed to create session: " .. vim.inspect(err), vim.log.levels.ERROR)
 				return
 			end
-			if not res or not res.body or not res.body.id then
+			local data = record(res and res.body and res.body.data)
+			if not data.id then
 				vim.notify("Unexpected session response: " .. vim.inspect(res), vim.log.levels.ERROR)
 				return
 			end
 			vim.schedule(function()
-				buffer.set_session_id(bufnr, res.body.id)
-				buffer.render_frontmatter(bufnr, { model = meta.model, system = meta.system, session = res.body.id })
-				M.submit(bufnr)
+				buffer.set_session_id(bufnr, data.id)
+				buffer.render_frontmatter(bufnr, {
+					model = (meta.model ~= "" and meta.model) or model_string(data.model) or defaults.model or "",
+					variant = meta.variant or "",
+					system = meta.system,
+					session = data.id,
+				})
+				send(data.id)
 			end)
 		end)
 		return
 	end
 
-	local parts = { { type = "text", text = prompt } }
-	local opts = {}
-	local cfg = get_config().get()
-	local defaults = cfg and cfg.defaults or {}
-	if meta.model and meta.model ~= "" then
-		local provider, model = meta.model:match("([^/]+)/(.+)")
-		if provider and model then opts.model = { providerID = provider, modelID = model } end
-	elseif defaults.model and defaults.model ~= "" then
-		local provider, model = defaults.model:match("([^/]+)/(.+)")
-		if provider and model then opts.model = { providerID = provider, modelID = model } end
-	end
-	if meta.system and meta.system ~= "" then
-		opts.system = meta.system
-	elseif defaults.system and defaults.system ~= "" then
-		opts.system = defaults.system
-	end
-
-	M.state.streaming[meta.session] = true
-	local lc = vim.api.nvim_buf_line_count(bufnr)
-	vim.api.nvim_buf_set_lines(bufnr, lc, lc, false, { "", "### Assistant", "" })
-
-	session.send_message(meta.session, parts, opts, function(err)
-		if err then
-			vim.schedule(function()
-				vim.notify("Failed to send: " .. vim.inspect(err), vim.log.levels.ERROR)
-				M.state.streaming[meta.session] = nil
-			end)
-		end
-	end)
+	send(meta.session)
 end
 
 function M.abort(bufnr)
-	local buffer = get_buffer()
-	local meta = buffer.parse_frontmatter(bufnr)
-	if meta.session == "" then return end
+	local meta = get_buffer().parse_frontmatter(bufnr)
+	if meta.session == "" then
+		return
+	end
+	if not get_stream().is_connected() then
+		get_api().setup(get_config().get())
+	end
 	get_session().abort(meta.session, function(err)
-		if err then vim.notify("Abort failed: " .. vim.inspect(err), vim.log.levels.ERROR) end
-		M.state.streaming[meta.session] = nil
-		vim.schedule(function() vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr }) end)
+		if err then
+			vim.notify("Abort failed: " .. vim.inspect(err), vim.log.levels.ERROR)
+		end
+		events.state.streaming[meta.session] = nil
+		vim.schedule(function()
+			if vim.api.nvim_buf_is_valid(bufnr) then
+				vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
+			end
+		end)
 	end)
 end
 
 function M._subscribe_events(bufnr)
-	local stream, buffer = get_stream(), get_buffer()
-
-	stream.subscribe("message.part.delta", function(data)
-		vim.schedule(function()
-			if not vim.api.nvim_buf_is_valid(bufnr) then return end
-			local props = data and data.properties or data or {}
-			if props.field == "text" and props.delta then
-				M._append_to_assistant_section(bufnr, props.delta)
-			end
-			M._auto_scroll(bufnr)
-		end)
-	end)
-
-	stream.subscribe("message.part.updated", function(data)
-		vim.schedule(function()
-			if not vim.api.nvim_buf_is_valid(bufnr) then return end
-			local props = data and data.properties or data or {}
-			local part = props.part
-			if part and part.type == "text" and part.text then
-				M._update_assistant_section(bufnr, part.text)
-			end
-			M._auto_scroll(bufnr)
-		end)
-	end)
-
-	stream.subscribe("message.updated", function(data)
-		vim.schedule(function()
-			if not vim.api.nvim_buf_is_valid(bufnr) then return end
-			local props = data and data.properties or data or {}
-			local info = props.info
-			if info and info.finish == "stop" and info.role == "assistant" then
-				M.state.streaming[info.sessionID] = nil
-				local lc = vim.api.nvim_buf_line_count(bufnr)
-				vim.api.nvim_buf_set_lines(bufnr, lc, lc, false, { "", "### User", "" })
-			end
-			M._auto_scroll(bufnr)
-		end)
-	end)
-
-	stream.subscribe("session.turn.close", function(data)
-		vim.schedule(function()
-			if not vim.api.nvim_buf_is_valid(bufnr) then return end
-			local props = data and data.properties or data or {}
-			M.state.streaming[props.sessionID] = nil
-			local lc = vim.api.nvim_buf_line_count(bufnr)
-			vim.api.nvim_buf_set_lines(bufnr, lc, lc, false, { "", "### User", "" })
-		end)
-	end)
-
-	stream.subscribe("session.error", function(data)
-		vim.schedule(function()
-			local props = data and data.properties or data or {}
-			vim.notify("OpenCode error: " .. vim.inspect(props.error), vim.log.levels.ERROR)
-			local meta = buffer.parse_frontmatter(bufnr)
-			if meta.session then
-				M.state.streaming[meta.session] = nil
-			end
-			vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
-		end)
-	end)
-end
-
-function M._update_assistant_section(bufnr, text)
-	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-	local start = nil
-	for i = #lines, 1, -1 do
-		if lines[i]:match("^### [Aa]ssistant") then start = i break end
-	end
-	if not start then return end
-	vim.api.nvim_buf_set_lines(bufnr, start, -1, false, vim.split(text, "\n"))
-end
-
-function M._append_to_assistant_section(bufnr, text)
-	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-	local start = nil
-	for i = #lines, 1, -1 do
-		if lines[i]:match("^### [Aa]ssistant") then start = i break end
-	end
-	if not start then return end
-	local existing_lines = {}
-	for i = start, #lines do
-		table.insert(existing_lines, lines[i])
-	end
-	local updated = table.concat(existing_lines, "\n") .. text
-	vim.api.nvim_buf_set_lines(bufnr, start - 1, -1, false, vim.split(updated, "\n"))
-end
-
-function M._auto_scroll(bufnr)
-	local info = get_buffer().bufs[bufnr]
-	if not info or not info.win_id or not vim.api.nvim_win_is_valid(info.win_id) then return end
-	local cursor = vim.api.nvim_win_get_cursor(info.win_id)
-	local lc = vim.api.nvim_buf_line_count(bufnr)
-	if cursor[1] >= lc - 2 then vim.api.nvim_win_set_cursor(info.win_id, { lc, 0 }) end
+	events.subscribe(bufnr)
 end
 
 return M

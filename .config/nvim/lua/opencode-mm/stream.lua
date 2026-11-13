@@ -23,14 +23,20 @@ function M._do_connect(on_ready)
 		return
 	end
 
-	M.state.handle = M.state.api.sse("/event", function(event_type, data)
+	M.state.handle = M.state.api.sse("/api/event", function(event_type, data)
 		M._dispatch(event_type, data)
-	end, function(err)
+	end, function()
 		M.state.connected = false
 		if M.state.should_connect then
 			M._schedule_reconnect()
 		end
 	end)
+
+	if not M.state.handle then
+		M.state.connected = false
+		M._schedule_reconnect()
+		return
+	end
 
 	M.state.connected = true
 	if on_ready then

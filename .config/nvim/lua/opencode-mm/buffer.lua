@@ -73,33 +73,65 @@ function M.render_frontmatter(bufnr, meta)
 	local lines = {
 		"---",
 		"model: " .. (meta.model or ""),
+		"variant: " .. (meta.variant or ""),
 		"system: " .. (meta.system or ""),
 		"session: " .. (meta.session or ""),
 		"---",
 		"",
 	}
 	local fm_end = M._find_frontmatter_end(bufnr)
+	-- Consume the blank separator after the header so re-rendering does not
+	-- accumulate empty lines.
+	if fm_end > 0 then
+		local after = vim.api.nvim_buf_get_lines(bufnr, fm_end, fm_end + 1, false)[1]
+		if after == "" then
+			fm_end = fm_end + 1
+		end
+	end
 	vim.api.nvim_buf_set_lines(bufnr, 0, fm_end, false, lines)
 	M._highlight_headers(bufnr)
 end
 
+--- Extract the editable text from a v2 session message.
+--- Only user messages and assistant text parts are rendered; tool, reasoning,
+--- system and idle messages are skipped.
+local function message_text(msg)
+	if msg.type == "user" then
+		return msg.text or ""
+	elseif msg.type == "assistant" then
+		local texts = {}
+		for _, part in ipairs(type(msg.content) == "table" and msg.content or {}) do
+			if part.type == "text" and part.text and part.text ~= "" then
+				table.insert(texts, part.text)
+			end
+		end
+		return table.concat(texts, "\n")
+	end
+	return nil
+end
+
 function M.render_messages(bufnr, messages)
+	if type(messages) ~= "table" then
+		messages = {}
+	end
 	local fm_end = M._find_frontmatter_end(bufnr)
 	local lines = {}
+	local previous_role
 	for _, msg in ipairs(messages) do
-		local role = msg.role or (msg.info and msg.info.role) or "user"
-		local content = msg.content
-		if not content then
-			local parts = msg.parts or {}
-			local texts = {}
-			for _, part in ipairs(parts) do
-				if part.type == "text" then table.insert(texts, part.text or "") end
+		local content = message_text(msg)
+		if content and content ~= "" then
+			local role = msg.type == "assistant" and "Assistant" or "User"
+			-- v2 can emit several assistant messages per turn (one per tool
+			-- step); merge consecutive same-role messages into one section.
+			if role ~= previous_role then
+				table.insert(lines, "### " .. role)
+				previous_role = role
 			end
-			content = table.concat(texts, "\n")
+			for line in content:gmatch("[^\n]*") do
+				table.insert(lines, line)
+			end
+			table.insert(lines, "")
 		end
-		table.insert(lines, "### " .. role:sub(1, 1):upper() .. role:sub(2))
-		for line in content:gmatch("[^\n]*") do table.insert(lines, line) end
-		table.insert(lines, "")
 	end
 	vim.api.nvim_buf_set_lines(bufnr, fm_end, -1, false, lines)
 	M._highlight_headers(bufnr)
@@ -139,6 +171,34 @@ function M.set_pending_prompt(bufnr, text)
 	end
 end
 
+--- Append text to the pending (last) user section, creating one if the buffer
+--- currently ends in an assistant or empty section.
+function M.append_pending_prompt(bufnr, text)
+	M.ensure_section(bufnr, "User")
+	local msgs = M.parse_messages(bufnr)
+	local last = msgs[#msgs]
+	if not last or last.role ~= "user" then
+		M.ensure_section(bufnr, "User")
+		msgs = M.parse_messages(bufnr)
+		last = msgs[#msgs]
+	end
+	if not last or last.role ~= "user" then
+		return
+	end
+
+	local start = last.line_start
+	local stop = last.line_end or last.line_start
+	local lines = vim.api.nvim_buf_get_lines(bufnr, start, stop, false)
+	while #lines > 0 and vim.trim(lines[#lines]) == "" do
+		table.remove(lines)
+	end
+	for _, line in ipairs(vim.split(text, "\n", { plain = true })) do
+		table.insert(lines, line)
+	end
+	vim.api.nvim_buf_set_lines(bufnr, start, stop, false, lines)
+	M._highlight_headers(bufnr)
+end
+
 function M.setup_keymaps(bufnr, submit_fn, abort_fn)
 	local opts = { buffer = bufnr, noremap = true, silent = true, nowait = true }
 	vim.keymap.set("n", "<CR>", submit_fn, opts)
@@ -154,6 +214,28 @@ function M.setup_keymaps(bufnr, submit_fn, abort_fn)
 	vim.keymap.set("n", "<leader><leader>", function()
 		require("opencode-mm.mastermind").enter(bufnr)
 	end, { buffer = bufnr, noremap = true, silent = true, nowait = true })
+end
+
+function M.last_role(bufnr)
+	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+	for i = #lines, 1, -1 do
+		local role = lines[i]:match("^### (%w+)")
+		if role then
+			return role:lower()
+		end
+	end
+	return nil
+end
+
+--- Make sure the buffer ends with the requested section header.
+function M.ensure_section(bufnr, role)
+	if M.last_role(bufnr) == role:lower() then
+		return
+	end
+	local lc = vim.api.nvim_buf_line_count(bufnr)
+	local title = role:sub(1, 1):upper() .. role:sub(2):lower()
+	vim.api.nvim_buf_set_lines(bufnr, lc, lc, false, { "", "### " .. title, "" })
+	M._highlight_headers(bufnr)
 end
 
 function M._find_frontmatter_end(bufnr)

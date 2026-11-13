@@ -3,10 +3,17 @@
 
 local M = {}
 
---- Default configuration settings
+--- Default configuration settings.
+---
+--- `serve.url`/`serve.password` are optional. When omitted they are
+--- discovered from the OpenCode v2 background service state file
+--- (`$XDG_STATE_HOME/opencode/service.json`). Set `serve.port` only to target
+--- a manually started `opencode serve --port ...` instance.
 M.defaults = {
-	serve = { host = "127.0.0.1", port = 11634, password = nil },
-	defaults = { model = "kilo/kilo-auto/free", system = "You are a helpful assistant." },
+	serve = {
+		auto_start = true,
+	},
+	defaults = { model = nil, system = nil },
 	chords = {
 		c = "create a ",
 		f = "fix the ",
@@ -16,12 +23,12 @@ M.defaults = {
 		t = "test for ",
 		d = "document the ",
 		a = "add a ",
-		e = "explain the "
+		e = "explain the ",
 	},
 	parametric_chords = {
 		l = "in no more than $arg lines",
 		w = "without exceeding $arg words",
-		p = "with priority $arg"
+		p = "with priority $arg",
 	},
 	window = { width = 0.6, height = 0.8, position = "right" },
 	submit_on_cr = true,
@@ -38,9 +45,17 @@ M.setup = function(user_opts)
 		return
 	end
 
-	-- Validate port is a number
-	if user_opts.serve and type(user_opts.serve.port) ~= "number" then
-		user_opts.serve.port = 11634
+	-- `port` is opt-in: don't leave a stale default that bypasses discovery.
+	if user_opts.serve then
+		if user_opts.serve.port ~= nil and type(user_opts.serve.port) ~= "number" then
+			user_opts.serve.port = nil
+		end
+		if user_opts.serve.url ~= nil and type(user_opts.serve.url) ~= "string" then
+			user_opts.serve.url = nil
+		end
+		if user_opts.serve.auto_start ~= nil and type(user_opts.serve.auto_start) ~= "boolean" then
+			user_opts.serve.auto_start = true
+		end
 	end
 
 	-- Validate chords is a table
