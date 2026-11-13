@@ -201,12 +201,14 @@ lsa() { lsz "ls -a" "$@"; }
 lc() { locate "$*" | fzf --border; }
 
 h() {
-    local cmd
-    cmd="$(history | cut -c 8- | sort | uniq | fzf +s --tac --prompt='Run command: ')"
-    [ ! "$cmd" ] && return
-    echo "$cmd" | xclip -selection clipboard
-    sleep 0.1 && xdotool key --delay {{1}} ctrl+shift+v
+	local cmd
+    cmd=$(fc -ln 1 | awk '!seen[$0]++' | fzf --tac --prompt='Run command: ')
+    [[ -z "$cmd" ]] && return
+
+	printf '%s' "$cmd" | xclip -selection clipboard
+	sleep 0.1 && xdotool key --delay 50 ctrl+shift+v
 }
+
 alias hcls='cat /dev/null > ~/.bash_history && history -c && clear && nf'
 alias hlen='echo $(history | wc -l)'
 
