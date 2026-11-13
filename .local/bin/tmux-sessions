@@ -31,9 +31,11 @@ tmux-sessions() {
             fi
             printf '%s\t%-20s %s%s\n' "$s" "$s" "$mark" "${badges[$s]}"
         done |
-        fzf --ansi --delimiter=$'\t' --with-nth=2 --prompt="Session: " --border --height=50% \
-            --preview="tmux list-windows -t {1}" |
-        cut -f1)
+		  fzf --ansi --delimiter=$'\t' --with-nth=2 --prompt="Session: " --border \
+			  --tmux 95% \
+			  --preview-window='right,65%,follow' \
+			  --preview="tmux capture-pane -ep -t {1} | awk 'NF{for(;n;n--)print \"\";print;next}{n++}'" |
+			  cut -f1)
     [ ! "$session_name" ] && return
 
     project-sessions record-session "$session_name"
