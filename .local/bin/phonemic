@@ -15,6 +15,7 @@ SOURCE=phonemic
 CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/phonemic"
 LAST_WIFI="$CONF_DIR/last_wifi"
 GAIN_FILE="$CONF_DIR/gain_db"
+SOURCE_FILE="$CONF_DIR/mic_source"
 PIDFILE="${XDG_RUNTIME_DIR:-/tmp}/phonemic-$UID.pid"
 OPT_DIR="$HOME/.local/opt/scrcpy"
 BIN_DIR="$HOME/.local/bin"
@@ -542,6 +543,7 @@ choose_mic_source() {
         3) MIC_SOURCE=mic-camcorder ;;
         4) MIC_SOURCE=mic-unprocessed ;;
     esac
+    mkdir -p "$CONF_DIR" && echo "$MIC_SOURCE" >"$SOURCE_FILE"
 }
 
 cmd_guide() {
@@ -624,6 +626,7 @@ Options (any command):
   --source=NAME         Phone mic mode: mic, mic-voice-communication,
                         mic-camcorder, mic-unprocessed, ...
   --default             Make PhoneMic the default input while running.
+                        (--source and --gain are remembered for next time.)
   --keep                Keep the PhoneMic device after stopping.
   --gain=DB             Boost PhoneMic by DB decibels (remembered; 0 = off).
 EOF
@@ -635,7 +638,8 @@ main() {
         case "$a" in
             --usb) TRANSPORT=usb ;;
             --wifi) TRANSPORT=wifi ;;
-            --source=*) MIC_SOURCE=${a#*=} ;;
+            --source=*) MIC_SOURCE=${a#*=}
+                mkdir -p "$CONF_DIR" && echo "$MIC_SOURCE" >"$SOURCE_FILE" ;;
             --default) MAKE_DEFAULT=1 ;;
             --keep) KEEP=1 ;;
             --gain=*) GAIN=${a#*=}
@@ -646,6 +650,12 @@ main() {
             *) [ -z "$sub" ] && sub=$a || die "Unexpected argument: $a" ;;
         esac
     done
+    # Mic mode is remembered like the boost: flag > saved > ask (guide) / mic.
+    if [ -z "$MIC_SOURCE" ] && [ -s "$SOURCE_FILE" ]; then
+        MIC_SOURCE=$(cat "$SOURCE_FILE")
+        [ "$sub" = stop ] || [ "$sub" = status ] ||
+            hint "mic mode: $MIC_SOURCE (remembered; change with --source=…)"
+    fi
     case "${sub:-guide}" in
         guide) cmd_guide ;;
         start) cmd_start ;;
