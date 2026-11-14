@@ -3,7 +3,8 @@
 # costs - usage, credits and remaining quota for the AI providers configured
 #         in the opencode credential store.
 #
-#   costs                 show every provider
+#   costs                 show every provider that has usage or cost data
+#   costs --show-all      also show the ones with nothing to report
 #   costs openrouter      show one provider
 #                         (openrouter | opencode | zai | minimax | claude |
 #                          codex | agy | google)
@@ -47,11 +48,14 @@ usage() {
 	cat <<'EOF'
 costs - usage, credits and remaining quota across your AI providers
 
-usage: costs [provider]
+usage: costs [--show-all] [provider]
 
 providers: openrouter | opencode | zai | minimax | claude | codex | agy | google
-           credits
-           (default: all)
+           credits                                   (default: all)
+
+by default only sections reporting usage or cost are shown. --show-all also
+lists the ones with nothing to report (expired keys, endpoints that expose no
+usage, plans on no active subscription, and so on).
 
 env:
   OPENCODE_DB         opencode store (default ~/.local/share/opencode/opencode.db)
@@ -120,8 +124,16 @@ key() {
 }
 
 header() { printf '\n%s%s%s\n' "$BOLD$CYAN" "$1" "$RESET"; }
-field() { printf '  %s%-11s%s %s\n' "$DIM" "$1" "$RESET" "$2"; }
+# a field carrying real data marks its section as worth showing; a bare status
+# and the plan label are context, not data, so they do not
+field() {
+	printf '  %s%-11s%s %s\n' "$DIM" "$1" "$RESET" "$2"
+	case "$1" in status|Plan) ;; *) mark_useful;; esac
+}
 note() { printf '  %s%s%s\n' "$DIM" "$1" "$RESET"; }
+# force a section to be kept by the default filter: used for providers in
+# active use, where a fetch failure is something you want to see
+mark_useful() { [ -n "${COSTS_MARK:-}" ] && : >"$COSTS_MARK"; }
 money() { printf '$%.2f' "${1:-0}"; }
 
 # used-percentage, colourised by how close it is to the cap
@@ -158,7 +170,7 @@ render_openrouter() {
 
 	http_get "https://openrouter.ai/api/v1/key" "Authorization: Bearer $k"
 	body="$BODY"
-	if [ "$HTTP_CODE" != 200 ]; then field status "$(err "$body" "$HTTP_CODE")"; return 0; fi
+	if [ "$HTTP_CODE" != 200 ]; then mark_useful; field status "$(err "$body" "$HTTP_CODE")"; return 0; fi
 
 	field "Key usage" "$(money "$(jq -r '.data.usage // 0' <<<"$body")")"
 	if jq -e '.data.limit and .data.limit > 0' >/dev/null 2>&1 <<<"$body"; then
@@ -288,6 +300,7 @@ render_claude() {
 
 	exp=$(jq -r '.claudeAiOauth.expiresAt // 0' "$CLAUDE_CREDS" 2>/dev/null)
 	if [ -n "$exp" ] && [ "$exp" != 0 ] && [ "$exp" -le "$(date +%s%3N)" ]; then
+		mark_useful
 		field status "access token expired $(date -d "@$((exp / 1000))" '+%Y-%m-%d %H:%M') - run claude to refresh"
 		return 0
 	fi
@@ -301,7 +314,11 @@ render_claude() {
 	http_get "https://api.anthropic.com/api/oauth/usage?cedar_ember=1" \
 		"Authorization: Bearer $tok" "anthropic-beta: oauth-2025-04-20" "Accept: application/json"
 	body="$BODY"
-	if [ "$HTTP_CODE" != 200 ]; then field status "$(err "$body" "$HTTP_CODE")"; return 0; fi
+	if [ "$HTTP_CODE" != 200 ]; then
+		mark_useful
+		field status "$(err "$body" "$HTTP_CODE")"
+		return 0
+	fi
 
 	if jq -e '(.limits? | length) > 0' >/dev/null 2>&1 <<<"$body"; then
 		jq -r '.limits[] | [ (.kind // "limit"), (.scope.model.display_name // "-"),
@@ -352,16 +369,14 @@ render_anthropic_api() {
 	[ -n "${ANTHROPIC_WORKSPACE_ID:-}" ] && hdrs+=("anthropic-workspace-id: $ANTHROPIC_WORKSPACE_ID")
 
 	http_get "https://api.anthropic.com/v1/models" "${hdrs[@]}"
-	if [ "$HTTP_CODE" != 200 ]; then field Key "$(err "$BODY" "$HTTP_CODE")"; return 0; fi
+	if [ "$HTTP_CODE" != 200 ]; then field status "$(err "$BODY" "$HTTP_CODE")"; return 0; fi
 
-	field "Key" "valid"
 	case "$k" in
 		sk-ant-admin*)
-			field "Usage" "admin key - see the org spend section below"
+			note "key valid - admin key, see the spend section"
 			;;
 		*)
-			field "Usage" "standard key - no balance or usage endpoint"
-			note "an Admin API key (sk-ant-admin...) unlocks org spend reports"
+			note "key valid - standard API keys expose no balance or usage"
 			;;
 	esac
 }
@@ -501,6 +516,7 @@ render_codex() {
 		"Authorization: Bearer $tok" "chatgpt-account-id: $acct" "Accept: application/json"
 	body="$BODY"
 	if [ "$HTTP_CODE" != 200 ]; then
+		mark_useful
 		field status "$(err "$body" "$HTTP_CODE")"
 		[ "$HTTP_CODE" = 401 ] && note "run 'codex login' to refresh"
 		return 0
@@ -556,9 +572,11 @@ render_google() {
 
 	# a light validity check; the Gemini API has no quota/credit endpoint
 	http_get "https://generativelanguage.googleapis.com/v1beta/models" "x-goog-api-key: $k" >/dev/null
-	if [ "$HTTP_CODE" = 200 ]; then field "Key" "valid"
-	else field "Key" "$(err "$BODY" "$HTTP_CODE")"; fi
-	field "Usage" "no usage or credit endpoint is exposed for Gemini API keys"
+	if [ "$HTTP_CODE" = 200 ]; then
+		note "key valid - the Gemini API exposes no usage or credit endpoint"
+	else
+		field status "$(err "$BODY" "$HTTP_CODE")"
+	fi
 }
 
 render_one() {
@@ -569,6 +587,9 @@ render_one() {
 		minimax)    render_minimax;;
 		anthropic)       render_anthropic;;
 		anthropic-core)  render_anthropic_core;;
+		claude)          render_claude;;
+		anthropic-key)   render_anthropic_api;;
+		anthropic-spend) render_anthropic_spend;;
 		credits)         render_anthropic_credits;;
 		codex)      render_codex;;
 		agy)        render_agy;;
@@ -576,26 +597,41 @@ render_one() {
 	esac
 }
 
+# short label used in the "hidden" hint
+job_label() {
+	case "$1" in
+		openrouter)      printf 'OpenRouter';;
+		opencode)        printf 'OpenCode';;
+		zai)             printf 'z.ai';;
+		minimax)         printf 'MiniMax';;
+		claude)          printf 'Claude Code';;
+		anthropic-key)   printf 'Anthropic API key';;
+		anthropic-spend) printf 'Anthropic spend';;
+		credits)         printf 'Anthropic credits';;
+		codex)           printf 'Codex';;
+		agy)             printf 'Antigravity';;
+		google)          printf 'Google';;
+		*)               printf '%s' "$1";;
+	esac
+}
+
 # every provider at once -- each renderer is independent (its state lives in
 # subshell-local globals), so they run concurrently and print in a fixed order
 render_all() {
-	# credits are a separate job here so the console requests overlap the rest
-	local order="openrouter opencode zai minimax anthropic-core credits codex agy google"
-	local d n
+	# one job per section: it keeps the console requests overlapping everything
+	# else, and lets a section with no data be dropped on its own
+	local order="openrouter opencode zai minimax claude anthropic-key credits anthropic-spend codex agy google"
+	local d n total=0 hidden=""
+
+	# sequential fallback (or COSTS_SEQUENTIAL=1) streams every section
 	if [ "${COSTS_SEQUENTIAL:-0}" = 1 ] || ! d=$(mktemp -d 2>/dev/null); then
-		for n in $order; do
-			case "$n" in
-				anthropic-core) render_anthropic;;	# credits included
-				credits)        continue;;
-				*)              render_one "$n";;
-			esac
-		done
+		for n in $order; do render_one "$n"; done
 		return
 	fi
-	local total=0
+
 	for n in $order; do total=$((total + 1)); done
 
-	for n in $order; do render_one "$n" >"$d/$n" 2>&1 & done
+	for n in $order; do ( COSTS_MARK="$d/.use.$n"; render_one "$n" ) >"$d/$n" 2>&1 & done
 
 	# transient progress on stderr, so piped stdout stays clean; jobs are still
 	# buffered and printed below in a fixed order
@@ -621,7 +657,16 @@ render_all() {
 		wait
 	fi
 
-	for n in $order; do cat "$d/$n" 2>/dev/null; done
+	for n in $order; do
+		# keep a section only if it produced real data, unless --show-all
+		if [ "${SHOW_ALL:-0}" = 1 ] || [ -e "$d/.use.$n" ]; then
+			cat "$d/$n" 2>/dev/null
+		elif [ -s "$d/$n" ]; then
+			hidden="${hidden:+$hidden, }$(job_label "$n")"
+		fi
+	done
+	[ -n "$hidden" ] &&
+		printf '\n%s  hidden (no usage data): %s  -  use --show-all%s\n' "$DIM" "$hidden" "$RESET"
 	rm -rf "$d"
 }
 
@@ -640,6 +685,16 @@ canonical() {
 		*)                   printf '?%s' "$1";;
 	esac
 }
+
+SHOW_ALL=0
+rest=()
+for a in "$@"; do
+	case "$a" in
+		--show-all|--all) SHOW_ALL=1;;
+		*)                rest+=("$a");;
+	esac
+done
+if [ "${#rest[@]}" -gt 0 ]; then set -- "${rest[@]}"; else set --; fi
 
 case "$(canonical "${1:-all}")" in
 	all)          render_all;;
