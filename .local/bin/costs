@@ -24,6 +24,7 @@
 #   ANTHROPIC_WORKSPACE_ID  workspace (wrkspc_...) for unbound API keys
 #   CLAUDE_CONSOLE_COOKIE   override the Console session cookie (else read
 #                           from the newest Firefox profile)
+#   COSTS_QUIET=1           suppress the progress spinner
 #   COSTS_TIMEOUT        per-request timeout in seconds (default 20)
 #
 set -uo pipefail
@@ -591,8 +592,35 @@ render_all() {
 		done
 		return
 	fi
+	local total=0
+	for n in $order; do total=$((total + 1)); done
+
 	for n in $order; do render_one "$n" >"$d/$n" 2>&1 & done
-	wait
+
+	# transient progress on stderr, so piped stdout stays clean; jobs are still
+	# buffered and printed below in a fixed order
+	local want_progress=0
+	if [ -t 2 ] && [ "${COSTS_QUIET:-0}" != 1 ]; then
+		if [ "${BASH_VERSINFO[0]:-0}" -gt 4 ] ||
+		   { [ "${BASH_VERSINFO[0]:-0}" -eq 4 ] && [ "${BASH_VERSINFO[1]:-0}" -ge 3 ]; }; then
+			want_progress=1
+		fi
+	fi
+
+	if [ "$want_progress" = 1 ]; then
+		local spins=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏) done_n=0 si=0
+		while [ "$done_n" -lt "$total" ]; do
+			wait -n
+			done_n=$((done_n + 1))
+			si=$(( (si + 1) % ${#spins[@]} ))
+			printf '\r\033[K%s%s  fetching %d/%d providers%s' \
+				"$DIM" "${spins[si]}" "$done_n" "$total" "$RESET" >&2
+		done
+		printf '\r\033[K' >&2
+	else
+		wait
+	fi
+
 	for n in $order; do cat "$d/$n" 2>/dev/null; done
 	rm -rf "$d"
 }
