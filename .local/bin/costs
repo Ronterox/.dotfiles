@@ -404,7 +404,6 @@ render_anthropic_spend() {
 	local start end k json="" src=""
 
 	command -v ant >/dev/null 2>&1 || [ -n "$(admin_key)" ] || return 1
-	header "Anthropic - API spend"
 
 	start=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
 	end=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -423,12 +422,17 @@ render_anthropic_spend() {
 		if [ "$HTTP_CODE" = 200 ]; then json="$BODY"; src="admin API key"; fi
 	fi
 
+	# stay silent unless authorized, so an account without org-level access
+	# sees no nagging; COSTS_VERBOSE=1 explains the situation instead
 	if [ -z "$src" ]; then
-		note "not available - no authorized credential"
-		note "grant access with 'ant auth login --admin' (or set ANTHROPIC_ADMIN_KEY)"
+		[ "${COSTS_VERBOSE:-0}" = 1 ] || return 0
+		header "Anthropic - API spend"
+		note "not available - no credential with org-level cost access"
+		note "needs an Admin API key, or org analytics access on this account"
 		return 0
 	fi
 
+	header "Anthropic - API spend"
 	spend_report "$json" "$src"
 	note "billed against your organization; data may lag a few minutes"
 }
