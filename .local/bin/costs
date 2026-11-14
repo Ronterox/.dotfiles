@@ -19,7 +19,8 @@
 #   OPENCODE_AUTH        override the legacy opencode auth.json path
 #   CLAUDE_CREDENTIALS   override the Claude Code credentials path
 #   CODEX_HOME           Codex home directory (default ~/.codex)
-#   ANTHROPIC_ADMIN_KEY  Admin API key used for Claude org spend reports
+#   ANTHROPIC_ADMIN_KEY  Admin/org key used for Claude org spend reports
+#                        (ANTHROPIC_API_KEY is also accepted)
 #   COSTS_TIMEOUT        per-request timeout in seconds (default 20)
 #
 set -uo pipefail
@@ -52,7 +53,7 @@ env:
   OPENCODE_AUTH       legacy opencode auth.json (read as a fallback)
   CLAUDE_CREDENTIALS  Claude Code login (default ~/.claude/.credentials.json)
   CODEX_HOME          Codex home (default ~/.codex)
-  ANTHROPIC_ADMIN_KEY Admin API key (sk-ant-admin...) for Claude org spend
+  ANTHROPIC_ADMIN_KEY Admin/org key for Claude spend (ANTHROPIC_API_KEY also)
   COSTS_TIMEOUT       per-request timeout in seconds (default 20)
 EOF
 }
@@ -355,9 +356,10 @@ render_anthropic_api() {
 }
 
 # Admin API key from the environment, the opencode store or an admin-prefixed
-# anthropic credential. Returns nothing when the account has no admin access.
+# anthropic credential. ANTHROPIC_API_KEY is accepted too, since the ant CLI
+# reads that one. Returns nothing when the account has no admin access.
 admin_key() {
-	local v="${ANTHROPIC_ADMIN_KEY:-}"
+	local v="${ANTHROPIC_ADMIN_KEY:-${ANTHROPIC_API_KEY:-}}"
 	[ -n "$v" ] || v=$(db_key anthropic-admin)
 	if [ -z "$v" ]; then
 		v=$(key anthropic)
