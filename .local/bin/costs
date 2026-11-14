@@ -356,8 +356,7 @@ render_anthropic_api() {
 }
 
 # Admin API key from the environment, the opencode store or an admin-prefixed
-# anthropic credential. ANTHROPIC_API_KEY is accepted too, since the ant CLI
-# reads that one. Returns nothing when the account has no admin access.
+# anthropic credential. ANTHROPIC_API_KEY is accepted as a convenience.
 admin_key() {
 	local v="${ANTHROPIC_ADMIN_KEY:-${ANTHROPIC_API_KEY:-}}"
 	[ -n "$v" ] || v=$(db_key anthropic-admin)
@@ -368,74 +367,46 @@ admin_key() {
 	printf '%s' "$v"
 }
 
-# ant CLI wrappers: exit status signals success, so a failure falls through
-# to the next credential. The legacy report is freshest (~5 min); the
-# analytics endpoint needs the org:admin scope and lags up to 24h.
-ant_legacy_report() {
-	local out
-	out=$(timeout "$TIMEOUT" ant beta:organization:analytics:cost-report list \
-		--starting-at "$1" --bucket-width 1d --limit "$2" --format json 2>/dev/null) || return 1
-	jq -e '.data' >/dev/null 2>&1 <<<"$out" || return 1
-	printf '%s' "$out"
-}
-
-ant_cost_analytics() {
-	local out
-	out=$(timeout "$TIMEOUT" ant beta:organization:analytics:cost list \
-		--starting-at "$1" --ending-at "$2" --time-bucket-width 1d --format json 2>/dev/null) || return 1
-	jq -e '.data' >/dev/null 2>&1 <<<"$out" || return 1
-	printf '%s' "$out"
-}
-
 # amounts are decimal strings in cents; handles both the bucket shape
 # ({"data":[{"starting_at","results":[{"amount"}]}]}) and the row shape
 spend_report() {
-	local json="$1" src="$2" today total today_amt
+	local json="$1" today total today_amt
 	today=$(date -u +%Y-%m-%d)
 	total=$(jq -r '[.data[]? | ((.results // [])[]?.amount // .amount) | tonumber?] | add // 0' <<<"$json")
 	today_amt=$(jq -r --arg d "$today" '[.data[]? | select((.starting_at // "")[0:10] == $d)
 		| ((.results // [])[]?.amount // .amount) | tonumber?] | add // 0' <<<"$json")
 	field "30 days" "$(money "$(jq -n --argjson c "$total" '$c / 100')")"
 	field "today" "$(money "$(jq -n --argjson c "$today_amt" '$c / 100')")"
-	field "source" "$src"
 }
 
-# Organization spend. Prefers the ant CLI, which owns whatever OAuth profile
-# or read:analytics key is configured; falls back to an Admin API key.
+# Organization spend from the legacy Usage and Cost API (freshest, ~5 min).
+# Needs an Admin API key or an org-scoped/read:analytics key. Silent unless it
+# has one and it works, so accounts without org access see no noise;
+# COSTS_VERBOSE=1 explains the state instead.
 render_anthropic_spend() {
-	local start end k json="" src=""
+	local start k
 
-	command -v ant >/dev/null 2>&1 || [ -n "$(admin_key)" ] || return 1
-
-	start=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
-	end=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-
-	if command -v ant >/dev/null 2>&1; then
-		if json=$(ant_legacy_report "$start" 31); then
-			src="ant (legacy report)"
-		elif json=$(ant_cost_analytics "$start" "$end"); then
-			src="ant (analytics api)"
-		fi
-	fi
-
-	if [ -z "$src" ] && k=$(admin_key) && [ -n "$k" ]; then
-		http_get "https://api.anthropic.com/v1/organizations/cost_report?starting_at=$start&bucket_width=1d&limit=31" \
-			"x-api-key: $k" "anthropic-version: 2023-06-01" "Accept: application/json"
-		if [ "$HTTP_CODE" = 200 ]; then json="$BODY"; src="admin API key"; fi
-	fi
-
-	# stay silent unless authorized, so an account without org-level access
-	# sees no nagging; COSTS_VERBOSE=1 explains the situation instead
-	if [ -z "$src" ]; then
+	k=$(admin_key)
+	if [ -z "$k" ]; then
 		[ "${COSTS_VERBOSE:-0}" = 1 ] || return 0
 		header "Anthropic - API spend"
-		note "not available - no credential with org-level cost access"
-		note "needs an Admin API key, or org analytics access on this account"
+		note "not configured - set ANTHROPIC_ADMIN_KEY to enable"
+		return 0
+	fi
+
+	start=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
+	http_get "https://api.anthropic.com/v1/organizations/cost_report?starting_at=$start&bucket_width=1d&limit=31" \
+		"x-api-key: $k" "anthropic-version: 2023-06-01" "Accept: application/json"
+
+	if [ "$HTTP_CODE" != 200 ]; then
+		[ "${COSTS_VERBOSE:-0}" = 1 ] || return 0
+		header "Anthropic - API spend"
+		field status "$(err "$BODY" "$HTTP_CODE")"
 		return 0
 	fi
 
 	header "Anthropic - API spend"
-	spend_report "$json" "$src"
+	spend_report "$BODY"
 	note "billed against your organization; data may lag a few minutes"
 }
 
