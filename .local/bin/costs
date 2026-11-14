@@ -1,0 +1,476 @@
+#!/usr/bin/env bash
+#
+# costs - usage, credits and remaining quota for the AI providers configured
+#         in the opencode credential store.
+#
+#   costs                 show every provider
+#   costs openrouter      show one provider
+#                         (openrouter | opencode | zai | minimax | claude |
+#                          codex | agy | google)
+#
+# API keys are read from the opencode credential store -- the sqlite database
+# (~/.local/share/opencode/opencode.db, "credential" table) with a fallback to
+# the legacy auth.json. Subscription usage is read from the local tool logins:
+# Claude Code (~/.claude/.credentials.json), Codex (~/.codex/auth.json) and the
+# Antigravity CLI (agy). So this works regardless of which tool spent the quota.
+#
+# Environment:
+#   OPENCODE_DB          override the opencode database path
+#   OPENCODE_AUTH        override the legacy opencode auth.json path
+#   CLAUDE_CREDENTIALS   override the Claude Code credentials path
+#   CODEX_HOME           Codex home directory (default ~/.codex)
+#   COSTS_TIMEOUT        per-request timeout in seconds (default 20)
+#
+set -uo pipefail
+
+DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/opencode"
+DB_FILE="${OPENCODE_DB:-$DATA_DIR/opencode.db}"
+AUTH_FILE="${OPENCODE_AUTH:-$DATA_DIR/auth.json}"
+CLAUDE_CREDS="${CLAUDE_CREDENTIALS:-$HOME/.claude/.credentials.json}"
+CODEX_AUTH="${CODEX_HOME:-$HOME/.codex}/auth.json"
+TIMEOUT="${COSTS_TIMEOUT:-20}"
+
+if [ -t 1 ]; then
+	BOLD=$'\e[1m'; DIM=$'\e[2m'
+	CYAN=$'\e[36m'; GREEN=$'\e[32m'; YELLOW=$'\e[33m'; RED=$'\e[31m'; RESET=$'\e[0m'
+else
+	BOLD= DIM= CYAN= GREEN= YELLOW= RED= RESET=
+fi
+
+usage() {
+	cat <<'EOF'
+costs - usage, credits and remaining quota across your AI providers
+
+usage: costs [provider]
+
+providers: openrouter | opencode | zai | minimax | claude | codex | agy | google
+           (default: all)
+
+env:
+  OPENCODE_DB         opencode store (default ~/.local/share/opencode/opencode.db)
+  OPENCODE_AUTH       legacy opencode auth.json (read as a fallback)
+  CLAUDE_CREDENTIALS  Claude Code login (default ~/.claude/.credentials.json)
+  CODEX_HOME          Codex home (default ~/.codex)
+  COSTS_TIMEOUT       per-request timeout in seconds (default 20)
+EOF
+}
+
+case "${1:-}" in -h|--help|help) usage; exit 0;; esac
+
+for bin in curl jq; do
+	command -v "$bin" >/dev/null 2>&1 || { printf '%s\n' "${RED}costs: $bin is required${RESET}" >&2; exit 1; }
+done
+if [ ! -r "$DB_FILE" ] && [ ! -r "$AUTH_FILE" ]; then
+	printf '%s\n' "${RED}costs: no opencode credential store found ($DB_FILE)${RESET}" >&2
+	exit 1
+fi
+
+HTTP_CODE=000
+BODY=
+# http_get URL [Header: value ...]
+# Response body lands in $BODY, status code in $HTTP_CODE.
+# Headers are fed to curl on stdin so secrets never show up in the process list.
+http_get() {
+	local url="$1"; shift
+	local cfg="" h out
+	for h in "$@"; do cfg+="header = \"$h\""$'\n'; done
+	if ! out=$(printf '%s' "$cfg" | curl -sS -m "$TIMEOUT" -K - --url "$url" -w $'\n%{http_code}' 2>/dev/null); then
+		HTTP_CODE=000
+		BODY=
+		return 0
+	fi
+	HTTP_CODE="${out##*$'\n'}"
+	BODY="${out%$'\n'*}"
+}
+
+# credential value stored in the opencode sqlite database
+db_key() {
+	[ -r "$DB_FILE" ] && command -v python3 >/dev/null 2>&1 || return 0
+	python3 - "$DB_FILE" "$1" <<'PY' 2>/dev/null
+import json, sqlite3, sys
+db, pid = sys.argv[1], sys.argv[2]
+try:
+	con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+	row = con.execute(
+		"select value from credential where integration_id=? and value is not null limit 1",
+		(pid,)).fetchone()
+	if row:
+		v = json.loads(row[0])
+		sys.stdout.write(v.get("key") or v.get("access") or v.get("api_key") or "")
+except Exception:
+	pass
+PY
+}
+
+# API key for a provider: sqlite store first, legacy auth.json second
+key() {
+	local v
+	v=$(db_key "$1"); [ -n "$v" ] && { printf '%s' "$v"; return; }
+	jq -r --arg p "$1" '.[$p].key // empty' "$AUTH_FILE" 2>/dev/null
+}
+
+header() { printf '\n%s%s%s\n' "$BOLD$CYAN" "$1" "$RESET"; }
+field() { printf '  %s%-11s%s %s\n' "$DIM" "$1" "$RESET" "$2"; }
+note() { printf '  %s%s%s\n' "$DIM" "$1" "$RESET"; }
+money() { printf '$%.2f' "${1:-0}"; }
+
+# used-percentage, colourised by how close it is to the cap
+pct() {
+	local p="${1:-0}" i
+	i="${p%%.*}"; case "$i" in ''|*[!0-9]*) i=0;; esac
+	if [ "$i" -ge 90 ]; then printf '%s%s%%%s' "$RED" "$p" "$RESET"
+	elif [ "$i" -ge 70 ]; then printf '%s%s%%%s' "$YELLOW" "$p" "$RESET"
+	else printf '%s%s%%%s' "$GREEN" "$p" "$RESET"; fi
+}
+
+iso() { [ -n "${1:-}" ] && date -d "$1" '+%Y-%m-%d %H:%M' 2>/dev/null || printf '%s' "${1:-}"; }
+# epoch timestamp in seconds or milliseconds -> local time
+ms() {
+	case "${1:-}" in ''|null|*[!0-9]*) return 0;; esac
+	local t="$1"; [ "$t" -gt 100000000000 ] && t=$(( t / 1000 ))
+	date -d "@$t" '+%Y-%m-%d %H:%M' 2>/dev/null
+}
+
+# pull a human-readable error message out of whatever the provider returned
+err() {
+	local body="$1" code="$2" msg
+	msg=$(jq -r '((if (.error | type) == "object" then .error.message else .error end)
+		// .message // .msg // .base_resp.status_msg // .data.base_resp.status_msg)
+		| if type == "string" and . != "" then . else empty end' <<<"$body" 2>/dev/null)
+	[ -z "$msg" ] && msg="unavailable (HTTP ${code:-000})"
+	printf '%s' "$msg"
+}
+
+render_openrouter() {
+	local k body c
+	k=$(key openrouter); [ -n "$k" ] || return 1
+	header "OpenRouter"
+
+	http_get "https://openrouter.ai/api/v1/key" "Authorization: Bearer $k"
+	body="$BODY"
+	if [ "$HTTP_CODE" != 200 ]; then field status "$(err "$body" "$HTTP_CODE")"; return 0; fi
+
+	field "Key usage" "$(money "$(jq -r '.data.usage // 0' <<<"$body")")"
+	if jq -e '.data.limit and .data.limit > 0' >/dev/null 2>&1 <<<"$body"; then
+		field "Key limit" "$(money "$(jq -r '.data.limit_remaining // 0' <<<"$body")") left of $(money "$(jq -r '.data.limit' <<<"$body")")"
+	else
+		field "Key limit" "none configured (pay-as-you-go)"
+	fi
+	field "Spend" "today $(money "$(jq -r '.data.usage_daily // 0' <<<"$body")")  week $(money "$(jq -r '.data.usage_weekly // 0' <<<"$body")")  month $(money "$(jq -r '.data.usage_monthly // 0' <<<"$body")")"
+
+	# prepaid balance lives on a separate endpoint
+	http_get "https://openrouter.ai/api/v1/credits" "Authorization: Bearer $k"
+	if [ "$HTTP_CODE" = 200 ]; then
+		field "Credits" "$(jq -r '(.data.total_credits - .data.total_usage) as $l
+			| "$\(($l * 100 | round) / 100) left of $\(.data.total_credits) purchased"' <<<"$BODY")"
+	fi
+	if jq -e '.data.free_model_daily_requests' >/dev/null 2>&1 <<<"$body"; then
+		field "Free models" "$(jq -r '.data.free_model_daily_requests
+			| "\(.remaining) of \(.limit) requests left today"' <<<"$body")"
+	fi
+}
+
+render_opencode() {
+	local k body w p reset
+	k=$(key opencode); [ -n "$k" ] || return 1
+	header "OpenCode Zen / Go"
+
+	http_get "https://opencode.ai/zen/go/v1/usage" "Authorization: Bearer $k"
+	body="$BODY"
+	if [ "$HTTP_CODE" != 200 ]; then field status "$(err "$body" "$HTTP_CODE")"; return 0; fi
+
+	for w in rolling weekly monthly; do
+		p=$(jq -r --arg w "$w" '.usage[$w].percent // empty' <<<"$body")
+		[ -n "$p" ] || continue
+		reset=$(jq -r --arg w "$w" '.usage[$w].resetsAt // empty' <<<"$body")
+		field "$w" "$(pct "$p") used${reset:+  resets $(iso "$reset")}"
+	done
+}
+
+render_zai() {
+	local k body t p r
+	k=$(key zai-coding-plan); [ -n "$k" ] || return 1
+	header "z.ai - GLM Coding Plan"
+
+	http_get "https://api.z.ai/api/monitor/usage/quota/limit" \
+		"Authorization: Bearer $k" "Accept: application/json"
+	body="$BODY"
+	if [ "$HTTP_CODE" != 200 ] || ! jq -e '(.data.limits? | length) > 0' >/dev/null 2>&1 <<<"$body"; then
+		field status "$(err "$body" "$HTTP_CODE")"; return 0
+	fi
+
+	if jq -e '.data.planName // .data.plan' >/dev/null 2>&1 <<<"$body"; then
+		field "Plan" "$(jq -r '.data.planName // .data.plan' <<<"$body")"
+	fi
+
+	jq -r '.data.limits[] | [ (.type // "limit"),
+		(if .percentage == null then "-" else (.percentage | tostring) end),
+		(.nextResetTime // "-") ] | @tsv' <<<"$body" |
+	while IFS=$'\t' read -r t p r; do
+		[ "$p" = - ] && p=
+		[ "$r" = - ] && r=
+		if [ -n "$p" ]; then field "$t" "$(pct "$p") used${r:+  resets $(ms "$r")}"
+		else field "$t" "quota unavailable"; fi
+	done
+}
+
+render_minimax() {
+	local k body first200 last bodycode url sc n plan bal
+	k=$(key minimax-coding-plan); [ -n "$k" ] || return 1
+	header "MiniMax Coding Plan"
+
+	body=; first200=; last=; bodycode=000
+	for url in \
+		"https://api.minimax.io/v1/api/openplatform/coding_plan/remains" \
+		"https://api.minimaxi.com/v1/api/openplatform/coding_plan/remains"; do
+		http_get "$url" "Authorization: Bearer $k" \
+			"Accept: application/json" "MM-API-Source: costs"
+		last="$BODY"; bodycode="$HTTP_CODE"
+		[ "$bodycode" = 200 ] || continue
+		[ -z "$first200" ] && first200="$BODY"
+		sc=$(jq -r '.base_resp.status_code // .data.base_resp.status_code // 0' <<<"$BODY")
+		n=$(jq -r '[(.data.model_remains // .model_remains // [])[]] | length' <<<"$BODY")
+		if [ "$sc" = 0 ] && [ "$n" != 0 ]; then body="$BODY"; break; fi
+	done
+	[ -n "$body" ] || body="$first200"
+	[ -n "$body" ] || { field status "$(err "$last" "$bodycode")"; return 0; }
+
+	sc=$(jq -r '.base_resp.status_code // .data.base_resp.status_code // 0' <<<"$body")
+	n=$(jq -r '[(.data.model_remains // .model_remains // [])[]] | length' <<<"$body")
+	if [ "$sc" != 0 ] || [ "$n" = 0 ]; then field status "$(err "$body" 200)"; return 0; fi
+
+	plan=$(jq -r '.data.plan_name // .data.current_subscribe_title // .data.combo_title
+		// .data.current_plan_title // .plan_name // empty' <<<"$body")
+	[ -n "$plan" ] && field "Plan" "$plan"
+	bal=$(jq -r '.data.points_balance // .data.point_balance // .data.credits_balance
+		// .data.balance // empty' <<<"$body")
+	[ -n "$bal" ] && field "Points" "$bal"
+
+	jq -r '(.data.model_remains // .model_remains // [])[] | [
+			(.model_name // "model"),
+			(.current_interval_remaining_percent // "-"),
+			(.current_weekly_remaining_percent // "-"),
+			(.end_time // .weekly_end_time // "-")
+		] | @tsv' <<<"$body" |
+	while IFS=$'\t' read -r name ip wp end; do
+		[ "$ip" = - ] && ip=
+		[ "$wp" = - ] && wp=
+		[ "$end" = - ] && end=
+		bits=""
+		[ -n "$ip" ] && bits="5h ${ip}% left"
+		[ -n "$wp" ] && bits="${bits:+$bits  }weekly ${wp}% left"
+		[ -n "$bits" ] || bits="quota unavailable"
+		[ -n "$end" ] && bits="$bits  resets $(ms "$end")"
+		field "$name" "$bits"
+	done
+}
+
+render_claude() {
+	local tok exp sub tier body kind scope p r label plan
+	[ -r "$CLAUDE_CREDS" ] || return 1
+	tok=$(jq -r '.claudeAiOauth.accessToken // empty' "$CLAUDE_CREDS" 2>/dev/null)
+	[ -n "$tok" ] || return 1
+	header "Anthropic - Claude Code (subscription)"
+
+	exp=$(jq -r '.claudeAiOauth.expiresAt // 0' "$CLAUDE_CREDS" 2>/dev/null)
+	if [ -n "$exp" ] && [ "$exp" != 0 ] && [ "$exp" -le "$(date +%s%3N)" ]; then
+		field status "access token expired $(date -d "@$((exp / 1000))" '+%Y-%m-%d %H:%M') - run claude to refresh"
+		return 0
+	fi
+
+	sub=$(jq -r '.claudeAiOauth.subscriptionType // empty' "$CLAUDE_CREDS" 2>/dev/null)
+	tier=$(jq -r '.claudeAiOauth.rateLimitTier // empty' "$CLAUDE_CREDS" 2>/dev/null)
+	plan="$sub"
+	case "$tier" in *max_20x*) plan="$sub 20x";; *max_5x*) plan="$sub 5x";; esac
+	[ -n "$plan" ] && field "Plan" "$plan"
+
+	http_get "https://api.anthropic.com/api/oauth/usage?cedar_ember=1" \
+		"Authorization: Bearer $tok" "anthropic-beta: oauth-2025-04-20" "Accept: application/json"
+	body="$BODY"
+	if [ "$HTTP_CODE" != 200 ]; then field status "$(err "$body" "$HTTP_CODE")"; return 0; fi
+
+	if jq -e '(.limits? | length) > 0' >/dev/null 2>&1 <<<"$body"; then
+		jq -r '.limits[] | [ (.kind // "limit"), (.scope.model.display_name // "-"),
+			(if .percent == null then "-" else (.percent | tostring) end),
+			(.resets_at // "-") ] | @tsv' <<<"$body" |
+		while IFS=$'\t' read -r kind scope p r; do
+			[ "$scope" = - ] && scope=
+			[ "$p" = - ] && p=
+			[ "$r" = - ] && r=
+			case "$kind" in
+				session)       label="session";;
+				weekly_all)    label="weekly";;
+				weekly_scoped) label="weekly ${scope:-scoped}";;
+				*)             label="$kind";;
+			esac
+			if [ -n "$p" ]; then field "$label" "$(pct "$p") used${r:+  resets $(iso "$r")}"
+			else field "$label" "quota unavailable"; fi
+		done
+	else
+		for label in five_hour seven_day seven_day_sonnet seven_day_opus; do
+			p=$(jq -r --arg w "$label" '.[$w].utilization // empty' <<<"$body")
+			[ -n "$p" ] || continue
+			r=$(jq -r --arg w "$label" '.[$w].resets_at // empty' <<<"$body")
+			case "$label" in
+				five_hour) label="session";;
+				seven_day) label="weekly";;
+				seven_day_sonnet) label="weekly Sonnet";;
+				seven_day_opus) label="weekly Opus";;
+			esac
+			field "$label" "$(pct "$p") used${r:+  resets $(iso "$r")}"
+		done
+	fi
+
+	if jq -e '.extra_usage.is_enabled == true' >/dev/null 2>&1 <<<"$body"; then
+		field "Extra usage" "$(jq -r '.extra_usage
+			| "\(.used_credits // 0) of \(.monthly_limit // "?") used"' <<<"$body")"
+	fi
+}
+
+render_anthropic_api() {
+	local k
+	k=$(key anthropic); [ -n "$k" ] || return 1
+	header "Anthropic - API key"
+
+	http_get "https://api.anthropic.com/v1/models" \
+		"x-api-key: $k" "anthropic-version: 2023-06-01"
+	if [ "$HTTP_CODE" != 200 ]; then field Key "$(err "$BODY" "$HTTP_CODE")"; return 0; fi
+
+	field "Key" "valid"
+	case "$k" in
+		sk-ant-admin*)
+			field "Usage" "admin key - org spend is available in the Anthropic Console"
+			;;
+		*)
+			field "Usage" "API keys have no balance or usage endpoint (Console only)"
+			note "this is pay-as-you-go billing against your organization"
+			;;
+	esac
+}
+
+render_anthropic() { render_claude; render_anthropic_api; }
+
+render_codex() {
+	local tok acct body p r rc
+	[ -r "$CODEX_AUTH" ] || return 1
+	tok=$(jq -r '.tokens.access_token // empty' "$CODEX_AUTH" 2>/dev/null)
+	[ -n "$tok" ] || return 1
+	acct=$(jq -r '.tokens.account_id // empty' "$CODEX_AUTH" 2>/dev/null)
+	header "OpenAI - Codex"
+
+	http_get "https://chatgpt.com/backend-api/wham/usage" \
+		"Authorization: Bearer $tok" "chatgpt-account-id: $acct" "Accept: application/json"
+	body="$BODY"
+	if [ "$HTTP_CODE" != 200 ]; then
+		field status "$(err "$body" "$HTTP_CODE")"
+		[ "$HTTP_CODE" = 401 ] && note "run 'codex login' to refresh"
+		return 0
+	fi
+
+	field "Plan" "$(jq -r '.plan_type // "unknown"' <<<"$body")"
+	p=$(jq -r '.rate_limit.primary_window.used_percent // empty' <<<"$body")
+	r=$(jq -r '.rate_limit.primary_window.reset_at // empty' <<<"$body")
+	[ -n "$p" ] && field "5h limit" "$(pct "$p") used${r:+  resets $(ms "$r")}"
+	p=$(jq -r '.rate_limit.secondary_window.used_percent // empty' <<<"$body")
+	r=$(jq -r '.rate_limit.secondary_window.reset_at // empty' <<<"$body")
+	[ -n "$p" ] && field "weekly" "$(pct "$p") used${r:+  resets $(ms "$r")}"
+
+	if jq -e '.credits' >/dev/null 2>&1 <<<"$body"; then
+		field "Credits" "$(jq -r '.credits
+			| if .unlimited then "unlimited"
+			  elif (.has_credits | not) then "none on this plan"
+			  else "\(.balance) left" end' <<<"$body")"
+	fi
+	rc=$(jq -r '.rate_limit_reset_credits.available_count // empty' <<<"$body")
+	[ -n "$rc" ] && [ "$rc" != 0 ] && field "Resets" "$rc unused limit-reset credit(s)"
+}
+
+render_agy() {
+	local bin json g name frac reset
+	command -v agy >/dev/null 2>&1 || return 1
+	header "Antigravity (agy)"
+
+	if ! json=$(timeout "$TIMEOUT" agy -p /usage --output-format json 2>/dev/null); then
+		field status "agy /usage did not return"
+		return 0
+	fi
+	if ! jq -e '(.command.data.groups | length) > 0' >/dev/null 2>&1 <<<"$json"; then
+		field status "$(err "$json" 200)"
+		return 0
+	fi
+
+	jq -r '(.command.data.groups // [])[] | .name as $g | (.buckets // [])[] | [
+			$g, (.window // "window"),
+			(((1 - (.remaining_fraction // 0)) * 1000 | round) / 10 | tostring),
+			(.reset_time // "-")
+		] | @tsv' <<<"$json" |
+	while IFS=$'\t' read -r g name frac reset; do
+		[ "$reset" = - ] && reset=
+		field "$g" "$(pct "$frac") used  ($name)${reset:+  resets $(iso "$reset")}"
+	done
+}
+
+render_google() {
+	local k
+	k=$(key google); [ -n "$k" ] || return 1
+	header "Google - Gemini API"
+
+	# a light validity check; the Gemini API has no quota/credit endpoint
+	http_get "https://generativelanguage.googleapis.com/v1beta/models" "x-goog-api-key: $k" >/dev/null
+	if [ "$HTTP_CODE" = 200 ]; then field "Key" "valid"
+	else field "Key" "$(err "$BODY" "$HTTP_CODE")"; fi
+	field "Usage" "no usage or credit endpoint is exposed for Gemini API keys"
+}
+
+render_one() {
+	case "$1" in
+		openrouter) render_openrouter;;
+		opencode)   render_opencode;;
+		zai)        render_zai;;
+		minimax)    render_minimax;;
+		anthropic)  render_anthropic;;
+		codex)      render_codex;;
+		agy)        render_agy;;
+		google)     render_google;;
+	esac
+}
+
+# every provider at once -- each renderer is independent (its state lives in
+# subshell-local globals), so they run concurrently and print in a fixed order
+render_all() {
+	local order="openrouter opencode zai minimax anthropic codex agy google"
+	local d n
+	if [ "${COSTS_SEQUENTIAL:-0}" = 1 ] || ! d=$(mktemp -d 2>/dev/null); then
+		for n in $order; do render_one "$n"; done
+		return
+	fi
+	for n in $order; do render_one "$n" >"$d/$n" 2>&1 & done
+	wait
+	for n in $order; do cat "$d/$n" 2>/dev/null; done
+	rm -rf "$d"
+}
+
+canonical() {
+	case "$1" in
+		all)                 printf 'all';;
+		or|openrouter)       printf 'openrouter';;
+		zen|go|opencode)     printf 'opencode';;
+		zai|z.ai|glm)        printf 'zai';;
+		mm|minimax)          printf 'minimax';;
+		claude|anthropic)    printf 'anthropic';;
+		codex|openai)        printf 'codex';;
+		agy|antigravity)     printf 'agy';;
+		gemini|google)       printf 'google';;
+		*)                   printf '?%s' "$1";;
+	esac
+}
+
+case "$(canonical "${1:-all}")" in
+	all)          render_all;;
+	\?*)          printf 'costs: unknown provider "%s"\n' "$1" >&2; usage; exit 1;;
+	*)            render_one "$(canonical "$1")";;
+esac
+
+printf '\n%scredentials: opencode %s%s\n' "$DIM" "$DB_FILE" "$RESET"
+printf '%s             claude   %s%s\n' "$DIM" "$CLAUDE_CREDS" "$RESET"
+printf '%s             codex    %s%s\n' "$DIM" "$CODEX_AUTH" "$RESET"
