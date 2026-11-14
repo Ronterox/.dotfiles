@@ -366,32 +366,70 @@ admin_key() {
 	printf '%s' "$v"
 }
 
-# Organization spend from the legacy Usage and Cost API. Requires an Admin API
-# key; amounts come back as decimal strings in cents and may lag ~5 minutes.
+# ant CLI wrappers: exit status signals success, so a failure falls through
+# to the next credential. The legacy report is freshest (~5 min); the
+# analytics endpoint needs the org:admin scope and lags up to 24h.
+ant_legacy_report() {
+	local out
+	out=$(timeout "$TIMEOUT" ant beta:organization:analytics:cost-report list \
+		--starting-at "$1" --bucket-width 1d --limit "$2" --format json 2>/dev/null) || return 1
+	jq -e '.data' >/dev/null 2>&1 <<<"$out" || return 1
+	printf '%s' "$out"
+}
+
+ant_cost_analytics() {
+	local out
+	out=$(timeout "$TIMEOUT" ant beta:organization:analytics:cost list \
+		--starting-at "$1" --ending-at "$2" --time-bucket-width 1d --format json 2>/dev/null) || return 1
+	jq -e '.data' >/dev/null 2>&1 <<<"$out" || return 1
+	printf '%s' "$out"
+}
+
+# amounts are decimal strings in cents; handles both the bucket shape
+# ({"data":[{"starting_at","results":[{"amount"}]}]}) and the row shape
+spend_report() {
+	local json="$1" src="$2" today total today_amt
+	today=$(date -u +%Y-%m-%d)
+	total=$(jq -r '[.data[]? | ((.results // [])[]?.amount // .amount) | tonumber?] | add // 0' <<<"$json")
+	today_amt=$(jq -r --arg d "$today" '[.data[]? | select((.starting_at // "")[0:10] == $d)
+		| ((.results // [])[]?.amount // .amount) | tonumber?] | add // 0' <<<"$json")
+	field "30 days" "$(money "$(jq -n --argjson c "$total" '$c / 100')")"
+	field "today" "$(money "$(jq -n --argjson c "$today_amt" '$c / 100')")"
+	field "source" "$src"
+}
+
+# Organization spend. Prefers the ant CLI, which owns whatever OAuth profile
+# or read:analytics key is configured; falls back to an Admin API key.
 render_anthropic_spend() {
-	local k body start today total today_amt
-	k=$(admin_key); [ -n "$k" ] || return 1
+	local start end k json="" src=""
+
+	command -v ant >/dev/null 2>&1 || [ -n "$(admin_key)" ] || return 1
 	header "Anthropic - API spend"
 
 	start=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
-	http_get "https://api.anthropic.com/v1/organizations/cost_report?starting_at=$start&bucket_width=1d&limit=31" \
-		"x-api-key: $k" "anthropic-version: 2023-06-01" "Accept: application/json"
-	body="$BODY"
-	if [ "$HTTP_CODE" != 200 ]; then
-		field status "$(err "$body" "$HTTP_CODE")"
-		case "$HTTP_CODE" in
-			401|403) note "an Admin API key (sk-ant-admin...) or org-scoped key is required" ;;
-		esac
+	end=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+	if command -v ant >/dev/null 2>&1; then
+		if json=$(ant_legacy_report "$start" 31); then
+			src="ant (legacy report)"
+		elif json=$(ant_cost_analytics "$start" "$end"); then
+			src="ant (analytics api)"
+		fi
+	fi
+
+	if [ -z "$src" ] && k=$(admin_key) && [ -n "$k" ]; then
+		http_get "https://api.anthropic.com/v1/organizations/cost_report?starting_at=$start&bucket_width=1d&limit=31" \
+			"x-api-key: $k" "anthropic-version: 2023-06-01" "Accept: application/json"
+		if [ "$HTTP_CODE" = 200 ]; then json="$BODY"; src="admin API key"; fi
+	fi
+
+	if [ -z "$src" ]; then
+		note "not available - no authorized credential"
+		note "grant access with 'ant auth login --admin' (or set ANTHROPIC_ADMIN_KEY)"
 		return 0
 	fi
 
-	today=$(date -u +%Y-%m-%d)
-	total=$(jq -r '[.data[]? | (.results // [])[] | (.amount // "0") | tonumber?] | add // 0' <<<"$body")
-	today_amt=$(jq -r --arg d "$today" '[.data[]? | select((.starting_at // "")[0:10] == $d)
-		| (.results // [])[] | (.amount // "0") | tonumber?] | add // 0' <<<"$body")
-
-	field "30 days" "$(money "$(jq -n --argjson c "$total" '$c / 100')")"
-	field "today" "$(money "$(jq -n --argjson c "$today_amt" '$c / 100')")"
+	spend_report "$json" "$src"
 	note "billed against your organization; data may lag a few minutes"
 }
 
