@@ -18,6 +18,7 @@ GAIN_FILE="$CONF_DIR/gain_db"
 SOURCE_FILE="$CONF_DIR/mic_source"
 PIDFILE="${XDG_RUNTIME_DIR:-/tmp}/phonemic-$UID.pid"
 OPT_DIR="$HOME/.local/opt/scrcpy"
+PT_DIR="$HOME/.local/opt/platform-tools"   # Google's adb, linked into ~/.local/bin
 BIN_DIR="$HOME/.local/bin"
 
 # Runtime settings (filled by flags or the guide).
@@ -73,10 +74,67 @@ pause() { interactive && read -rp "  ↵ ${1:-Press Enter to continue}" _; }
 
 # ---------------------------------------------------------------- tools
 ADB=adb
+adb_major() { "$1" version 2>/dev/null | sed -n 's/^Version \([0-9]*\).*/\1/p' | head -n1; }
+
+# One adb for everything: whatever `adb` is on PATH. Exported so scrcpy uses
+# it too (the official scrcpy build would otherwise run its own bundled adb).
 find_adb() {
-    if command -v adb >/dev/null; then ADB=adb
-    elif [ -x "$OPT_DIR/adb" ]; then ADB="$OPT_DIR/adb"
-    else return 1; fi
+    local c
+    c=$(command -v adb 2>/dev/null) || return 1
+    export ADB=$c
+}
+
+install_platform_tools() {
+    local tmp url=https://dl.google.com/android/repository/platform-tools-latest-linux.zip
+    [ "$(uname -m)" = x86_64 ] || { err "Google's platform-tools for Linux are x86_64 only."; return 1; }
+    command -v curl >/dev/null && command -v unzip >/dev/null || { err "Needs curl and unzip."; return 1; }
+    say "  Downloading Google's Android platform-tools (latest adb)…"
+    hint "This means accepting the Android SDK terms: https://developer.android.com/studio/terms"
+    tmp=$(mktemp -d)
+    if ! curl -fL --progress-bar -o "$tmp/pt.zip" "$url" || ! unzip -q "$tmp/pt.zip" -d "$tmp"; then
+        rm -rf "$tmp"; err "Download failed: $url"; return 1
+    fi
+    rm -rf "${PT_DIR:?}"
+    mkdir -p "$(dirname "$PT_DIR")" "$BIN_DIR" && mv "$tmp/platform-tools" "$PT_DIR"
+    rm -rf "$tmp"
+    ln -sfn "$PT_DIR/adb" "$BIN_DIR/adb"
+    ln -sfn "$PT_DIR/fastboot" "$BIN_DIR/fastboot"
+    hash -r
+    ok "adb $(adb_major "$PT_DIR/adb") installed ($BIN_DIR/adb → $PT_DIR)"
+    remove_distro_adb
+    find_adb
+    [ "$ADB" = "$BIN_DIR/adb" ] || warn "'adb' still resolves to $ADB; put $BIN_DIR first in PATH."
+}
+
+# Keep a single adb: offer to uninstall the distro package it replaces.
+remove_distro_adb() {
+    local old pkg
+    old=$(type -ap adb | grep -vxF "$BIN_DIR/adb" | head -n1)
+    [ -n "$old" ] || return 0
+    pkg=$(pkg_for adb)
+    if [ -n "$pkg" ] && ask_yn "Uninstall the old adb ($old, package '$pkg') so only one is left?" y; then
+        case "$PM" in
+            apt-get) sudo apt-get remove -y "$pkg" ;;
+            dnf) sudo dnf remove -y "$pkg" ;;
+            pacman) sudo pacman -R --noconfirm "$pkg" ;;
+            zypper) sudo zypper remove -y "$pkg" ;;
+        esac
+    else
+        hint "Old adb left at $old (the new one in $BIN_DIR comes first on PATH)."
+    fi
+}
+
+# Wireless pairing (adb pair) arrived in adb 30.
+ensure_pair_adb() {
+    local v
+    v=$(adb_major "$ADB")
+    [ "${v:-0}" -ge 30 ] && return 0
+    warn "Your adb (version ${v:-?}) is too old for wireless pairing; that needs version 30+."
+    hint "The other option (plug in the USB cable once) works with any adb."
+    ask_yn "Update adb to Google's latest (replaces the old one)?" y || return 1
+    # The running server is the old adb's and can't pair; let the new one start fresh.
+    "$ADB" kill-server >/dev/null 2>&1
+    install_platform_tools && find_adb && [ "$(adb_major "$ADB")" -ge 30 ]
 }
 
 scrcpy_major() {
@@ -174,11 +232,14 @@ ensure_scrcpy() {
 
 ensure_adb() {
     local pkg
-    if find_adb; then ok "adb"; return; fi
+    if find_adb; then ok "adb $(adb_major "$ADB") ($ADB)"; return; fi
     warn "adb is not installed (it talks to the phone)."
     pkg=$(pkg_for adb)
     if [ -n "$pkg" ] && ask_yn "Install '$pkg' with $PM?" y; then
         pm_install "$pkg" && find_adb && { ok "adb"; return; }
+    fi
+    if ask_yn "Install Google's latest adb instead (no sudo)?" y; then
+        install_platform_tools && find_adb && { ok "adb"; return; }
     fi
     err "Install adb (often packaged as 'adb' or 'android-tools') and re-run."
     return 1
@@ -233,7 +294,7 @@ wait_for_phone() {
     local shown_help=0 shown_auth=0 shown_perm=0 list ready n c
     "$ADB" start-server >/dev/null 2>&1
     if [ "$TRANSPORT" != usb ] && [ -s "$LAST_WIFI" ] && ! adb_list | grep -q $'\tdevice$'; then
-        "$ADB" connect "$(cat "$LAST_WIFI")" >/dev/null 2>&1
+        reconnect_wifi
     fi
     while :; do
         list=$(adb_list)
@@ -275,6 +336,27 @@ wait_for_phone() {
     [[ $SERIAL == *:* ]] && TRANSPORT=${TRANSPORT:-wifi} || TRANSPORT=${TRANSPORT:-usb}
 }
 
+# The phone's current Wireless debugging address, as it announces itself on
+# the network (mDNS). Its port changes every time Wireless debugging is
+# switched on. $1: the IP to prefer (falls back to the only phone found).
+mdns_addr() {
+    "$ADB" mdns services 2>/dev/null | awk -F'\t' -v ip="${1:-}" '
+        $2 ~ /_adb-tls-connect/ { n++; last = $3; if (ip != "" && index($3, ip ":") == 1) { print $3; found = 1; exit } }
+        END { if (!found && n == 1) print last }'
+}
+
+# Reconnect to the remembered Wi-Fi phone, following it if its port changed.
+reconnect_wifi() {
+    local last addr
+    [ -s "$LAST_WIFI" ] || return 1
+    last=$(cat "$LAST_WIFI")
+    "$ADB" connect "$last" 2>/dev/null | grep -q connected && return 0
+    addr=$(mdns_addr "${last%%:*}")
+    [ -n "$addr" ] && [ "$addr" != "$last" ] || return 1
+    "$ADB" connect "$addr" 2>/dev/null | grep -q connected || return 1
+    echo "$addr" >"$LAST_WIFI"
+}
+
 phone_wifi_ip() {
     "$ADB" -s "$1" shell ip -f inet addr show wlan0 2>/dev/null |
         awk '/inet /{split($2, a, "/"); print a[1]; exit}'
@@ -295,13 +377,24 @@ setup_wifi() {
         sleep 2
         addr="$ip:5555"
     else
+        ensure_pair_adb || die "Wireless pairing needs a newer adb. Run 'phonemic wifi' again and pick the USB-cable option."
         say "  On your phone: Developer options → turn on ${B}Wireless debugging${R} → tap it"
         say "  → ${B}Pair device with pairing code${R}. Keep that screen open."
         read -rp "  ? IP address & port shown under the code (e.g. 192.168.1.20:37123): " pair
         read -rp "  ? Six-digit pairing code: " code
         "$ADB" pair "$pair" "$code" || die "Pairing failed; check the address/code and try again."
-        say "  Now close the pairing popup. The Wireless debugging screen shows"
-        read -rp "  ? \"IP address & Port\" (e.g. 192.168.1.20:41234): " addr
+        ok "Paired (one time only). Now connecting…"
+        # Connecting uses a different port than pairing; the phone announces it.
+        for _ in 1 2 3 4 5 6 7 8; do
+            addr=$(mdns_addr "${pair%%:*}") && [ -n "$addr" ] && break
+            sleep 1
+        done
+        if [ -z "$addr" ]; then
+            say "  Close the pairing popup. On the main Wireless debugging screen, under"
+            say "  ${B}IP address & Port${R}, there's an address like ${pair%%:*}:37105"
+            say "  (same IP, but a different port than the one you paired with)."
+            read -rp "  ? Type that address: " addr
+        fi
     fi
     "$ADB" connect "$addr" | grep -q connected || die "Could not connect to $addr."
     mkdir -p "$CONF_DIR" && echo "$addr" >"$LAST_WIFI"
@@ -558,7 +651,7 @@ cmd_guide() {
             "USB cable (lowest latency, also charges)" \
             "Wi-Fi (same network as this PC)")" = 2 ]; then TRANSPORT=wifi; else TRANSPORT=usb; fi
     fi
-    if [ "$TRANSPORT" = wifi ] && ! { [ -s "$LAST_WIFI" ] && "$ADB" connect "$(cat "$LAST_WIFI")" 2>/dev/null | grep -q connected; }; then
+    if [ "$TRANSPORT" = wifi ] && ! reconnect_wifi; then
         setup_wifi
     else
         wait_for_phone
@@ -578,7 +671,7 @@ cmd_guide() {
 
 cmd_start() {
     check_tools || die "Missing requirements; run 'phonemic' for the guide."
-    if [ "$TRANSPORT" = wifi ] && ! { [ -s "$LAST_WIFI" ] && "$ADB" connect "$(cat "$LAST_WIFI")" 2>/dev/null | grep -q connected; }; then
+    if [ "$TRANSPORT" = wifi ] && ! reconnect_wifi; then
         setup_wifi
     else
         wait_for_phone
