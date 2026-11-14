@@ -231,6 +231,10 @@ render_minimax() {
 		sc=$(jq -r '.base_resp.status_code // .data.base_resp.status_code // 0' <<<"$BODY")
 		n=$(jq -r '[(.data.model_remains // .model_remains // [])[]] | length' <<<"$BODY")
 		if [ "$sc" = 0 ] && [ "$n" != 0 ]; then body="$BODY"; break; fi
+		# auth / host-mismatch errors are worth retrying on the other host,
+		# anything else (e.g. "no active subscription") is a definitive answer
+		case "$sc" in 1002|1003|1004|1016) continue;; esac
+		body="$BODY"; break
 	done
 	[ -n "$body" ] || body="$first200"
 	[ -n "$body" ] || { field status "$(err "$last" "$bodycode")"; return 0; }
