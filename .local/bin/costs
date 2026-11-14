@@ -19,6 +19,7 @@
 #   OPENCODE_AUTH        override the legacy opencode auth.json path
 #   CLAUDE_CREDENTIALS   override the Claude Code credentials path
 #   CODEX_HOME           Codex home directory (default ~/.codex)
+#   ANTHROPIC_ADMIN_KEY  Admin API key used for Claude org spend reports
 #   COSTS_TIMEOUT        per-request timeout in seconds (default 20)
 #
 set -uo pipefail
@@ -51,6 +52,7 @@ env:
   OPENCODE_AUTH       legacy opencode auth.json (read as a fallback)
   CLAUDE_CREDENTIALS  Claude Code login (default ~/.claude/.credentials.json)
   CODEX_HOME          Codex home (default ~/.codex)
+  ANTHROPIC_ADMIN_KEY Admin API key (sk-ant-admin...) for Claude org spend
   COSTS_TIMEOUT       per-request timeout in seconds (default 20)
 EOF
 }
@@ -343,16 +345,57 @@ render_anthropic_api() {
 	field "Key" "valid"
 	case "$k" in
 		sk-ant-admin*)
-			field "Usage" "admin key - org spend is available in the Anthropic Console"
+			field "Usage" "admin key - see the org spend section below"
 			;;
 		*)
-			field "Usage" "API keys have no balance or usage endpoint (Console only)"
-			note "this is pay-as-you-go billing against your organization"
+			field "Usage" "standard key - no balance or usage endpoint"
+			note "an Admin API key (sk-ant-admin...) unlocks org spend reports"
 			;;
 	esac
 }
 
-render_anthropic() { render_claude; render_anthropic_api; }
+# Admin API key from the environment, the opencode store or an admin-prefixed
+# anthropic credential. Returns nothing when the account has no admin access.
+admin_key() {
+	local v="${ANTHROPIC_ADMIN_KEY:-}"
+	[ -n "$v" ] || v=$(db_key anthropic-admin)
+	if [ -z "$v" ]; then
+		v=$(key anthropic)
+		case "$v" in sk-ant-admin*) ;; *) v=;; esac
+	fi
+	printf '%s' "$v"
+}
+
+# Organization spend from the legacy Usage and Cost API. Requires an Admin API
+# key; amounts come back as decimal strings in cents and may lag ~5 minutes.
+render_anthropic_spend() {
+	local k body start today total today_amt
+	k=$(admin_key); [ -n "$k" ] || return 1
+	header "Anthropic - API spend"
+
+	start=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
+	http_get "https://api.anthropic.com/v1/organizations/cost_report?starting_at=$start&bucket_width=1d&limit=31" \
+		"x-api-key: $k" "anthropic-version: 2023-06-01" "Accept: application/json"
+	body="$BODY"
+	if [ "$HTTP_CODE" != 200 ]; then
+		field status "$(err "$body" "$HTTP_CODE")"
+		case "$HTTP_CODE" in
+			401|403) note "an Admin API key (sk-ant-admin...) or org-scoped key is required" ;;
+		esac
+		return 0
+	fi
+
+	today=$(date -u +%Y-%m-%d)
+	total=$(jq -r '[.data[]? | (.results // [])[] | (.amount // "0") | tonumber?] | add // 0' <<<"$body")
+	today_amt=$(jq -r --arg d "$today" '[.data[]? | select((.starting_at // "")[0:10] == $d)
+		| (.results // [])[] | (.amount // "0") | tonumber?] | add // 0' <<<"$body")
+
+	field "30 days" "$(money "$(jq -n --argjson c "$total" '$c / 100')")"
+	field "today" "$(money "$(jq -n --argjson c "$today_amt" '$c / 100')")"
+	note "billed against your organization; data may lag a few minutes"
+}
+
+render_anthropic() { render_claude; render_anthropic_api; render_anthropic_spend; }
 
 render_codex() {
 	local tok acct body p r rc
