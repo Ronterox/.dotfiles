@@ -22,6 +22,8 @@
 #   ANTHROPIC_ADMIN_KEY  Admin/org key used for Claude org spend reports
 #                        (ANTHROPIC_API_KEY is also accepted)
 #   ANTHROPIC_WORKSPACE_ID  workspace (wrkspc_...) for unbound API keys
+#   CLAUDE_CONSOLE_COOKIE   override the Console session cookie (else read
+#                           from the newest Firefox profile)
 #   COSTS_TIMEOUT        per-request timeout in seconds (default 20)
 #
 set -uo pipefail
@@ -47,6 +49,7 @@ costs - usage, credits and remaining quota across your AI providers
 usage: costs [provider]
 
 providers: openrouter | opencode | zai | minimax | claude | codex | agy | google
+           credits
            (default: all)
 
 env:
@@ -56,6 +59,7 @@ env:
   CODEX_HOME          Codex home (default ~/.codex)
   ANTHROPIC_ADMIN_KEY Admin/org key for Claude spend (ANTHROPIC_API_KEY also)
   ANTHROPIC_WORKSPACE_ID  workspace id for an unbound Anthropic API key
+  CLAUDE_CONSOLE_COOKIE   Console session cookie (else: Firefox profile)
   COSTS_TIMEOUT       per-request timeout in seconds (default 20)
 EOF
 }
@@ -416,7 +420,73 @@ render_anthropic_spend() {
 	note "billed against your organization; data may lag a few minutes"
 }
 
-render_anthropic() { render_claude; render_anthropic_api; render_anthropic_spend; }
+# Console (platform.claude.com) session cookie, read in place from the newest
+# Firefox profile so no secret is ever written to disk. Override with
+# CLAUDE_CONSOLE_COOKIE (a raw Cookie header value).
+console_cookie() {
+	[ -n "${CLAUDE_CONSOLE_COOKIE:-}" ] && { printf '%s' "$CLAUDE_CONSOLE_COOKIE"; return; }
+	command -v python3 >/dev/null 2>&1 || return 0
+	python3 - <<'PY' 2>/dev/null
+import glob, os, sqlite3
+profiles = sorted(glob.glob(os.path.expanduser("~/.mozilla/firefox/*/cookies.sqlite")),
+                  key=os.path.getmtime, reverse=True)
+for db in profiles:
+	try:
+		con = sqlite3.connect(f"file:{db}?mode=ro&immutable=1", uri=True)
+		rows = con.execute("select name, value from moz_cookies "
+		                   "where host like '%platform.claude.com%'").fetchall()
+		if rows:
+			print("; ".join(f"{n}={v}" for n, v in rows), end="")
+			break
+	except Exception:
+		pass
+PY
+}
+
+# Prepaid credit balance of the API organization, via the Console API. This is
+# the one place a credit balance is exposed; the public API has no such
+# endpoint. Silent unless there is a usable Console session.
+render_anthropic_credits() {
+	local cookie oid exp
+	cookie=$(console_cookie)
+	if [ -z "$cookie" ]; then
+		[ "${COSTS_VERBOSE:-0}" = 1 ] || return 0
+		header "Anthropic - API credits"
+		note "no Console session - log in at platform.claude.com"
+		return 0
+	fi
+
+	http_get "https://platform.claude.com/api/organizations" \
+		"Cookie: $cookie" "Accept: application/json"
+	[ "$HTTP_CODE" = 200 ] || return 0
+	oid=$(jq -r 'if type == "array" then (map(select(.billing_type == "prepaid"))[0] // .[0]) else . end
+		| .uuid // .id // empty' <<<"$BODY" 2>/dev/null)
+	[ -n "$oid" ] || return 0
+
+	http_get "https://platform.claude.com/api/organizations/$oid/prepaid/credits" \
+		"Cookie: $cookie" "Accept: application/json"
+	if [ "$HTTP_CODE" != 200 ]; then
+		[ "${COSTS_VERBOSE:-0}" = 1 ] || return 0
+		header "Anthropic - API credits"
+		field status "$(err "$BODY" "$HTTP_CODE")"
+		return 0
+	fi
+
+	header "Anthropic - API credits"
+	field "Balance" "$(jq -r 'def pow10: reduce range(0; .) as $i (1; . * 10);
+		.balance.credits as $c
+		| (((($c.amount_minor // 0) / ((($c.exponent // 2)) | pow10)) * 100) | round) / 100
+		| "$\(.)"' <<<"$BODY")"
+	exp=$(jq -r '[.promo_tranches[]? | select((.remaining_amount_minor_units // 0) > 0) | .expires_at]
+		| sort | first // empty' <<<"$BODY" 2>/dev/null)
+	[ -n "$exp" ] && field "Expires" "$(iso "$exp")  (promo credits)"
+	note "prepaid balance of the API organization"
+}
+
+render_anthropic() { render_claude; render_anthropic_api; render_anthropic_credits; render_anthropic_spend; }
+
+# same, minus credits: lets the parallel run overlap the console requests
+render_anthropic_core() { render_claude; render_anthropic_api; render_anthropic_spend; }
 
 render_codex() {
 	local tok acct body p r rc
@@ -496,7 +566,9 @@ render_one() {
 		opencode)   render_opencode;;
 		zai)        render_zai;;
 		minimax)    render_minimax;;
-		anthropic)  render_anthropic;;
+		anthropic)       render_anthropic;;
+		anthropic-core)  render_anthropic_core;;
+		credits)         render_anthropic_credits;;
 		codex)      render_codex;;
 		agy)        render_agy;;
 		google)     render_google;;
@@ -506,10 +578,17 @@ render_one() {
 # every provider at once -- each renderer is independent (its state lives in
 # subshell-local globals), so they run concurrently and print in a fixed order
 render_all() {
-	local order="openrouter opencode zai minimax anthropic codex agy google"
+	# credits are a separate job here so the console requests overlap the rest
+	local order="openrouter opencode zai minimax anthropic-core credits codex agy google"
 	local d n
 	if [ "${COSTS_SEQUENTIAL:-0}" = 1 ] || ! d=$(mktemp -d 2>/dev/null); then
-		for n in $order; do render_one "$n"; done
+		for n in $order; do
+			case "$n" in
+				anthropic-core) render_anthropic;;	# credits included
+				credits)        continue;;
+				*)              render_one "$n";;
+			esac
+		done
 		return
 	fi
 	for n in $order; do render_one "$n" >"$d/$n" 2>&1 & done
@@ -529,12 +608,14 @@ canonical() {
 		codex|openai)        printf 'codex';;
 		agy|antigravity)     printf 'agy';;
 		gemini|google)       printf 'google';;
+		credits)             printf 'credits';;
 		*)                   printf '?%s' "$1";;
 	esac
 }
 
 case "$(canonical "${1:-all}")" in
 	all)          render_all;;
+	credits)      render_anthropic_credits;;
 	\?*)          printf 'costs: unknown provider "%s"\n' "$1" >&2; usage; exit 1;;
 	*)            render_one "$(canonical "$1")";;
 esac
