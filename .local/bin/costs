@@ -21,6 +21,7 @@
 #   CODEX_HOME           Codex home directory (default ~/.codex)
 #   ANTHROPIC_ADMIN_KEY  Admin/org key used for Claude org spend reports
 #                        (ANTHROPIC_API_KEY is also accepted)
+#   ANTHROPIC_WORKSPACE_ID  workspace (wrkspc_...) for unbound API keys
 #   COSTS_TIMEOUT        per-request timeout in seconds (default 20)
 #
 set -uo pipefail
@@ -54,6 +55,7 @@ env:
   CLAUDE_CREDENTIALS  Claude Code login (default ~/.claude/.credentials.json)
   CODEX_HOME          Codex home (default ~/.codex)
   ANTHROPIC_ADMIN_KEY Admin/org key for Claude spend (ANTHROPIC_API_KEY also)
+  ANTHROPIC_WORKSPACE_ID  workspace id for an unbound Anthropic API key
   COSTS_TIMEOUT       per-request timeout in seconds (default 20)
 EOF
 }
@@ -339,8 +341,12 @@ render_anthropic_api() {
 	k=$(key anthropic); [ -n "$k" ] || return 1
 	header "Anthropic - API key"
 
-	http_get "https://api.anthropic.com/v1/models" \
-		"x-api-key: $k" "anthropic-version: 2023-06-01"
+	# an unbound (non-workspace-scoped) key must name its workspace on the
+	# normal API; taken from the environment so no id is baked in here
+	local hdrs=("x-api-key: $k" "anthropic-version: 2023-06-01")
+	[ -n "${ANTHROPIC_WORKSPACE_ID:-}" ] && hdrs+=("anthropic-workspace-id: $ANTHROPIC_WORKSPACE_ID")
+
+	http_get "https://api.anthropic.com/v1/models" "${hdrs[@]}"
 	if [ "$HTTP_CODE" != 200 ]; then field Key "$(err "$BODY" "$HTTP_CODE")"; return 0; fi
 
 	field "Key" "valid"
