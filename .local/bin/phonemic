@@ -289,6 +289,30 @@ usb_instructions() {
     say "    4. Tap ${B}Allow${R} on the \"Allow USB debugging?\" prompt (tick \"Always allow\")"
 }
 
+# Is this adb connection over Wi-Fi? (ip:port, or the mDNS name adb gives
+# paired phones, like adb-SERIAL-xyz._adb-tls-connect._tcp)
+is_wifi_serial() { [[ $1 == *:* || $1 == *._tcp ]]; }
+
+# One line per physical phone: adb can list the same phone several times
+# (USB, ip:port and its mDNS name). Keeps the connection matching $TRANSPORT,
+# USB when unset.
+unique_phones() {
+    local d sn order=()
+    local -A best=()
+    while read -r d; do
+        [ -n "$d" ] || continue
+        sn=$("$ADB" -s "$d" shell getprop ro.serialno 2>/dev/null | tr -d '\r')
+        sn=${sn:-$d}
+        if [ -z "${best[$sn]:-}" ]; then
+            order+=("$sn"); best[$sn]=$d
+        elif wants_conn "$d" && ! wants_conn "${best[$sn]}"; then
+            best[$sn]=$d
+        fi
+    done
+    for sn in "${order[@]}"; do echo "${best[$sn]}"; done
+}
+wants_conn() { if is_wifi_serial "$1"; then [ "$TRANSPORT" = wifi ]; else [ "$TRANSPORT" != wifi ]; fi; }
+
 # Wait until exactly one usable device is selected into $SERIAL.
 wait_for_phone() {
     local shown_help=0 shown_auth=0 shown_perm=0 list ready n c
@@ -298,7 +322,7 @@ wait_for_phone() {
     fi
     while :; do
         list=$(adb_list)
-        ready=$(awk -F'\t' '$2=="device"{print $1}' <<<"$list")
+        ready=$(awk -F'\t' '$2=="device"{print $1}' <<<"$list" | unique_phones)
         n=$(grep -c . <<<"$ready")
         if [ "$n" -eq 1 ]; then SERIAL=$ready; break; fi
         if [ "$n" -gt 1 ]; then
@@ -333,7 +357,7 @@ wait_for_phone() {
     if [ "${sdk:-0}" -lt 30 ]; then
         die "Android 11 or newer is required to capture the mic (this phone is Android $rel)."
     fi
-    [[ $SERIAL == *:* ]] && TRANSPORT=${TRANSPORT:-wifi} || TRANSPORT=${TRANSPORT:-usb}
+    is_wifi_serial "$SERIAL" && TRANSPORT=${TRANSPORT:-wifi} || TRANSPORT=${TRANSPORT:-usb}
 }
 
 # The phone's current Wireless debugging address, as it announces itself on
