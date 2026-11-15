@@ -1,0 +1,398 @@
+#!/usr/bin/env bash
+# phonevid — use an Android phone's camera as a webcam on any Linux PC.
+#
+# How it works: scrcpy streams the phone's camera over adb (USB or Wi-Fi) into
+# a virtual V4L2 webcam called "PhoneCam" (v4l2loopback), which every app sees
+# as a normal camera. No app on the phone. Needs Android 12+, scrcpy 2.2+.
+#
+# Run `phonevid` with no arguments for the step-by-step guide. Shares the phone
+# connection (USB / Wi-Fi / pairing) with phonemic; run both for cam + mic.
+
+# Reuse phonemic's helpers: ui, tool installs, phone connection, Wi-Fi.
+# shellcheck source=phonemic
+source "$(dirname "$(readlink -f "$0")")/phonemic" || exit 1
+
+LABEL=PhoneCam
+VIDEO_NR=10                      # /dev/video10: clear of real cameras
+VCONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/phonevid"
+VCONF="$VCONF_DIR/settings"      # camera=… size=… fps=… rotate=…
+VPIDFILE="${XDG_RUNTIME_DIR:-/tmp}/phonevid-$UID.pid"
+VLOG="${VPIDFILE%.pid}.log"
+CAMERA="" SIZE="" FPS="" ROTATE="" DEVICE="" CAM_PID=""
+
+vconf_get() { [ -f "$VCONF" ] && sed -n "s/^$1=//p" "$VCONF" | tail -n1; }
+vconf_set() {
+    mkdir -p "$VCONF_DIR"
+    { [ -f "$VCONF" ] && grep -v "^$1=" "$VCONF"; echo "$1=$2"; } >"$VCONF.tmp" && mv "$VCONF.tmp" "$VCONF"
+}
+
+# ---------------------------------------------------------------- scrcpy
+# Camera capture arrived in scrcpy 2.2.
+scrcpy_has_camera() {
+    local v
+    v=$(scrcpy --version 2>/dev/null | awk 'NR==1{print $2}'); v=${v#v}
+    local maj=${v%%.*} min=${v#*.}; min=${min%%.*}
+    [ "${maj:-0}" -gt 2 ] || { [ "${maj:-0}" -eq 2 ] && [ "${min:-0}" -ge 2 ]; }
+}
+
+# ---------------------------------------------------------------- webcam device
+loopback_devs() {   # every v4l2loopback device: "/dev/videoN<TAB>name"
+    local d
+    for d in /sys/devices/virtual/video4linux/video*; do
+        [ -e "$d/name" ] && printf '/dev/%s\t%s\n' "$(basename "$d")" "$(cat "$d/name")"
+    done
+}
+find_cam_dev() { loopback_devs | awk -F'\t' -v l="$LABEL" '$2 == l {print $1; exit}'; }
+
+pkg_for_loopback() {
+    case "$PM" in
+        apt-get) echo "v4l2loopback-dkms" ;;
+        pacman) echo "v4l2loopback-dkms" ;;
+        dnf) echo "akmod-v4l2loopback" ;;    # RPM Fusion
+        zypper) echo "v4l2loopback-kmp-default" ;;
+    esac
+}
+
+MODOPTS=(devices=1 "video_nr=$VIDEO_NR" "card_label=$LABEL" exclusive_caps=1)
+
+# Installed v4l2loopback version (modinfo, else DKMS), empty if unknown.
+loopback_version() {
+    local v
+    v=$(modinfo -F version v4l2loopback 2>/dev/null)
+    [ -n "$v" ] || v=$(dkms status v4l2loopback 2>/dev/null |
+        sed -nE 's#^v4l2loopback[/,] ?([0-9.]+).*installed.*#\1#p' | sort -V | tail -n1)
+    echo "$v"
+}
+version_lt() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n1)" = "$1" ]; }
+# (Not `lsmod | grep -q`: with pipefail, grep quitting early fails the pipe.)
+loopback_loaded() { [ -d /sys/module/v4l2loopback ]; }
+# The running module is an older build than the installed one (after an update).
+loopback_stale() {
+    loopback_loaded &&
+        [ "$(cat /sys/module/v4l2loopback/srcversion 2>/dev/null)" != "$(modinfo -F srcversion v4l2loopback 2>/dev/null)" ]
+}
+
+ensure_cam_device() {
+    local busy pkg names ver reload=0
+
+    if ! modinfo v4l2loopback >/dev/null 2>&1; then
+        warn "The v4l2loopback kernel module (virtual webcams) is not installed."
+        pkg=$(pkg_for_loopback)
+        [ "$PM" = dnf ] && hint "Fedora: needs the RPM Fusion repository."
+        if [ -n "$pkg" ] && ask_yn "Install '$pkg' with $PM? (builds a kernel module; needs kernel headers)" y; then
+            pm_install "$pkg" || return 1
+        else
+            err "Install v4l2loopback for your distro and re-run."; return 1
+        fi
+    fi
+
+    # Before 0.13 a webcam can't be written to again once a stream ends
+    # (scrcpy: "ioctl(VIDIOC_G_FMT): Invalid argument").
+    ver=$(loopback_version)
+    if [ -n "$ver" ] && version_lt "$ver" 0.13; then
+        warn "v4l2loopback $ver is too old: the webcam stops working after the first stream."
+        pkg=$(pkg_for_loopback)
+        if [ -n "$pkg" ] && ask_yn "Update '$pkg' with $PM? (rebuilds the kernel module)" y; then
+            pm_install "$pkg" || return 1
+            ok "v4l2loopback $(loopback_version) installed"
+        fi
+    fi
+    loopback_stale && reload=1
+
+    DEVICE=$(find_cam_dev)
+    if [ -n "$DEVICE" ] && [ $reload = 0 ]; then ok "Virtual webcam ${B}$LABEL${R} is $DEVICE"; return; fi
+
+    if loopback_loaded; then
+        # Loaded without a PhoneCam (e.g. left by another webcam app), or an old build.
+        busy=$(loopback_devs | cut -f1 | while read -r d; do fuser -s "$d" 2>/dev/null && echo "$d"; done)
+        names=$(loopback_devs | cut -f2 | paste -sd',' | sed 's/,/, /g')
+        if [ -n "$busy" ] && [ $reload = 1 ]; then
+            err "Close the app using the webcam ($busy) to switch to the updated module, then re-run."
+            return 1
+        elif [ -n "$busy" ]; then
+            if v4l2loopback-ctl --help 2>&1 | grep -q '\badd\b'; then
+                say "  Adding $LABEL next to the loopback devices in use ($busy)…"
+                sudo v4l2loopback-ctl add -n "$LABEL" -x 1 "/dev/video$VIDEO_NR" >/dev/null || return 1
+            else
+                err "Virtual webcams are in use ($busy) and can't be changed now. Close the app using them."
+                return 1
+            fi
+        elif [ $reload = 1 ]; then
+            say "  Loading the updated v4l2loopback…"
+            sudo modprobe -r v4l2loopback || return 1
+        else
+            warn "v4l2loopback is loaded with other devices (${names:-none})."
+            ask_yn "Reload it to create $LABEL? (replaces those devices)" y || return 1
+            sudo modprobe -r v4l2loopback || return 1
+        fi
+    fi
+    if [ -z "$(find_cam_dev)" ]; then
+        sudo modprobe v4l2loopback "${MODOPTS[@]}" ||
+            { err "modprobe failed. With Secure Boot on, the module must be signed (or disable Secure Boot)."; return 1; }
+    fi
+    DEVICE=$(find_cam_dev)
+    [ -n "$DEVICE" ] || { err "Loaded v4l2loopback but no $LABEL device appeared."; return 1; }
+    ok "Virtual webcam ${B}$LABEL${R} is $DEVICE"
+    offer_persist
+}
+
+# Create PhoneCam at every boot, so it's there without sudo next time.
+offer_persist() {
+    local other
+    [ -f /etc/modprobe.d/phonevid.conf ] && return
+    other=$(grep -rl 'options v4l2loopback' /etc/modprobe.d/ 2>/dev/null | head -n1)
+    if [ -n "$other" ]; then
+        hint "Not making it permanent: $other already configures v4l2loopback."
+        return
+    fi
+    ask_yn "Create $LABEL automatically at every boot (no sudo next time)?" y || return
+    echo "options v4l2loopback ${MODOPTS[*]}" | sudo tee /etc/modprobe.d/phonevid.conf >/dev/null &&
+        echo v4l2loopback | sudo tee /etc/modules-load.d/phonevid.conf >/dev/null &&
+        ok "$LABEL will be there after reboots (undo: phonevid unpersist)"
+}
+
+# ---------------------------------------------------------------- camera choice
+# "id<TAB>facing<TAB>WxH<TAB>fps list" per camera.
+list_cameras() {
+    scrcpy -s "$SERIAL" --list-cameras 2>&1 |
+        sed -n 's/.*--camera-id=\([0-9]*\)[[:space:]]*(\([a-z]*\), \([0-9x]*\), fps=\[\(.*\)\]).*/\1\t\2\t\3\t\4/p'
+}
+
+choose_camera() {
+    local cams opts=() ids=() id facing res fps n=0 c front=0 back=0 label
+    [ -n "$CAMERA" ] && return
+    cams=$(list_cameras)
+    [ -n "$cams" ] || { warn "Couldn't list the cameras; using the back camera."; CAMERA=back; return; }
+    while IFS=$'\t' read -r id facing res fps; do
+        n=$((n + 1))
+        if [ "$facing" = front ]; then front=$((front + 1)); label="Front camera $front"
+        else back=$((back + 1)); label="Back camera $back"; fi
+        [ "$label" = "Back camera 1" ] && label="$label (main, best quality)"
+        [ "$label" = "Front camera 1" ] && label="$label (selfie, faces you)"
+        opts+=("$label — ${res}, up to ${fps##*, } fps"); ids+=("$id")
+    done <<<"$cams"
+    c=$(choose "Which camera?" "${opts[@]}")
+    CAMERA=${ids[c-1]}
+    vconf_set camera "$CAMERA"
+}
+
+choose_quality() {
+    [ -n "$SIZE" ] && return
+    case $(choose "Quality?" "1080p, 30 fps (recommended)" "720p, 30 fps (lighter, better on Wi-Fi)" \
+        "1440p, 30 fps (sharpest, heavy)") in
+        1) SIZE=1920 ;; 2) SIZE=1280 ;; 3) SIZE=2560 ;;
+    esac
+    FPS=${FPS:-30}
+    vconf_set size "$SIZE"; vconf_set fps "$FPS"
+}
+
+# ---------------------------------------------------------------- streaming
+cam_args() {
+    CAM_ARGS=(-s "$SERIAL" --video-source=camera --no-audio --no-control
+        --camera-ar=16:9 --max-size="${SIZE:-1920}" --camera-fps="${FPS:-30}"
+        --v4l2-sink="$DEVICE")
+    case "$CAMERA" in
+        front | back) CAM_ARGS+=(--camera-facing="$CAMERA") ;;
+        *) CAM_ARGS+=(--camera-id="${CAMERA:-0}") ;;
+    esac
+    [ "$TRANSPORT" = wifi ] && CAM_ARGS+=(--video-bit-rate=6M)
+    if [ "$(scrcpy_major)" -ge 3 ]; then
+        CAM_ARGS+=(--no-window)
+        [ -n "$ROTATE" ] && [ "$ROTATE" != 0 ] && CAM_ARGS+=(--capture-orientation="$ROTATE")
+    else
+        CAM_ARGS+=(--no-video-playback)
+    fi
+}
+
+cam_cleanup() {
+    trap - INT TERM EXIT
+    [ -n "$CAM_PID" ] && kill "$CAM_PID" 2>/dev/null && wait "$CAM_PID" 2>/dev/null
+    rm -f "$VPIDFILE"
+    printf '\n  Stopped. (%s stays available for next time.)\n' "$LABEL"
+}
+
+preview() {
+    command -v ffplay >/dev/null || return
+    say "  Opening a 10-second preview window…"
+    timeout 10 ffplay -loglevel error -f v4l2 -window_title "$LABEL preview" -i "$DEVICE" >/dev/null 2>&1 &
+}
+
+# Recreate PhoneCam when old v4l2loopback leaves it unwritable.
+reset_cam_device() {
+    warn "The $LABEL webcam is stuck (v4l2loopback $(loopback_version) bug after a stream ends)."
+    hint "Running 'phonevid' (the guide) offers the v4l2loopback update that fixes this."
+    ask_yn "Reset the webcam now? (sudo; close apps using it first)" y || return 1
+    sudo modprobe -r v4l2loopback && sudo modprobe v4l2loopback "${MODOPTS[@]}" || return 1
+    DEVICE=$(find_cam_dev)
+    [ -n "$DEVICE" ]
+}
+
+cam_stream() {
+    local rc
+    trap cam_cleanup EXIT
+    trap 'exit 0' INT TERM
+    while :; do
+        cam_args
+        scrcpy "${CAM_ARGS[@]}" >"$VLOG" 2>&1 &
+        CAM_PID=$!
+        echo "$CAM_PID" >"$VPIDFILE"
+        # The webcam is live once scrcpy reports the v4l2 sink is open.
+        for _ in $(seq 1 40); do
+            grep -qiE 'v4l2 sink started|recording started|Device:' "$VLOG" 2>/dev/null && break
+            kill -0 "$CAM_PID" 2>/dev/null || break
+            sleep 0.25
+        done
+        if kill -0 "$CAM_PID" 2>/dev/null; then
+            ok "Streaming the phone's camera ($TRANSPORT, camera ${CAMERA}, ${SIZE}p-wide, ${FPS} fps) → ${B}$LABEL${R} ($DEVICE)"
+            say ""
+            say "  ${B}Pick \"$LABEL\" as the camera in your app${R} (Zoom, Meet, Discord, OBS…)."
+            hint "Keep the phone unlocked when starting. Ctrl+C here to stop."
+            [ "$GUIDED" = 1 ] && ask_yn "Show a quick preview?" y && preview
+            say ""
+            printf '  %s● live%s  (Ctrl+C to stop)\n' "$RED" "$R"
+        fi
+        wait "$CAM_PID"; rc=$?
+        CAM_PID=""
+        err "scrcpy stopped (exit $rc). Last messages:"
+        tail -n 5 "$VLOG" | sed 's/^/      /' >&2
+        if grep -q 'VIDIOC_G_FMT' "$VLOG"; then
+            reset_cam_device || exit "$rc"
+            continue
+        fi
+        hint "Phone unplugged or locked, Wi-Fi dropped, or the camera is used by another app?"
+        ask_yn "Retry?" y || exit "$rc"
+        wait_for_phone
+    done
+}
+
+# ---------------------------------------------------------------- commands
+connect_phone() {
+    if [ "$TRANSPORT" = wifi ] && ! reconnect_wifi; then setup_wifi; else wait_for_phone; fi
+    local sdk
+    sdk=$("$ADB" -s "$SERIAL" shell getprop ro.build.version.sdk 2>/dev/null | tr -d '\r')
+    [ "${sdk:-0}" -ge 31 ] || die "The camera needs Android 12 or newer (this phone has SDK ${sdk:-?})."
+}
+
+check_cam_tools() {
+    local fail=0
+    detect_pm
+    ensure_scrcpy || fail=1
+    if [ $fail = 0 ] && ! scrcpy_has_camera; then
+        warn "This scrcpy can't use the camera (needs 2.2+)."
+        ask_yn "Download the official latest scrcpy?" y && install_scrcpy_release || fail=1
+    fi
+    ensure_adb || fail=1
+    return $fail
+}
+
+load_settings() {
+    CAMERA=${CAMERA:-$(vconf_get camera)}
+    SIZE=${SIZE:-$(vconf_get size)}
+    FPS=${FPS:-$(vconf_get fps)}
+    ROTATE=${ROTATE:-$(vconf_get rotate)}
+}
+
+vid_guide() {
+    GUIDED=1
+    say "${B}📱→📷  phonevid${R} — use your Android phone's camera as this PC's webcam"
+    step 1/4 "Checking what this PC needs"
+    check_cam_tools || die "Fix the items above, then run phonevid again."
+    step 2/4 "Connecting your phone"
+    if [ -z "$TRANSPORT" ] && ! adb_list | grep -q $'\tdevice$'; then
+        if [ "$(choose "How will the phone connect?" \
+            "USB cable (best quality and latency, also charges)" \
+            "Wi-Fi (same network as this PC)")" = 2 ]; then TRANSPORT=wifi; else TRANSPORT=usb; fi
+    fi
+    connect_phone
+    step 3/4 "Creating the virtual webcam"
+    ensure_cam_device || die "Couldn't create the virtual webcam."
+    step 4/4 "Streaming"
+    load_settings
+    [ -n "$CAMERA" ] && [ -n "$SIZE" ] && hint "camera $CAMERA, ${SIZE} wide, ${FPS:-30} fps (remembered; change with --camera / --size)"
+    choose_camera
+    choose_quality
+    cam_stream
+}
+
+vid_start() {
+    check_cam_tools || die "Missing requirements; run 'phonevid' for the guide."
+    connect_phone
+    ensure_cam_device || die "Couldn't create the virtual webcam."
+    load_settings
+    CAMERA=${CAMERA:-back} SIZE=${SIZE:-1920} FPS=${FPS:-30}
+    cam_stream
+}
+
+vid_stop() {
+    local pid
+    pid=$(cat "$VPIDFILE" 2>/dev/null)
+    if [ -n "$pid" ] && kill "$pid" 2>/dev/null; then ok "Stopped the camera stream (pid $pid)"; else warn "Not streaming"; fi
+    rm -f "$VPIDFILE"
+}
+
+vid_status() {
+    local pid dev
+    dev=$(find_cam_dev)
+    [ -n "$dev" ] && ok "$LABEL webcam is $dev" || warn "$LABEL webcam not present"
+    pid=$(cat "$VPIDFILE" 2>/dev/null)
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then ok "Streaming (scrcpy pid $pid)"; else warn "Not streaming"; fi
+    [ -f /etc/modprobe.d/phonevid.conf ] && hint "Created at boot (/etc/modprobe.d/phonevid.conf)"
+    [ -f "$VCONF" ] && hint "Settings: $(paste -sd' ' "$VCONF")"
+    return 0
+}
+
+vid_unpersist() {
+    sudo rm -f /etc/modprobe.d/phonevid.conf /etc/modules-load.d/phonevid.conf &&
+        ok "$LABEL is no longer created at boot."
+}
+
+vid_usage() {
+    cat <<EOF
+${B}phonevid${R} — use an Android phone's camera (Android 12+) as a webcam on Linux.
+
+  phonevid              Step-by-step guide: checks/installs what's missing,
+                        connects the phone, creates the PhoneCam webcam, streams.
+  phonevid start        Same, without questions (remembered or default settings).
+  phonevid wifi         Connect over Wi-Fi (set up / reuse), then start.
+  phonevid stop         Stop streaming.
+  phonevid status       Show what's running.
+  phonevid unpersist    Stop creating PhoneCam at boot.
+
+Options (remembered for next time):
+  --camera=front|back|ID   Which camera (IDs from the guide's list).
+  --size=1280|1920|2560    Width of the 16:9 picture (720p / 1080p / 1440p).
+  --fps=N                  Frame rate (default 30).
+  --rotate=0|90|180|270    Rotate the picture (e.g. phone held upright).
+  --usb | --wifi           Force the connection type.
+
+For camera + microphone, run phonemic too (in another terminal).
+EOF
+}
+
+vid_main() {
+    local sub="" a
+    for a in "$@"; do
+        case "$a" in
+            --usb) TRANSPORT=usb ;;
+            --wifi) TRANSPORT=wifi ;;
+            --camera=*) CAMERA=${a#*=}; vconf_set camera "$CAMERA" ;;
+            --size=*) SIZE=${a#*=}; [[ $SIZE =~ ^[0-9]+$ ]] || die "--size takes a width, e.g. 1920"; vconf_set size "$SIZE" ;;
+            --fps=*) FPS=${a#*=}; [[ $FPS =~ ^[0-9]+$ ]] || die "--fps takes a number"; vconf_set fps "$FPS" ;;
+            --rotate=*) ROTATE=${a#*=}; [[ $ROTATE =~ ^(0|90|180|270)$ ]] || die "--rotate takes 0, 90, 180 or 270"; vconf_set rotate "$ROTATE" ;;
+            -h | --help | help) vid_usage; exit 0 ;;
+            -*) die "Unknown option: $a (see phonevid --help)" ;;
+            *) [ -z "$sub" ] && sub=$a || die "Unexpected argument: $a" ;;
+        esac
+    done
+    case "${sub:-guide}" in
+        guide) vid_guide ;;
+        start) vid_start ;;
+        wifi) TRANSPORT=wifi; vid_guide ;;
+        stop) vid_stop ;;
+        status) vid_status ;;
+        unpersist) vid_unpersist ;;
+        *) die "Unknown command: $sub (see phonevid --help)" ;;
+    esac
+}
+
+vid_main "$@"

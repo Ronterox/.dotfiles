@@ -785,4 +785,5 @@ main() {
     esac
 }
 
-main "$@"
+# Run unless sourced as a library (phonevid reuses the helpers above).
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then main "$@"; fi
