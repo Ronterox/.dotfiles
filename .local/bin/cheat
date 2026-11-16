@@ -5,7 +5,10 @@
 #   topic    exact topic opens directly, otherwise it prefills the fzf query
 #            lang/:learn         whole learnxinyminutes page    lang/Section  one section of it
 #            lang/:list          every topic under lang/
+#            rfc/NUMBER          an RFC
 #   keyword  only show the blocks that mention it (case-insensitive)
+#
+# RFCs are downloaded the first time they are opened, then kept.
 #
 # Sources (override the root with CHEAT_SOURCES):
 #   cheat.sheets/sheets  chubin/cheat.sheets  (lang sheets as lang/topic)
@@ -14,12 +17,17 @@
 #   learnxinyminutes     adambard/learnxinyminutes-docs  (as lang/:learn)
 #                        git clone --depth 1 https://github.com/adambard/learnxinyminutes-docs \
 #                            ~/.cache/remcli/sources/learnxinyminutes
+#   rfc                  rfc-index.txt (titles, refreshed monthly in the background)
+#                        and every RFC opened so far
 
 SRC=${CHEAT_SOURCES:-$HOME/.cache/remcli/sources}
 SHEETS=$SRC/cheat.sheets/sheets
 CHEATS=$SRC/cheatsheets
 TLDR=$SRC/tldr-new/pages
 LEARN=$SRC/learnxinyminutes
+RFC=$SRC/rfc
+RFC_INDEX=$RFC/rfc-index.txt
+RFC_URL=https://www.rfc-editor.org
 PLATFORMS=(common linux osx windows android freebsd openbsd netbsd sunos dos cisco-ios)
 # cheat.sh language names -> learnxinyminutes page
 declare -A LEARN_ALIAS=(
@@ -36,11 +44,39 @@ topics() {
             find "$TLDR/$p" -name '*.md' -printf '%f\n'
         done | sed 's/\.md$//'
         learn_topics
+        rfc_topics
     } 2>/dev/null | awk -F/ '
         !seen[$0]++ { print }
         NF > 1 { lang[$1] }
         END { for (l in lang) print l "/:list" }
     ' # unsorted so fzf can start before every source is read
+}
+
+# fetch URL FILE: download FILE once; a failed download leaves nothing behind
+fetch() {
+    local tmp
+    [ -s "$2" ] && return
+    mkdir -p "${2%/*}" && tmp=$(mktemp "$2.XXXXXX") || return 1
+    if curl -fsL --max-time 60 -o "$tmp" "$1"; then
+        mv "$tmp" "$2"
+    else
+        rm -f "$tmp"
+        return 1
+    fi
+}
+
+# refresh FILE COMMAND...: when FILE is missing or a month old, replace it in the
+# background with the output of COMMAND
+refresh() {
+    local file=$1
+    shift
+    [ -f "$file" ] && [ -z "$(find "$file" -mtime +30)" ] && return
+    [ -f "$file" ] && touch "$file" # one refresh a month, even when it fails
+    (
+        mkdir -p "${file%/*}" && tmp=$(mktemp "$file.XXXXXX") || exit
+        if "$@" > "$tmp" && [ -s "$tmp" ]; then mv "$tmp" "$file"; else rm -f "$tmp"; fi
+    ) >/dev/null 2>&1 &
+    disown
 }
 
 # --- learnxinyminutes ---
@@ -116,6 +152,46 @@ learn_section() {
     [ -n "$out" ] && echo "$out"
 }
 
+# --- RFCs ---
+
+# "rfc/NUMBER<TAB>Title" for every issued RFC in the index; the title is only
+# shown and searched in fzf, the topic is the first field
+rfc_topics() {
+    [ -f "$RFC_INDEX" ] || return
+    LC_ALL=C awk '
+        function out(  n, t) {
+            n = e; sub(/ .*/, "", n); t = substr(e, length(n) + 2)
+            if (t !~ /^Not Issued/) { sub(/\. .*/, "", t); printf "rfc/%d\t%s\n", n, t }
+            e = ""
+        }
+        /^[0-9]+ / { if (e != "") out(); e = $0; next }
+        /^ +/ && e != "" { sub(/^ +/, " "); e = e $0; next }
+        e != "" { out() }
+        END { if (e != "") out() }
+    ' "$RFC_INDEX"
+}
+
+# rfc_sheet NUMBER: print the RFC, downloading it once.
+# With NO_FETCH set (fzf preview) it only shows the index entry of a missing one.
+rfc_sheet() {
+    local n=$((10#$1)) f
+    f=$RFC/rfc$n.txt
+    if [ ! -s "$f" ]; then
+        if [ -n "$NO_FETCH" ]; then
+            awk -v n="$n" 'BEGIN { RS = "" } $1 == n' "$RFC_INDEX" 2>/dev/null
+            printf '\n(not downloaded yet: open it to download and keep it)\n'
+            return
+        fi
+        echo "Downloading RFC $n..." >&2
+        fetch "$RFC_URL/rfc/rfc$n.txt" "$f" || { echo "cheat: could not download RFC $n" >&2; return 1; }
+    fi
+    tr -d '\f' < "$f" | sed '/./,$!d'
+}
+
+rfc_index_download() {
+    curl -fsL --max-time 60 "$RFC_URL/rfc-index.txt"
+}
+
 # --- local sheets ---
 
 # tldr markdown -> "# description" / "command" blocks, like cheat.sh renders it
@@ -136,7 +212,11 @@ sheet() {
     local t=$1 f p found=
     case $t in
     */:list)
-        topics | grep "^${t%/:list}/" | grep -v '/:list$' | LC_ALL=C sort
+        topics | cut -f1 | grep "^${t%/:list}/" | grep -v '/:list$' | LC_ALL=C sort
+        return
+        ;;
+    rfc/*)
+        [[ $t =~ ^rfc/([0-9]+)$ ]] && rfc_sheet "${BASH_REMATCH[1]}"
         return
         ;;
     */:learn)
@@ -162,12 +242,12 @@ filter() {
 }
 
 # highlight TOPIC [bat options]: shell-like by default, learnxinyminutes as markdown,
-# lists as plain text
+# lists and RFCs as plain text
 highlight() {
     local t=$1 syntax=(-l bash) f
     shift
     case $t in
-    */:list) syntax=(-l txt) ;;
+    */:list | rfc/*) syntax=(-l txt) ;;
     */:learn) syntax=(-l md) ;;
     */*)
         [ ! -f "$SHEETS/_$t" ] && [ ! -f "$CHEATS/$t" ] && [ -f "$(learn_file "$t")" ] && syntax=(-l md)
@@ -179,15 +259,17 @@ highlight() {
 [ -d "$SRC" ] || { echo "cheat: sources not found in $SRC" >&2; exit 1; }
 
 if [ "$1" = --preview ]; then
-    sheet "$2" | highlight "$2" --color=always
+    NO_FETCH=1 sheet "$2" | highlight "$2" --color=always
     exit
 fi
+
+refresh "$RFC_INDEX" rfc_index_download
 
 topic=$1 keyword=$2
 # an existing topic opens directly; anything else goes through fzf
 if [ -z "$topic" ] || ! raw=$(sheet "$topic") || [ -z "${raw//[[:space:]]/}" ]; then
-    topic=$(topics | fzf --border --prompt="Select a cheat sheet: " -q "$topic" \
-        --preview "$(printf '%q' "$0") --preview {}" --preview-window=right,60%)
+    topic=$(topics | fzf --border --prompt="Select a cheat sheet: " -q "$topic" --delimiter='\t' \
+        --preview "$(printf '%q' "$0") --preview {1}" --preview-window=right,60% | cut -f1)
     [ -z "$topic" ] && exit 0
     raw=$(sheet "$topic")
 fi
