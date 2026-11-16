@@ -1,39 +1,86 @@
 #!/usr/bin/env bash
+# Offline cheat sheets from the local cheat.sh upstream sources.
+#
+# usage: cheat [topic] [keyword]
+#   topic    exact topic opens directly, otherwise it prefills the fzf query
+#   keyword  only show the blocks that mention it (case-insensitive)
+#
+# Sources (override the root with CHEAT_SOURCES):
+#   cheat.sheets/sheets  chubin/cheat.sheets  (lang sheets as lang/topic)
+#   cheatsheets          cheat/cheatsheets
+#   tldr-new/pages       tldr-pages (common, then linux)
 
-path=$(realpath "$0" | xargs dirname)
+SRC=${CHEAT_SOURCES:-$HOME/.cache/remcli/sources}
+SHEETS=$SRC/cheat.sheets/sheets
+CHEATS=$SRC/cheatsheets
+TLDR=$SRC/tldr-new/pages
+PLATFORMS=(common linux)
+BAT=$(command -v batcat || command -v bat)
 
-extract() { cat "$path/$*"; }
-
-run_query() {
-    local output clean_output
-    output=$("$path/cheat.sh" "$1" "$2")
-    clean_output=$(echo "$output" | sed -e 's/\x1b\[[0-9;]*m//g')
-
-    if grep -q '404 NOT FOUND' <<< "$clean_output" || [ -z "$clean_output" ]; then
-        echo "No cheatsheet found for '$2'"
-        ask_query
-    elif grep -q ':' <<< "$1"; then
-        echo "$output" | less -R
-    else
-        echo "$clean_output" | batcat -l "$3"
-    fi
+topics() {
+    {
+        find "$SHEETS" -type f ! -name '.*' ! -name '_info.yaml' -printf '%P\n' | sed 's|^_||'
+        find "$CHEATS" -mindepth 1 -name '.*' -prune -o -type f -printf '%P\n'
+        for p in "${PLATFORMS[@]}"; do
+            find "$TLDR/$p" -name '*.md' -printf '%f\n'
+        done | sed 's/\.md$//'
+    } 2>/dev/null | sort -u
 }
 
-ask_query() {
-    local query
-    read -rp "Your query (~keyword): " query
-
-    if [ "$selected" == "navi" ]; then
-        navi --cheatsh "$query" || navi --query "$query"
-    elif grep -q "$selected" <<< "$(extract langs.txt)"; then
-        run_query "/$selected" "$query" "$selected"
-    else
-        run_query "$selected~$query" "" bash
-    fi
+# tldr markdown -> "# description" / "command" blocks, like cheat.sh renders it
+tldr_to_sheet() {
+    awk '
+        /^# /      { print; next }
+        /^> /      { sub(/^> /, "# "); print; next }
+        /^- /      { sub(/^- /, "# "); print ""; print; next }
+        /^`.*`$/   { s = substr($0, 2, length($0) - 2); gsub(/\{\{|\}\}/, "", s); print s }
+    ' "$1"
 }
 
-selected=$(extract cheats.txt | fzf --border --prompt="Select a cheat sheet: " -q "$*")
-[ -z "$selected" ] && exit 0
+strip_frontmatter() {
+    awk 'NR == 1 && /^---$/ { fm = 1; next } fm && /^---$/ { fm = 0; next } !fm' "$1"
+}
 
-echo "You selected $selected"
-ask_query
+sheet() {
+    local t=$1 f p found=
+    f=$SHEETS/$t
+    [[ $t == */* ]] && f=$SHEETS/_$t
+    [ -f "$f" ] && { cat "$f"; echo; found=1; }
+    [ -f "$CHEATS/$t" ] && { strip_frontmatter "$CHEATS/$t"; echo; found=1; }
+    for p in "${PLATFORMS[@]}"; do
+        [ -f "$TLDR/$p/$t.md" ] && { tldr_to_sheet "$TLDR/$p/$t.md"; found=1; break; }
+    done
+    [ -n "$found" ]
+}
+
+filter() {
+    if [ -z "$1" ]; then cat; return; fi
+    awk -v k="$1" 'BEGIN { RS = ""; ORS = "\n\n"; k = tolower(k) } index(tolower($0), k)'
+}
+
+highlight() {
+    if [ -n "$BAT" ]; then "$BAT" -l bash --style=plain "$@"; else cat; fi
+}
+
+[ -d "$SRC" ] || { echo "cheat: sources not found in $SRC" >&2; exit 1; }
+
+if [ "$1" = --preview ]; then
+    sheet "$2" | highlight --color=always
+    exit
+fi
+
+topic=$1 keyword=$2
+# an existing topic opens directly; anything else goes through fzf
+if [ -z "$topic" ] || ! raw=$(sheet "$topic") || [ -z "${raw//[[:space:]]/}" ]; then
+    topic=$(topics | fzf --border --prompt="Select a cheat sheet: " -q "$topic" \
+        --preview "$(printf '%q' "$0") --preview {}" --preview-window=right,60%)
+    [ -z "$topic" ] && exit 0
+    raw=$(sheet "$topic")
+fi
+
+out=$(filter "$keyword" <<< "$raw")
+if [ -z "${out//[[:space:]]/}" ]; then
+    echo "No cheat sheet found for \"$topic\"${keyword:+ matching \"$keyword\"}" >&2
+    exit 1
+fi
+if [ -t 1 ]; then highlight --paging=auto <<< "$out"; else echo "$out"; fi
