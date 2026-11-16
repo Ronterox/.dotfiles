@@ -3,18 +3,29 @@
 #
 # usage: cheat [topic] [keyword]
 #   topic    exact topic opens directly, otherwise it prefills the fzf query
+#            lang/:learn         whole learnxinyminutes page    lang/Section  one section of it
+#            lang/:list          every topic under lang/
 #   keyword  only show the blocks that mention it (case-insensitive)
 #
 # Sources (override the root with CHEAT_SOURCES):
 #   cheat.sheets/sheets  chubin/cheat.sheets  (lang sheets as lang/topic)
 #   cheatsheets          cheat/cheatsheets
-#   tldr-new/pages       tldr-pages (common, then linux)
+#   tldr-new/pages       tldr-pages (common, linux, then the other platforms)
+#   learnxinyminutes     adambard/learnxinyminutes-docs  (as lang/:learn)
+#                        git clone --depth 1 https://github.com/adambard/learnxinyminutes-docs \
+#                            ~/.cache/remcli/sources/learnxinyminutes
 
 SRC=${CHEAT_SOURCES:-$HOME/.cache/remcli/sources}
 SHEETS=$SRC/cheat.sheets/sheets
 CHEATS=$SRC/cheatsheets
 TLDR=$SRC/tldr-new/pages
-PLATFORMS=(common linux)
+LEARN=$SRC/learnxinyminutes
+PLATFORMS=(common linux osx windows android freebsd openbsd netbsd sunos dos cisco-ios)
+# cheat.sh language names -> learnxinyminutes page
+declare -A LEARN_ALIAS=(
+    [cpp]=c++ [js]=javascript [python3]=python [perl6]=raku [coffee]=coffeescript
+    [lisp]=common-lisp [mathematica]=wolfram [octave]=matlab [vb]=visualbasic
+)
 BAT=$(command -v batcat || command -v bat)
 
 topics() {
@@ -24,8 +35,88 @@ topics() {
         for p in "${PLATFORMS[@]}"; do
             find "$TLDR/$p" -name '*.md' -printf '%f\n'
         done | sed 's/\.md$//'
-    } 2>/dev/null | sort -u
+        learn_topics
+    } 2>/dev/null | awk -F/ '
+        !seen[$0]++ { print }
+        NF > 1 { lang[$1] }
+        END { for (l in lang) print l "/:list" }
+    ' # unsorted so fzf can start before every source is read
 }
+
+# --- learnxinyminutes ---
+
+learn_file() {
+    local lang=${1%%/*}
+    echo "$LEARN/${LEARN_ALIAS[$lang]:-$lang}.md"
+}
+
+# A learnxinyminutes section is a title line framed by two banner lines made of
+# one repeated symbol, e.g. "####...", "## 1. Functions", "####...".
+# Without want=SECTION, list every "page/Section" (and "alias/Section");
+# with it, print that section of the single given page as a fenced code block.
+# shellcheck disable=SC2016
+SECTIONS_AWK='
+function banner(l,  k) {
+    if (l !~ /^[[:space:]]*[^[:alnum:][:space:]]+[[:space:]]*$/) return 0
+    gsub(/[[:space:]]/, "", l)
+    if (length(l) < 6) return 0
+    for (k = 2; k <= length(l); k++) if (substr(l, k, 1) != substr(l, 1, 1)) return 0
+    return 1
+}
+function title(l) {
+    gsub(/^[^[:alnum:]]+|[^[:alnum:]+]+$/, "", l); sub(/^[0-9.]+[[:space:]]*/, "", l)
+    gsub(/[^[:alnum:][:space:]_+,-]/, "", l); gsub(/[[:space:]]/, "_", l); return l
+}
+# the two lines before a section header are its own, so output lags two lines
+function flush() { if (k >= 2) print p2; if (k >= 1) print p1; print "```"; on = 0 }
+BEGIN { n = split(aliases, al, " "); for (i = 1; i <= n; i++) { split(al[i], kv, "="); alias[kv[2]] = alias[kv[2]] " " kv[1] } }
+FNR == 1 { page = FILENAME; sub(/.*\//, "", page); sub(/\.md$/, "", page); p1 = p2 = ""; lang = "" }
+on && /^```$/ { flush(); exit }
+/^```[^`]/ { lang = substr($0, 4) }
+{
+    t = ""
+    if (p2 != "" && banner($0) && banner(p2) && !banner(p1)) t = title(p1)
+    if (t != "" && want == "") {
+        print page "/" t
+        n = split(alias[page], names, " "); for (i = 1; i <= n; i++) print names[i] "/" t
+    } else if (t != "" && on) {
+        print "```"; on = 0; exit
+    } else if (t != "" && t == want) {
+        on = 1; k = 0; print "```" lang; print p2; print p1; print
+    } else if (on && ++k >= 3) {
+        print p2
+    }
+    p2 = p1; p1 = $0
+}
+END { if (on) flush() }'
+
+learn_aliases() {
+    local a
+    for a in "${!LEARN_ALIAS[@]}"; do printf '%s=%s ' "$a" "${LEARN_ALIAS[$a]}"; done
+}
+
+learn_topics() {
+    local f lang
+    for f in "$LEARN"/*.md; do
+        lang=${f##*/} lang=${lang%.md}
+        [ "$lang" = README ] || echo "$lang/:learn"
+    done
+    for lang in "${!LEARN_ALIAS[@]}"; do
+        [ -f "$(learn_file "$lang")" ] && echo "$lang/:learn"
+    done
+    LC_ALL=C awk -v aliases="$(learn_aliases)" "$SECTIONS_AWK" "$LEARN"/*.md
+}
+
+# learn_section LANG/SECTION: print it, fail when there is no such section
+learn_section() {
+    local f out
+    f=$(learn_file "$1")
+    [ -f "$f" ] || return 1
+    out=$(LC_ALL=C awk -v want="${1#*/}" "$SECTIONS_AWK" "$f")
+    [ -n "$out" ] && echo "$out"
+}
+
+# --- local sheets ---
 
 # tldr markdown -> "# description" / "command" blocks, like cheat.sh renders it
 tldr_to_sheet() {
@@ -43,6 +134,17 @@ strip_frontmatter() {
 
 sheet() {
     local t=$1 f p found=
+    case $t in
+    */:list)
+        topics | grep "^${t%/:list}/" | grep -v '/:list$' | LC_ALL=C sort
+        return
+        ;;
+    */:learn)
+        f=$(learn_file "$t")
+        [ -f "$f" ] && strip_frontmatter "$f"
+        return
+        ;;
+    esac
     f=$SHEETS/$t
     [[ $t == */* ]] && f=$SHEETS/_$t
     [ -f "$f" ] && { cat "$f"; echo; found=1; }
@@ -50,6 +152,7 @@ sheet() {
     for p in "${PLATFORMS[@]}"; do
         [ -f "$TLDR/$p/$t.md" ] && { tldr_to_sheet "$TLDR/$p/$t.md"; found=1; break; }
     done
+    [ -z "$found" ] && [[ $t == */* ]] && learn_section "$t" && found=1
     [ -n "$found" ]
 }
 
@@ -58,14 +161,25 @@ filter() {
     awk -v k="$1" 'BEGIN { RS = ""; ORS = "\n\n"; k = tolower(k) } index(tolower($0), k)'
 }
 
+# highlight TOPIC [bat options]: shell-like by default, learnxinyminutes as markdown,
+# lists as plain text
 highlight() {
-    if [ -n "$BAT" ]; then "$BAT" -l bash --style=plain "$@"; else cat; fi
+    local t=$1 syntax=(-l bash) f
+    shift
+    case $t in
+    */:list) syntax=(-l txt) ;;
+    */:learn) syntax=(-l md) ;;
+    */*)
+        [ ! -f "$SHEETS/_$t" ] && [ ! -f "$CHEATS/$t" ] && [ -f "$(learn_file "$t")" ] && syntax=(-l md)
+        ;;
+    esac
+    if [ -n "$BAT" ]; then "$BAT" "${syntax[@]}" --style=plain "$@"; else cat; fi
 }
 
 [ -d "$SRC" ] || { echo "cheat: sources not found in $SRC" >&2; exit 1; }
 
 if [ "$1" = --preview ]; then
-    sheet "$2" | highlight --color=always
+    sheet "$2" | highlight "$2" --color=always
     exit
 fi
 
@@ -83,4 +197,4 @@ if [ -z "${out//[[:space:]]/}" ]; then
     echo "No cheat sheet found for \"$topic\"${keyword:+ matching \"$keyword\"}" >&2
     exit 1
 fi
-if [ -t 1 ]; then highlight --paging=auto <<< "$out"; else echo "$out"; fi
+if [ -t 1 ]; then highlight "$topic" --paging=auto <<< "$out"; else echo "$out"; fi
