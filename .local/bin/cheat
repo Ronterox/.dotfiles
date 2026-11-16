@@ -6,9 +6,14 @@
 #            lang/:learn         whole learnxinyminutes page    lang/Section  one section of it
 #            lang/:list          every topic under lang/
 #            rfc/NUMBER          an RFC
+#            rosetta/TASK        a Rosetta Code task and the languages that solve it
+#            lang/rosetta        every Rosetta Code task solved in lang
+#            lang/rosetta/TASK   the lang solution(s) of TASK
 #   keyword  only show the blocks that mention it (case-insensitive)
 #
-# RFCs are downloaded the first time they are opened, then kept.
+# RFCs and Rosetta Code are downloaded the first time they are opened, then kept.
+# The fzf list holds lang/rosetta/TASK only for CHEAT_ROSETTA_LANGS (space separated);
+# other languages still open when typed.
 #
 # Sources (override the root with CHEAT_SOURCES):
 #   cheat.sheets/sheets  chubin/cheat.sheets  (lang sheets as lang/topic)
@@ -17,8 +22,10 @@
 #   learnxinyminutes     adambard/learnxinyminutes-docs  (as lang/:learn)
 #                        git clone --depth 1 https://github.com/adambard/learnxinyminutes-docs \
 #                            ~/.cache/remcli/sources/learnxinyminutes
-#   rfc                  rfc-index.txt (titles, refreshed monthly in the background)
-#                        and every RFC opened so far
+#   rfc                  rfc-index.txt (titles) and every RFC opened so far
+#   rosetta              index.txt (TASK/Lang/file of acmeism/RosettaCodeData) and every
+#                        task opened so far
+#   Both indexes refresh themselves in the background once a month.
 
 SRC=${CHEAT_SOURCES:-$HOME/.cache/remcli/sources}
 SHEETS=$SRC/cheat.sheets/sheets
@@ -28,11 +35,21 @@ LEARN=$SRC/learnxinyminutes
 RFC=$SRC/rfc
 RFC_INDEX=$RFC/rfc-index.txt
 RFC_URL=https://www.rfc-editor.org
+ROSETTA=$SRC/rosetta
+ROSETTA_INDEX=$ROSETTA/index.txt
+ROSETTA_REPO=https://github.com/acmeism/RosettaCodeData
+ROSETTA_RAW=https://raw.githubusercontent.com/acmeism/RosettaCodeData/main/Task
+read -ra ROSETTA_LANGS <<< "${CHEAT_ROSETTA_LANGS:-python javascript typescript go rust c c++ unix-shell lua}"
 PLATFORMS=(common linux osx windows android freebsd openbsd netbsd sunos dos cisco-ios)
 # cheat.sh language names -> learnxinyminutes page
 declare -A LEARN_ALIAS=(
     [cpp]=c++ [js]=javascript [python3]=python [perl6]=raku [coffee]=coffeescript
     [lisp]=common-lisp [mathematica]=wolfram [octave]=matlab [vb]=visualbasic
+)
+# common language names -> Rosetta Code language (lowercased)
+declare -A ROSETTA_ALIAS=(
+    [cpp]=c++ [js]=javascript [ts]=typescript [bash]=unix-shell [sh]=unix-shell
+    [csharp]=c-sharp [fsharp]=f-sharp [python3]=python [perl6]=raku
 )
 BAT=$(command -v batcat || command -v bat)
 
@@ -45,6 +62,7 @@ topics() {
         done | sed 's/\.md$//'
         learn_topics
         rfc_topics
+        rosetta_topics
     } 2>/dev/null | awk -F/ '
         !seen[$0]++ { print }
         NF > 1 { lang[$1] }
@@ -192,6 +210,100 @@ rfc_index_download() {
     curl -fsL --max-time 60 "$RFC_URL/rfc-index.txt"
 }
 
+# --- Rosetta Code ---
+
+rosetta_topics() {
+    [ -f "$ROSETTA_INDEX" ] || return
+    LC_ALL=C awk -F/ -v langs=" ${ROSETTA_LANGS[*]} " '
+        BEGIN { langs = tolower(langs) }
+        { l = tolower($2) }
+        !($1 in task) { task[$1]; print "rosetta/" $1 }
+        !(l in lang) { lang[l]; print l "/rosetta" }
+        index(langs, " " l " ") && !((l, $1) in seen) { seen[l, $1]; print l "/rosetta/" $1 }
+    ' "$ROSETTA_INDEX"
+}
+
+rosetta_lang() {
+    local l=${1,,}
+    echo "${ROSETTA_ALIAS[$l]:-$l}"
+}
+
+# rosetta_files TASK [LANG]: index lines (Task/Lang/file) of TASK, case-insensitive
+rosetta_files() {
+    LC_ALL=C awk -F/ -v t="$1" -v l="$2" '
+        tolower($1) == tolower(t) && (l == "" || tolower($2) == l)
+    ' "$ROSETTA_INDEX" 2>/dev/null
+}
+
+# MediaWiki markup of the task descriptions -> plain text
+wiki_to_text() {
+    sed -E \
+        -e 's/\{\{[^}]*\}\}//g' \
+        -e 's/\[\[(wp:)?[^]|]*\|([^]]*)\]\]/\2/g' -e 's/\[\[(wp:)?([^]]*)\]\]/\2/g' \
+        -e "s/'{2,}//g" -e 's/<[^>]+>//g' -e 's/&nbsp;/ /g' \
+        -e 's/&lt;/</g' -e 's/&gt;/>/g' -e 's/&amp;/\&/g' \
+        -e 's/^;(.*)/\n\1/' -e 's/^:*\*+ */  - /' -e 's/^:+//' -e 's/[[:space:]]+$//' |
+        cat -s | sed '/./,$!d'
+}
+
+rosetta_sheet() {
+    local t=$1 lang task files f path n sep
+    case $t in
+    rosetta/*)
+        files=$(rosetta_files "${t#rosetta/}" | cut -d/ -f1,2 | uniq)
+        [ -n "$files" ] || return 1
+        task=${files%%/*}
+        f=$ROSETTA/Task/$task/00-TASK.txt
+        if [ ! -s "$f" ] && [ -z "$NO_FETCH" ]; then
+            echo "Downloading $task..." >&2
+            fetch "$ROSETTA_RAW/$task/00-TASK.txt" "$f"
+        fi
+        if [ -s "$f" ]; then
+            wiki_to_text < "$f"
+        else
+            echo "(description not downloaded yet: open it to download and keep it)"
+        fi
+        printf '\nSolved in %s languages, open one as LANG/rosetta/%s:\n' "$(wc -l <<< "$files")" "$task"
+        cut -d/ -f2 <<< "$files" | tr '[:upper:]' '[:lower:]' | paste -sd ' ' | fold -sw 80
+        ;;
+    */rosetta)
+        lang=$(rosetta_lang "${t%/rosetta}")
+        LC_ALL=C awk -F/ -v l="$lang" 'tolower($2) == l && !seen[$1]++ { print l "/rosetta/" $1 }' \
+            "$ROSETTA_INDEX" 2>/dev/null | grep .
+        ;;
+    */rosetta/*)
+        lang=$(rosetta_lang "${t%%/rosetta/*}")
+        files=$(rosetta_files "${t#*/rosetta/}" "$lang")
+        [ -n "$files" ] || return 1
+        n=$(wc -l <<< "$files")
+        sep=
+        while read -r path; do
+            f=$ROSETTA/Task/$path
+            if [ ! -s "$f" ]; then
+                if [ -n "$NO_FETCH" ]; then
+                    printf '%s\n(not downloaded yet: open it to download and keep it)\n' "${path##*/}"
+                    continue
+                fi
+                echo "Downloading ${path##*/}..." >&2
+                fetch "$ROSETTA_RAW/$path" "$f" || { echo "cheat: could not download $path" >&2; return 1; }
+            fi
+            [ "$n" -gt 1 ] && printf '%b──── %s ────\n' "$sep" "${path##*/}" && sep='\n'
+            cat "$f"
+        done <<< "$files"
+        ;;
+    esac
+}
+
+rosetta_index_download() {
+    local d rc
+    d=$(mktemp -d) || return 1
+    git clone -q --filter=blob:none --no-checkout --depth 1 "$ROSETTA_REPO" "$d/repo" &&
+        git -C "$d/repo" ls-tree -r --name-only HEAD Task/ | sed 's|^Task/||' | grep -v '/00-'
+    rc=$?
+    rm -rf "$d"
+    return $rc
+}
+
 # --- local sheets ---
 
 # tldr markdown -> "# description" / "command" blocks, like cheat.sh renders it
@@ -219,6 +331,10 @@ sheet() {
         [[ $t =~ ^rfc/([0-9]+)$ ]] && rfc_sheet "${BASH_REMATCH[1]}"
         return
         ;;
+    rosetta/* | */rosetta | */rosetta/*)
+        rosetta_sheet "$t"
+        return
+        ;;
     */:learn)
         f=$(learn_file "$t")
         [ -f "$f" ] && strip_frontmatter "$f"
@@ -242,12 +358,16 @@ filter() {
 }
 
 # highlight TOPIC [bat options]: shell-like by default, learnxinyminutes as markdown,
-# lists and RFCs as plain text
+# Rosetta Code solutions by their file extension, lists and RFCs as plain text
 highlight() {
     local t=$1 syntax=(-l bash) f
     shift
     case $t in
-    */:list | rfc/*) syntax=(-l txt) ;;
+    */:list | rfc/* | rosetta/* | */rosetta) syntax=(-l txt) ;;
+    */rosetta/*)
+        f=$(rosetta_files "${t#*/rosetta/}" "$(rosetta_lang "${t%%/rosetta/*}")" | head -1)
+        syntax=(--file-name "${f##*/}")
+        ;;
     */:learn) syntax=(-l md) ;;
     */*)
         [ ! -f "$SHEETS/_$t" ] && [ ! -f "$CHEATS/$t" ] && [ -f "$(learn_file "$t")" ] && syntax=(-l md)
@@ -264,6 +384,7 @@ if [ "$1" = --preview ]; then
 fi
 
 refresh "$RFC_INDEX" rfc_index_download
+command -v git >/dev/null && refresh "$ROSETTA_INDEX" rosetta_index_download
 
 topic=$1 keyword=$2
 # an existing topic opens directly; anything else goes through fzf
