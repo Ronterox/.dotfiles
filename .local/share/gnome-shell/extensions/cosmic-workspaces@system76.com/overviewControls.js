@@ -313,6 +313,10 @@ var ControlsManagerOverride = {
 
         this._searchController.prepareToEnterOverview();
         this._workspacesDisplay.prepareToEnterOverview();
+        // prepareToEnterOverview() above rebuilds the views after Main.overview has
+        // already emitted 'showing', so secondary-monitor ThumbnailsBoxes never
+        // populate (GNOME 42.9). Create their thumbnails here; no-op if present.
+        this._workspacesDisplay._workspacesViews.forEach(v => v._thumbnails?._createThumbnails());
 
         this._stateAdjustment.value = ControlsState.HIDDEN;
 
