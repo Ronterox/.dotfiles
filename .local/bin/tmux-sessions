@@ -38,6 +38,9 @@ tmux-sessions() {
 			  cut -f1)
     [ ! "$session_name" ] && return
 
+    # Opening a session from the picker counts as reading its notifications.
+    "$HOME/.claude/hooks/tmux-notifications.sh" read "$session_name" 2>/dev/null
+
     project-sessions record-session "$session_name"
 
     if [ -z "${TMUX:-}" ]; then
