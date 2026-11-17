@@ -4,3 +4,5 @@ songs
 *.onnx
 package-lock.json
 .omc/
+.mcp.json
+.playwright-mcp/
