@@ -165,8 +165,76 @@ __z_cd() {
     fi
 }
 
+# Candidates, one per line as "SOURCE<TAB>DISTANCE<TAB>PATH": SOURCE 0 is local
+# (DISTANCE = levels away from $PWD), 1 is the zoxide database (DISTANCE =
+# -score). Prints matching paths best first. How well the last keyword matches
+# the directory name beats everything else, case-sensitive before not:
+#   exact name, name prefix, name substring, then (database only) anywhere in
+#   the path. Then local before database, then nearer / higher score, then the
+#   shorter name. Earlier keywords must appear in the path, in order.
+__z_rank() {
+    awk -F '\t' -v kws="$*" -v pwd="$PWD" '
+        BEGIN { n = split(kws, kw, " "); key = kw[n]; lkey = tolower(key) }
+        {
+            src = $1; dist = $2; path = $3
+            sub(/\/+$/, "", path)
+            if (path == pwd || path == "" || seen[path]++) next
+            base = path; sub(/.*\//, "", base)
+            lbase = tolower(base); lpath = tolower(path)
+            pos = 1
+            for (i = 1; i < n; i++) {
+                j = index(substr(lpath, pos), tolower(kw[i]))
+                if (!j) next
+                pos += j + length(kw[i]) - 1
+            }
+            if (base == key) t = 0
+            else if (lbase == lkey) t = 1
+            else if (index(base, key) == 1) t = 2
+            else if (index(lbase, lkey) == 1) t = 3
+            else if (index(base, key)) t = 4
+            else if (index(lbase, lkey)) t = 5
+            else if (src == 1 && index(substr(lpath, pos), lkey)) t = 6
+            else next
+            printf "%d\t%d\t%s\t%d\t%s\n", t, src, dist, length(base), path
+        }' | sort -t $'\t' -k1,1n -k2,2n -k3,3g -k4,4n | cut -f5-
+}
+
+# Every candidate for "z KEYWORDS...": directories up to 3 levels under $PWD,
+# the ancestors of $PWD, and the zoxide database.
+__z_candidates() {
+    local key="${*: -1}" dir="$PWD" up=0
+    # From / the scan would crawl the whole system for little gain.
+    [ "$PWD" != / ] && fdfind -t d -H -i -F --max-depth 3 --absolute-path -- "$key" 2>/dev/null |
+        awk -v pwd="$PWD" '{ path = $0; sub(/\/+$/, "", path); d = gsub(/\//, "/", path) - gsub(/\//, "/", pwd); print "0\t" d "\t" path }'
+    while [ "$dir" != / ] && [ -n "$dir" ]; do
+        dir="${dir%/*}"; up=$((up + 1))
+        printf '0\t%d\t%s\n' "$up" "${dir:-/}"
+    done
+    zoxide query --list --score -- "$@" 2>/dev/null |
+        awk '{ score = $1; sub(/^ *[^ ]+ /, ""); print "1\t" (-score) "\t" $0 }'
+}
+
+# Last resort: search ~ (files too) in widening depth bands and take the best
+# name match of the first band with any hit. fd's plain first hit is whatever a
+# thread reaches first, often deep in some node_modules.
+__z_search_home() {
+    local depth hit
+    for depth in 4 8 ''; do
+        hit=$(fdfind -H -i -F ${depth:+--max-depth "$depth"} -- "${*: -1}" ~ 2>/dev/null |
+            awk -v home="$HOME" '{ p = $0; sub(/\/+$/, "", p); d = gsub(/\//, "/", p) - gsub(/\//, "/", home); print "0\t" d "\t" p }' |
+            __z_rank "$@" | head -1)
+        [ -n "$hit" ] && { echo "$hit"; return; }
+    done
+}
+
+# z resolution, first hit wins:
+#   1. an existing directory path (z ./foo, z ../bar, z /tmp)
+#   2. the ranked candidates above: local and recent-but-unvisited directories
+#      win when they match better, not just when they're visited more
+#   3. fuzzy match on database names, for typos/abbreviations (z dw → Downloads)
+#   4. `fdfind PATTERN -H ~`, nearest best match (a file lands you in its directory)
 __z() {
-    local _zoxide_result
+    local _zoxide_result dir
     if [ "$#" -eq 0 ]; then
         __z_cd ~
     elif [ "$#" -eq 1 ] && [ "$1" = '-' ]; then
@@ -176,12 +244,25 @@ __z() {
             echo 'zoxide: $OLDPWD is not set'
             return 1
         fi
+    elif [ "$#" -eq 1 ] && [ -d "$1" ]; then
+        __z_cd "$1"
     else
-        _zoxide_result="$(zoxide query -- "$@" 2>/dev/null)"
+        while IFS= read -r dir; do
+            [ -d "$dir" ] && { _zoxide_result="$dir"; break; }
+        done < <(__z_candidates "$@" | __z_rank "$@")
         if [ -z "$_zoxide_result" ]; then
             _zoxide_result=$(zoxide query --list --score | fzf --delimiter / --with-nth -1 --filter "$*" | sort -hr | head -1 | awk '{print $NF}')
         fi
-        [ -n "$_zoxide_result" ] && __z_cd "$_zoxide_result"
+        if [ -z "$_zoxide_result" ]; then
+            _zoxide_result=$(__z_search_home "$@")
+            [ -f "$_zoxide_result" ] && _zoxide_result="${_zoxide_result%/*}"
+            [ -n "$_zoxide_result" ] && echo "z: found $_zoxide_result" >&2
+        fi
+        if [ -z "$_zoxide_result" ]; then
+            echo "z: no match for $*" >&2
+            return 1
+        fi
+        __z_cd "$_zoxide_result"
     fi
 }
 
