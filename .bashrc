@@ -228,7 +228,7 @@ __z_search_home() {
 }
 
 # z resolution, first hit wins:
-#   1. an existing directory path (z ./foo, z ../bar, z /tmp)
+#   1. an existing path (z ../bar, z /tmp); a file path goes to its folder
 #   2. the ranked candidates above: local and recent-but-unvisited directories
 #      win when they match better, not just when they're visited more
 #   3. fuzzy match on database names, for typos/abbreviations (z dw → Downloads)
@@ -246,7 +246,17 @@ __z() {
         fi
     elif [ "$#" -eq 1 ] && [ -d "$1" ]; then
         __z_cd "$1"
+    elif [ "$#" -eq 1 ] && [ -e "$1" ]; then
+        __z_cd "$(dirname -- "$1")"
     else
+        # A path that doesn't exist from here (z bin/dictate) searches like
+        # the keywords "bin dictate": last part is the name, earlier parts
+        # must appear in order in its path.
+        local -a _z_kws=()
+        while IFS= read -r dir; do
+            [ -n "$dir" ] && _z_kws+=("$dir")
+        done < <(printf '%s\n' "$@" | tr '/' '\n')
+        [ "${#_z_kws[@]}" -gt 0 ] && set -- "${_z_kws[@]}"
         while IFS= read -r dir; do
             [ -d "$dir" ] && { _zoxide_result="$dir"; break; }
         done < <(__z_candidates "$@" | __z_rank "$@")
