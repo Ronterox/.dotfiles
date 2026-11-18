@@ -214,12 +214,19 @@ __z_candidates() {
         awk '{ score = $1; sub(/^ *[^ ]+ /, ""); print "1\t" (-score) "\t" $0 }'
 }
 
+# Narrate the fallbacks on stderr, dimmed on a terminal, so a jump that came
+# from a guess is never a surprise.
+__z_say() {
+    if [ -t 2 ]; then printf '\e[2mz: %s\e[0m\n' "$*" >&2; else printf 'z: %s\n' "$*" >&2; fi
+}
+
 # Last resort: search ~ (files too) in widening depth bands and take the best
 # name match of the first band with any hit. fd's plain first hit is whatever a
 # thread reaches first, often deep in some node_modules.
 __z_search_home() {
     local depth hit
     for depth in 4 8 ''; do
+        __z_say "searching ~ for files and folders, $([ -n "$depth" ] && echo "$depth levels deep" || echo everywhere)…"
         hit=$(fdfind -H -i -F ${depth:+--max-depth "$depth"} -- "${*: -1}" ~ 2>/dev/null |
             awk -v home="$HOME" '{ p = $0; sub(/\/+$/, "", p); d = gsub(/\//, "/", p) - gsub(/\//, "/", home); print "0\t" d "\t" p }' |
             __z_rank "$@" | head -1)
@@ -261,15 +268,22 @@ __z() {
             [ -d "$dir" ] && { _zoxide_result="$dir"; break; }
         done < <(__z_candidates "$@" | __z_rank "$@")
         if [ -z "$_zoxide_result" ]; then
+            __z_say "nothing nearby or in history, trying a fuzzy match on history…"
             _zoxide_result=$(zoxide query --list --score | fzf --delimiter / --with-nth -1 --filter "$*" | sort -hr | head -1 | awk '{print $NF}')
+            [ -n "$_zoxide_result" ] && __z_say "fuzzy matched $_zoxide_result"
         fi
         if [ -z "$_zoxide_result" ]; then
+            __z_say "no fuzzy match either"
             _zoxide_result=$(__z_search_home "$@")
-            [ -f "$_zoxide_result" ] && _zoxide_result="${_zoxide_result%/*}"
-            [ -n "$_zoxide_result" ] && echo "z: found $_zoxide_result" >&2
+            if [ -f "$_zoxide_result" ]; then
+                __z_say "found file $_zoxide_result, going to its folder"
+                _zoxide_result="${_zoxide_result%/*}"
+            elif [ -n "$_zoxide_result" ]; then
+                __z_say "found $_zoxide_result"
+            fi
         fi
         if [ -z "$_zoxide_result" ]; then
-            echo "z: no match for $*" >&2
+            __z_say "no match for $*"
             return 1
         fi
         __z_cd "$_zoxide_result"
